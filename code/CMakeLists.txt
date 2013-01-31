@@ -1,4 +1,4 @@
- #
+#
 # $Id$
 #
 # (C) Copyright 2012-2013 Johns Hopkins University (JHU), All Rights Reserved.
@@ -30,13 +30,14 @@ if (cisst_FOUND_AS_REQUIRED)
   # Modify CMake configuration to use cisst
   include (${CISST_USE_FILE})
 
-  # Allow generated c++ code to find header files
+  # Allow c++ code to find local header files
   include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
-  # To link with build libraries
-  link_directories (${CMAKE_CURRENT_SOURCE_DIR})
-
+  # create/configure file for find_package (sawRobotIO1394)
   set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include")
+  set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
+  set (sawRobotIO1394_LIBRARIES sawRobotIO1394)
+
   include_directories (${sawRobotIO1394_INCLUDE_DIR})
   set (sawRobotIO1394_HEADER_DIR "${sawRobotIO1394_INCLUDE_DIR}/sawRobotIO1394")
 
@@ -46,6 +47,7 @@ if (cisst_FOUND_AS_REQUIRED)
                               RobotInternal.cpp
                               RobotInternal.h)
 
+  set_property (TARGET sawRobotIO1394 PROPERTY FOLDER "sawRobotIO1394")
   target_link_libraries (sawRobotIO1394 Amp1394)
 
   # link rtai lib (may need to add Xenomai support)
@@ -55,5 +57,9 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # link cisst lib
   cisst_target_link_libraries (sawRobotIO1394 ${REQUIRED_CISST_LIBRARIES})
+
+  configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawRobotIO1394Config.cmake.in"
+                  "${sawRobotIO1394_BINARY_DIR}/sawRobotIO1394Config.cmake"
+                   @ONLY@)
 
 endif(cisst_FOUND_AS_REQUIRED)
