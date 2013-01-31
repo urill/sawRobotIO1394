@@ -3,18 +3,18 @@
 
 /*
  $Id$
- 
+
  Author(s):  Zihan Chen, Peter Kazanzides
  Created on: 2012-07-31
- 
+
  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
- 
+
  --- begin cisst license - do not edit ---
- 
+
  This software is provided "as is" under an open source license, with
  no warranty.  The complete license can be found in license.txt and
  http://www.cisst.org/cisst/license.txt.
- 
+
  --- end cisst license ---
  */
 
@@ -156,7 +156,6 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec &mcur)
 }
 
 // Unit Conversions (TBD)
-
 void mtsRobotIO1394::RobotInternal::EncoderToDegree(const vctLongVec &fromData, vctDoubleVec &toData) const
 {
     toData.SetAll(0.0);

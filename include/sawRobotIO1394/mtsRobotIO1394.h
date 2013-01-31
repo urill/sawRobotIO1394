@@ -3,10 +3,10 @@
 
 /*
   $Id$
-  
+
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
-  
+
   (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
@@ -56,7 +56,7 @@ public:
     void Startup(void);
     void Run(void);
     void Cleanup(void);
-    
+
 protected:
 
     void GetNumberOfBoards(int &num) const;

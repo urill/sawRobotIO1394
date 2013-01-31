@@ -1,5 +1,5 @@
  #
-# $Id: CMakeLists.txt 2593 2011-06-02 22:41:14 zchen24 $
+# $Id$
 #
 # (C) Copyright 2012-2013 Johns Hopkins University (JHU), All Rights Reserved.
 #
@@ -11,58 +11,49 @@
 #
 # --- end cisst license ---
 
-
-################### sawFPGA1394QLALib ########################
- 
-set( REQUIRED_CISST_LIBRARIES
+set (REQUIRED_CISST_LIBRARIES
      cisstCommon
      cisstVector
      cisstOSAbstraction
-     cisstMultiTask 
-     cisstParameterTypes )
+     cisstMultiTask
+     cisstParameterTypes)
 
 
-find_package(cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
-if(cisst_FOUND_AS_REQUIRED)
+if (cisst_FOUND_AS_REQUIRED)
+
+  # Compile lib Amp1394 and examples within this project, this relies on svn:externals
+  add_subdirectory (Amp1394)
+  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
 
   # Modify CMake configuration to use cisst
   include (${CISST_USE_FILE})
 
   # Allow generated c++ code to find header files
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
   # To link with build libraries
-  link_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  link_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
   set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include")
-  include_directories(${sawRobotIO1394_INCLUDE_DIR})
+  include_directories (${sawRobotIO1394_INCLUDE_DIR})
   set (sawRobotIO1394_HEADER_DIR "${sawRobotIO1394_INCLUDE_DIR}/sawRobotIO1394")
 
   # create the library
-  add_library( sawRobotIO1394 mtsRobotIO1394.cpp
+  add_library (sawRobotIO1394 mtsRobotIO1394.cpp
                               ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394.h
                               RobotInternal.cpp
-                              RobotInternal.h )
+                              RobotInternal.h)
 
-  target_link_libraries(sawRobotIO1394 Amp1394)
+  target_link_libraries (sawRobotIO1394 Amp1394)
 
   # link rtai lib (may need to add Xenomai support)
-  if(CISST_HAS_LINUX_RTAI)
-    target_link_libraries(sawRobotIO1394 ${RTAI_LIBRARIES})
-  endif(CISST_HAS_LINUX_RTAI)
+  if (CISST_HAS_LINUX_RTAI)
+    target_link_libraries (sawRobotIO1394 ${RTAI_LIBRARIES})
+  endif (CISST_HAS_LINUX_RTAI)
 
   # link cisst lib
-  cisst_target_link_libraries(sawRobotIO1394 ${REQUIRED_CISST_LIBRARIES} )
+  cisst_target_link_libraries (sawRobotIO1394 ${REQUIRED_CISST_LIBRARIES})
 
 endif(cisst_FOUND_AS_REQUIRED)
-
-
-
-
-
-
-
-
-
-                                                        

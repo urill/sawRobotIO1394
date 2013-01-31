@@ -1,5 +1,5 @@
 #
-# $Id: CMakeLists.txt 2672 2011-08-05 17:15:38 zchen24 $
+# $Id$
 #
 # (C) Copyright 2012-2013 Johns Hopkins University (JHU), All Rights Reserved.
 #
@@ -14,7 +14,6 @@
 project(sawRobotIO1394)
 
 add_subdirectory(code)
-
 #add_subdirectory(examples)
 
 

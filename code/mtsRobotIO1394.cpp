@@ -3,18 +3,18 @@
 
 /*
  $Id$
- 
+
  Author(s):  Zihan Chen, Peter Kazanzides
  Created on: 2012-07-31
- 
+
  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
- 
+
  --- begin cisst license - do not edit ---
- 
+
  This software is provided "as is" under an open source license, with
  no warranty.  The complete license can be found in license.txt and
  http://www.cisst.org/cisst/license.txt.
- 
+
  --- end cisst license ---
  */
 
@@ -34,7 +34,7 @@ class mtsRobotIO1394::BoardInfo : public AmpIO {
     bool powerControl;
 
 public:
-    BoardInfo(unsigned int board_id) : AmpIO(board_id), 
+    BoardInfo(unsigned int board_id) : AmpIO(board_id),
                                           safetyRelayControl(false), powerControl(false) {}
     ~BoardInfo() {}
 
