@@ -33,7 +33,7 @@ if(cisst_FOUND_AS_REQUIRED)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
   # To link with build libraries
-  link_directories(${CMAKE_CURRENT_BINARY_DIR})
+  link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
   set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include")
   include_directories(${sawRobotIO1394_INCLUDE_DIR})
@@ -45,7 +45,7 @@ if(cisst_FOUND_AS_REQUIRED)
                               RobotInternal.cpp
                               RobotInternal.h )
 
-  target_link_libraries(sawRobotIO1394 AmpIO)
+  target_link_libraries(sawRobotIO1394 Amp1394)
 
   # link rtai lib (may need to add Xenomai support)
   if(CISST_HAS_LINUX_RTAI)

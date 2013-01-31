@@ -27,7 +27,7 @@
 
 #include "FirewirePort.h"
 #include "AmpIO.h"
-#include "mtsRobotInternal.h"
+#include "RobotInternal.h"
 
 class mtsRobotIO1394::BoardInfo : public AmpIO {
     bool safetyRelayControl;
