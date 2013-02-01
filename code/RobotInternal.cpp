@@ -25,6 +25,7 @@
 #include <cisstMultiTask/mtsStateTable.h>
 
 #include "RobotInternal.h"
+#include "AmpIO.h"
 
 // JointInfo Constructor
 mtsRobotIO1394::RobotInternal::JointInfo::JointInfo() : boardid(-1), axisid(-1)
@@ -39,7 +40,7 @@ mtsRobotIO1394::RobotInternal::JointInfo::~JointInfo()
 
 mtsRobotIO1394::RobotInternal::RobotInternal(const std::string &name, size_t numJoints) :
     robotName(name), JointList(numJoints), valid(false),
-    ampStatus(numJoints), ampEnable(numJoints),
+    ampStatus(numJoints, false), ampEnable(numJoints, false), ampControl(numJoints, false),
     encPosRaw(numJoints), encPos(numJoints),
     encVelRaw(numJoints), encVel(numJoints),
     analogInRaw(numJoints), analogIn(numJoints),
@@ -59,6 +60,7 @@ void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable &stateTable)
     stateTable.AddData(safetyRelayControl, robotName + "SafetyRelayControl");
     stateTable.AddData(ampStatus, robotName + "AmpStatus");
     stateTable.AddData(ampEnable, robotName + "AmpEnable");
+    stateTable.AddData(ampControl, robotName + "AmpControl");
     stateTable.AddData(encPosRaw, robotName + "PosRaw");
     stateTable.AddData(encPos, robotName + "Pos");
     stateTable.AddData(encVelRaw, robotName + "VelRaw");
@@ -85,6 +87,7 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
 
     prov->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable");
     prov->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus");
+    prov->AddCommandWriteState(stateTable, this->ampControl, "SetAmpStatus");
     prov->AddCommandReadState(stateTable, this->safetyRelay, "GetSafetyRelay");
 
     prov->AddCommandReadState(stateTable, this->encPosRaw, "GetPositionRaw");
@@ -126,12 +129,12 @@ void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int &num) const
 
 void mtsRobotIO1394::RobotInternal::EnablePower(void)
 {
-    ampEnable.SetAll(true);
+    ampControl.SetAll(true);
 }
 
 void mtsRobotIO1394::RobotInternal::DisablePower(void)
 {
-    ampEnable.SetAll(false);
+    ampControl.SetAll(false);
 }
 
 void mtsRobotIO1394::RobotInternal::EnableSafetyRelay(void)
@@ -195,6 +198,17 @@ void mtsRobotIO1394::RobotInternal::ADCToVolts(const vctLongVec &fromData, vctDo
 void mtsRobotIO1394::RobotInternal::ADCToMotorCurrent(const vctLongVec &fromData, vctDoubleVec &toData) const
 {
     toData.SetAll(0.0);
+}
+
+void mtsRobotIO1394::RobotInternal::GetData(size_t index, const AmpIO *board, int axis)
+{
+    // Assumes that index and axis were already verified to be in range
+    encPosRaw[index] = board->GetEncoderPosition(axis);
+    encVelRaw[index] = board->GetEncoderVelocity(axis);
+    analogInRaw[index] = board->GetAnalogInput(axis);
+    motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);
+    ampEnable[index] = board->GetAmpEnable(axis);
+    ampStatus[index] = board->GetAmpStatus(axis);
 }
 
 void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)

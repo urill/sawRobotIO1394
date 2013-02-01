@@ -144,12 +144,7 @@ void mtsRobotIO1394::Run(void)
         if (!RobotList[i]->IsValid()) continue;
         for (j = 0; j < RobotList[i]->JointList.size(); j++) {
             RobotInternal::JointInfo &jt = RobotList[i]->JointList[j];
-            RobotList[i]->encPosRaw[j] = BoardList[jt.boardid]->GetEncoderPosition(jt.axisid);
-            RobotList[i]->encVelRaw[j] = BoardList[jt.boardid]->GetEncoderVelocity(jt.axisid);
-            RobotList[i]->analogInRaw[j] = BoardList[jt.boardid]->GetAnalogInput(jt.axisid);
-            RobotList[i]->motorFeedbackCurrentRaw[j] = BoardList[jt.boardid]->GetMotorCurrent(jt.axisid);
-            RobotList[i]->ampEnable[j] = BoardList[jt.boardid]->GetAmpEnable(jt.axisid);
-            RobotList[i]->ampStatus[j] = BoardList[jt.boardid]->GetAmpStatus(jt.axisid);
+            RobotList[i]->GetData(j, BoardList[jt.boardid], jt.axisid);
         }
         // Convert from raw to SI units (TBD)
         RobotList[i]->ConvertRawToSI();

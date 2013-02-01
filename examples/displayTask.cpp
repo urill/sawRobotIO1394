@@ -69,7 +69,8 @@ void displayTask::Startup(void)
     keypad(stdscr, TRUE);
     noecho();
     nodelay(stdscr, TRUE);
-    mvprintw( 1, 4, "Robot Sensor Display");
+    mvprintw( 1, 4, "Robot Sensor Display (ESC to exit)");
+    mvprintw( 2, 4, "Press: p to toggle power, +/- to increase/decrease commanded current");
     mvprintw( 5, 4, "Enc Pos");
     mvprintw( 6, 4, "Enc Vel");
     mvprintw( 7, 4, "Analog In");

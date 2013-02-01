@@ -30,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 
 class mtsInterfaceProvided;
 class mtsStateTable;
+class AmpIO;
 
 class mtsRobotIO1394::RobotInternal {
 public:
@@ -50,8 +51,9 @@ public:
     bool           valid;
     unsigned short safetyRelay;
     bool           safetyRelayControl;
-    vctBoolVec     ampStatus;
-    vctBoolVec     ampEnable;
+    vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
+    vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
+    vctBoolVec     ampControl;          // Desired amplifier enable state (to write to boards)
     vctLongVec     encPosRaw;
     vctDoubleVec   encPos;
     vctLongVec     encVelRaw;
@@ -79,6 +81,8 @@ public:
     void MotorCurrentToDAC(const vctDoubleVec &fromData, vctLongVec &toData) const;
     void ADCToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const;
     void ADCToMotorCurrent(const vctLongVec &fromData, vctDoubleVec &toData) const;
+
+    void GetData(size_t index, const AmpIO *board, int axis);
     void ConvertRawToSI(void);
 
     RobotInternal(const std::string &name, size_t numJoints);
