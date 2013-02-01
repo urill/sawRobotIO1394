@@ -52,11 +52,11 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394, mtsTaskPeriodic, mtsTaskPe
 
 //============ mtsRobotIO1394 =========================================
 
-mtsRobotIO1394::mtsRobotIO1394(const std::string &name, double period, int port_num)
-    : mtsTaskPeriodic(name, period)
+mtsRobotIO1394::mtsRobotIO1394(const std::string &name, double period, int port_num,
+                               std::ostream &debugStream) : mtsTaskPeriodic(name, period)
 {
     Init();
-    Port = new FirewirePort(port_num);
+    Port = new FirewirePort(port_num, debugStream);
 }
 
 mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg &arg)
@@ -94,32 +94,32 @@ void mtsRobotIO1394::Configure(const std::string &filename)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Configuring from " << filename << std::endl;
 
-    // For now, use filename to specify pairs of boards.
+    // For now, use filename to specify boards (and assume just one robot)
     // In the future, change this to be an XML file
     cmnTokenizer tokens;
     tokens.Parse(filename);
 
-    for (unsigned int i = 0; i < tokens.GetNumTokens()-1; i += 2) {
-        int bd1 = atoi(tokens.GetToken(i));
-        BoardList[bd1] = new mtsRobotIO1394::BoardInfo(bd1);
-        Port->AddBoard(BoardList[bd1]);
-        int bd2 = atoi(tokens.GetToken(i+1));
-        BoardList[bd2] = new mtsRobotIO1394::BoardInfo(bd2);
-        Port->AddBoard(BoardList[bd2]);
-        std::string name("Robot_");
-        name.append(tokens.GetToken(i));
-        name.append("_");
-        name.append(tokens.GetToken(i+1));
-        RobotInternal *robot = new RobotInternal(name, 8);
-        for (int j = 0; j < 4; j++) {
-            robot->JointList[j] = RobotInternal::JointInfo(bd1, j);
-            robot->JointList[j+4] = RobotInternal::JointInfo(bd2, j);
-        }
-        robot->SetupStateTable(StateTable);
-        mtsInterfaceProvided* prov = AddInterfaceProvided(name);
-        robot->SetupProvidedInterface(prov, StateTable);
-        RobotList.push_back(robot);
+    unsigned int numBoards = tokens.GetNumTokens()-1;  // -1 for NULL at end
+    unsigned int numJoints = 4*numBoards;
+    RobotInternal *robot = new RobotInternal("Robot", numJoints);
+    unsigned int i, j;
+    for (i = 0, j = 0; i < numBoards; i++, j += 4) {
+        int bd = atoi(tokens.GetToken(i));
+        BoardList[bd] = new mtsRobotIO1394::BoardInfo(bd);
+        Port->AddBoard(BoardList[bd]);
+        robot->JointList[j] = RobotInternal::JointInfo(bd, j);
+        robot->JointList[j+1] = RobotInternal::JointInfo(bd, j+1);
+        robot->JointList[j+2] = RobotInternal::JointInfo(bd, j+2);
+        robot->JointList[j+3] = RobotInternal::JointInfo(bd, j+3);
     }
+    robot->SetupStateTable(StateTable);
+    mtsInterfaceProvided* prov = AddInterfaceProvided("Robot");
+    robot->SetupProvidedInterface(prov, StateTable);
+    RobotList.push_back(robot);
+}
+
+void mtsRobotIO1394::Startup(void)
+{
 }
 
 void mtsRobotIO1394::Run(void)
@@ -168,6 +168,10 @@ void mtsRobotIO1394::Run(void)
         }
     }
     Port->WriteAllBoards();
+}
+
+void mtsRobotIO1394::Cleanup(void)
+{
 }
 
 void mtsRobotIO1394::GetNumberOfBoards(int &num) const

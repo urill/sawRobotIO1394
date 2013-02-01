@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef __mtsRobotIO1394_H__
 #define __mtsRobotIO1394_H__
 
+#include <ostream>
 #include <iostream>
 #include <vector>
 
@@ -46,7 +47,8 @@ protected:
 ///////////// Public Class Methods ///////////////////////////
 public:
     // Constructor & Destructor
-    mtsRobotIO1394(const std::string &name, double period, int port_num);
+    mtsRobotIO1394(const std::string &name, double period, int port_num, 
+                   std::ostream &debugStream = std::cerr);
     mtsRobotIO1394(const mtsTaskPeriodicConstructorArg &arg); // TODO: add port_num
     virtual ~mtsRobotIO1394();
 

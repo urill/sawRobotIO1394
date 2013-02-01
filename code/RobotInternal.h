@@ -28,9 +28,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
-// Following should be added to vctDynamicVectorTypes.h
-typedef vctDynamicVector<long> vctLongVec;
-
 class mtsInterfaceProvided;
 class mtsStateTable;
 
@@ -48,9 +45,9 @@ public:
     };
     std::string robotName;              // Robot name (from config file)
     std::vector<JointInfo> JointList;   // Joint information
-    bool valid;
 
     // State data
+    bool           valid;
     unsigned short safetyRelay;
     bool           safetyRelayControl;
     vctBoolVec     powerStatus;
@@ -67,6 +64,7 @@ public:
     vctDoubleVec   motorControlCurrent;
 
     // Methods for provided interface
+    void GetNumberOfJoints(int &num) const;
     void EnablePower(void);
     void DisablePower(void);
     void EnableSafetyRelay(void);

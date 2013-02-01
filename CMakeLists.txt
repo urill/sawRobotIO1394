@@ -14,9 +14,12 @@
 project(sawRobotIO1394)
 
 add_subdirectory(code)
-#add_subdirectory(examples)
 
-
-
-
+# Example program uses curses for text-based display
+find_package (Curses)
+if (CURSES_FOUND)
+  add_subdirectory(examples)
+else (CURSES_FOUND)
+  message ("sawRobotIO1394 examples not available -- curses lib not found")
+endif (CURSES_FOUND)
 

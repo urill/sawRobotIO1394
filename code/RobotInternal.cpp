@@ -54,6 +54,7 @@ mtsRobotIO1394::RobotInternal::~RobotInternal()
 
 void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable &stateTable)
 {
+    stateTable.AddData(valid, robotName + "Valid");
     stateTable.AddData(safetyRelay, robotName + "SafetyRelay");
     stateTable.AddData(safetyRelayControl, robotName + "SafetyRelayControl");
     stateTable.AddData(powerStatus, robotName + "PowerStatus");
@@ -72,6 +73,10 @@ void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable &stateTable)
 
 void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided *prov, mtsStateTable &stateTable)
 {
+    prov->AddCommandRead(&mtsRobotIO1394::RobotInternal::GetNumberOfJoints, this,
+                         "GetNumberOfJoints");
+    prov->AddCommandReadState(stateTable, this->valid, "IsValid");
+
     // Enable // Disable
     prov->AddCommandVoid(&mtsRobotIO1394::RobotInternal::EnablePower, this, "EnablePower");
     prov->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisablePower, this, "DisablePower");
@@ -111,6 +116,11 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
                                   "ADCToVolts",analogInRaw, analogIn);
     prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::ADCToMotorCurrent, this,
                                   "ADCToMotorCurrent",motorFeedbackCurrentRaw, motorFeedbackCurrent);
+}
+
+void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int &num) const
+{
+    num = JointList.size();
 }
 
 void mtsRobotIO1394::RobotInternal::EnablePower(void)
