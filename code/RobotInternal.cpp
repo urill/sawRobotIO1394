@@ -39,7 +39,7 @@ mtsRobotIO1394::RobotInternal::JointInfo::~JointInfo()
 
 mtsRobotIO1394::RobotInternal::RobotInternal(const std::string &name, size_t numJoints) :
     robotName(name), JointList(numJoints), valid(false),
-    powerStatus(numJoints), powerControl(numJoints),
+    ampStatus(numJoints), ampEnable(numJoints),
     encPosRaw(numJoints), encPos(numJoints),
     encVelRaw(numJoints), encVel(numJoints),
     analogInRaw(numJoints), analogIn(numJoints),
@@ -57,8 +57,8 @@ void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable &stateTable)
     stateTable.AddData(valid, robotName + "Valid");
     stateTable.AddData(safetyRelay, robotName + "SafetyRelay");
     stateTable.AddData(safetyRelayControl, robotName + "SafetyRelayControl");
-    stateTable.AddData(powerStatus, robotName + "PowerStatus");
-    stateTable.AddData(powerControl, robotName + "PowerControl");
+    stateTable.AddData(ampStatus, robotName + "AmpStatus");
+    stateTable.AddData(ampEnable, robotName + "AmpEnable");
     stateTable.AddData(encPosRaw, robotName + "PosRaw");
     stateTable.AddData(encPos, robotName + "Pos");
     stateTable.AddData(encVelRaw, robotName + "VelRaw");
@@ -83,7 +83,8 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
     prov->AddCommandVoid(&mtsRobotIO1394::RobotInternal::EnableSafetyRelay, this, "EnableSafetyRelay");
     prov->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisableSafetyRelay, this, "DisableSafetyRelay");
 
-    prov->AddCommandReadState(stateTable, this->powerStatus, "GetPowerStatus");
+    prov->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable");
+    prov->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus");
     prov->AddCommandReadState(stateTable, this->safetyRelay, "GetSafetyRelay");
 
     prov->AddCommandReadState(stateTable, this->encPosRaw, "GetPositionRaw");
@@ -125,12 +126,12 @@ void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int &num) const
 
 void mtsRobotIO1394::RobotInternal::EnablePower(void)
 {
-    powerControl.SetAll(true);
+    ampEnable.SetAll(true);
 }
 
 void mtsRobotIO1394::RobotInternal::DisablePower(void)
 {
-    powerControl.SetAll(false);
+    ampEnable.SetAll(false);
 }
 
 void mtsRobotIO1394::RobotInternal::EnableSafetyRelay(void)
@@ -196,4 +197,11 @@ void mtsRobotIO1394::RobotInternal::ADCToMotorCurrent(const vctLongVec &fromData
     toData.SetAll(0.0);
 }
 
+void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
+{
+    EncoderToDegree(encPosRaw, encPos);
+    EncoderToDegPerSec(encVelRaw, encVel);
+    ADCToVolts(analogInRaw, analogIn);
+    ADCToMotorCurrent(motorFeedbackCurrentRaw, motorFeedbackCurrent);
+}
 

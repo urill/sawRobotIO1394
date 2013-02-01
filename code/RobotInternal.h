@@ -50,8 +50,8 @@ public:
     bool           valid;
     unsigned short safetyRelay;
     bool           safetyRelayControl;
-    vctBoolVec     powerStatus;
-    vctBoolVec     powerControl;
+    vctBoolVec     ampStatus;
+    vctBoolVec     ampEnable;
     vctLongVec     encPosRaw;
     vctDoubleVec   encPos;
     vctLongVec     encVelRaw;
@@ -79,6 +79,7 @@ public:
     void MotorCurrentToDAC(const vctDoubleVec &fromData, vctLongVec &toData) const;
     void ADCToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const;
     void ADCToMotorCurrent(const vctLongVec &fromData, vctDoubleVec &toData) const;
+    void ConvertRawToSI(void);
 
     RobotInternal(const std::string &name, size_t numJoints);
     ~RobotInternal();

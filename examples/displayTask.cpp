@@ -25,16 +25,20 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(displayTask, mtsTaskContinuous, std::strin
 
 // passing false to mtsTaskContinuous causes it to use the main thread
 displayTask::displayTask(const std::string & taskName) : mtsTaskContinuous(taskName, 256, false),
-    debugStream(std::stringstream::in), last_debug_line(DEBUG_START_LINE)
+    debugStream(std::stringstream::in), last_debug_line(DEBUG_START_LINE), power_on(false)
 {
     mtsInterfaceRequired *req = AddInterfaceRequired("Robot");
     if (req) {
         req->AddFunction("GetNumberOfJoints", Robot.GetNumberOfJoints);
         req->AddFunction("IsValid", Robot.IsValid);
+        req->AddFunction("EnablePower", Robot.EnablePower);
+        req->AddFunction("DisablePower", Robot.DisablePower);
         req->AddFunction("GetPositionRaw", Robot.GetPositionRaw);
         req->AddFunction("GetVelocityRaw", Robot.GetVelocityRaw);
-        req->AddFunction("GetAnalogInRaw", Robot.GetAnalogInRaw);
-        req->AddFunction("GetMotorCurrentRaw", Robot.GetMotorCurrentRaw);
+        req->AddFunction("GetAnalogInputRaw", Robot.GetAnalogInputRaw);
+        req->AddFunction("GetMotorFeedbackCurrentRaw", Robot.GetMotorCurrentRaw);
+        req->AddFunction("GetAmpEnable", Robot.GetAmpEnable);
+        req->AddFunction("GetAmpStatus", Robot.GetAmpStatus);
         req->AddFunction("SetMotorCurrentRaw", Robot.SetMotorCurrentRaw);
     }
 }
@@ -55,14 +59,24 @@ void displayTask::Startup(void)
     velRaw.SetSize(numJoints);
     analogInRaw.SetSize(numJoints);
     motorFeedbackCurrentRaw.SetSize(numJoints);
+    ampEnable.SetSize(numJoints);
+    ampStatus.SetSize(numJoints);
     motorControlCurrentRaw.SetSize(numJoints);
+    motorControlCurrentRaw.SetAll(0x8000);
 
     initscr();
     cbreak();
     keypad(stdscr, TRUE);
     noecho();
     nodelay(stdscr, TRUE);
-    mvprintw(1, 9, "Robot Sensor Display");
+    mvprintw( 1, 4, "Robot Sensor Display");
+    mvprintw( 5, 4, "Enc Pos");
+    mvprintw( 6, 4, "Enc Vel");
+    mvprintw( 7, 4, "Analog In");
+    mvprintw( 8, 4, "Current FdBk");
+    mvprintw( 9, 4, "Current Ctrl");
+    mvprintw(10, 4, "Amp Enable");
+    mvprintw(11, 4, "Amp Status");
 }
 
 void displayTask::Run(void)
@@ -73,7 +87,11 @@ void displayTask::Run(void)
     if (c == ESC_CHAR)
         Kill();
     else if (c == 'p') {
-        //power_on = !power_on;
+        if (power_on)
+            Robot.DisablePower();
+        else
+            Robot.EnablePower();
+        power_on = !power_on;
     }
     else if (c == '+') {
         for (i = 0; i < motorControlCurrentRaw.size(); i++)
@@ -104,14 +122,18 @@ void displayTask::Run(void)
     if (flag) {
         Robot.GetPositionRaw(posRaw);
         Robot.GetVelocityRaw(velRaw);
-        Robot.GetAnalogInRaw(analogInRaw);
+        Robot.GetAnalogInputRaw(analogInRaw);
         Robot.GetMotorCurrentRaw(motorFeedbackCurrentRaw);
+        Robot.GetAmpEnable(ampEnable);
+        Robot.GetAmpStatus(ampStatus);
         for (i = 0; i < posRaw.size(); i++) {
-            mvprintw( 5, 9+5+i*13, "0x%07X", posRaw[i]);
-            mvprintw( 6, 9+8+i*13, "0x%04X", velRaw[i]);
-            mvprintw( 7, 9+8+i*13, "0x%04X", analogInRaw[i]);
-            mvprintw( 8, 9+8+i*13, "0x%04X", motorFeedbackCurrentRaw[i]);
-            mvprintw( 9, 9+8+i*13, "0x%04X", motorControlCurrentRaw[i]);
+            mvprintw( 5, 14+5+i*13, "0x%07X", posRaw[i]);
+            mvprintw( 6, 14+8+i*13, "0x%04X", velRaw[i]);
+            mvprintw( 7, 14+8+i*13, "0x%04X", analogInRaw[i]);
+            mvprintw( 8, 14+8+i*13, "0x%04X", motorFeedbackCurrentRaw[i]);
+            mvprintw( 9, 14+8+i*13, "0x%04X", motorControlCurrentRaw[i]);
+            mvprintw(10, 14+8+i*13, (ampEnable[i]?"On":"Off"));
+            mvprintw(11, 14+8+i*13, (ampStatus[i]?"On":"Off"));
         }
         Robot.SetMotorCurrentRaw(motorControlCurrentRaw);
     }

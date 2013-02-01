@@ -30,14 +30,19 @@ protected:
     std::stringstream debugStream;
     enum { DEBUG_START_LINE = 15 };
     unsigned int last_debug_line;
+    bool power_on;
 
     struct RobotStruct {
         mtsFunctionRead GetNumberOfJoints;
         mtsFunctionRead IsValid;
+        mtsFunctionVoid EnablePower;
+        mtsFunctionVoid DisablePower;
         mtsFunctionRead GetPositionRaw;
         mtsFunctionRead GetVelocityRaw;
-        mtsFunctionRead GetAnalogInRaw;
+        mtsFunctionRead GetAnalogInputRaw;
         mtsFunctionRead GetMotorCurrentRaw;
+        mtsFunctionRead GetAmpEnable;
+        mtsFunctionRead GetAmpStatus;
         mtsFunctionWrite SetMotorCurrentRaw;
     } Robot;
 
@@ -46,6 +51,8 @@ protected:
     vctLongVec analogInRaw;
     vctLongVec motorFeedbackCurrentRaw;
     vctLongVec motorControlCurrentRaw;
+    vctBoolVec ampEnable;
+    vctBoolVec ampStatus;
 
 public:
     displayTask(const std::string & taskName);

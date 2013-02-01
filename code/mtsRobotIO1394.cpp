@@ -148,12 +148,11 @@ void mtsRobotIO1394::Run(void)
             RobotList[i]->encVelRaw[j] = BoardList[jt.boardid]->GetEncoderVelocity(jt.axisid);
             RobotList[i]->analogInRaw[j] = BoardList[jt.boardid]->GetAnalogInput(jt.axisid);
             RobotList[i]->motorFeedbackCurrentRaw[j] = BoardList[jt.boardid]->GetMotorCurrent(jt.axisid);
+            RobotList[i]->ampEnable[j] = BoardList[jt.boardid]->GetAmpEnable(jt.axisid);
+            RobotList[i]->ampStatus[j] = BoardList[jt.boardid]->GetAmpStatus(jt.axisid);
         }
         // Convert from raw to SI units (TBD)
-        RobotList[i]->EncoderToDegree(RobotList[i]->encPosRaw, RobotList[i]->encPos);
-        RobotList[i]->EncoderToDegPerSec(RobotList[i]->encVelRaw, RobotList[i]->encVel);
-        RobotList[i]->ADCToVolts(RobotList[i]->analogInRaw, RobotList[i]->analogIn);
-        RobotList[i]->ADCToMotorCurrent(RobotList[i]->motorFeedbackCurrentRaw, RobotList[i]->motorFeedbackCurrent);
+        RobotList[i]->ConvertRawToSI();
     }
     RunEvent();
     ProcessQueuedCommands();
