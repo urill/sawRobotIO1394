@@ -90,10 +90,10 @@ void mtsRobotIO1394::Configure(const std::string &filename)
         int bd = atoi(tokens.GetToken(i));
         BoardList[bd] = new AmpIO(bd);
         Port->AddBoard(BoardList[bd]);
-        robot->SetJointInfo(j, BoardList[bd], j);
-        robot->SetJointInfo(j+1, BoardList[bd], j+1);
-        robot->SetJointInfo(j+2, BoardList[bd], j+2);
-        robot->SetJointInfo(j+3, BoardList[bd], j+3);
+        robot->SetJointInfo(j+0, BoardList[bd], 0);
+        robot->SetJointInfo(j+1, BoardList[bd], 1);
+        robot->SetJointInfo(j+2, BoardList[bd], 2);
+        robot->SetJointInfo(j+3, BoardList[bd], 3);
     }
     robot->SetupStateTable(StateTable);
     mtsInterfaceProvided* prov = AddInterfaceProvided("Robot");
