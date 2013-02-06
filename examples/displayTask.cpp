@@ -26,7 +26,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(displayTask, mtsTaskContinuous, std::strin
 // passing false to mtsTaskContinuous causes it to use the main thread
 displayTask::displayTask(const std::string & taskName) : mtsTaskContinuous(taskName, 256, false),
     debugStream(std::stringstream::out|std::stringstream::in),
-    last_debug_line(DEBUG_START_LINE), power_on(false)
+    last_debug_line(DEBUG_START_LINE), power_on(false), safety_relay(false)
 {
     mtsInterfaceRequired *req = AddInterfaceRequired("Robot");
     if (req) {
@@ -34,12 +34,16 @@ displayTask::displayTask(const std::string & taskName) : mtsTaskContinuous(taskN
         req->AddFunction("IsValid", Robot.IsValid);
         req->AddFunction("EnablePower", Robot.EnablePower);
         req->AddFunction("DisablePower", Robot.DisablePower);
+        req->AddFunction("EnableSafetyRelay", Robot.EnableSafetyRelay);
+        req->AddFunction("DisableSafetyRelay", Robot.DisableSafetyRelay);
         req->AddFunction("GetPositionRaw", Robot.GetPositionRaw);
         req->AddFunction("GetVelocityRaw", Robot.GetVelocityRaw);
         req->AddFunction("GetAnalogInputRaw", Robot.GetAnalogInputRaw);
         req->AddFunction("GetMotorFeedbackCurrentRaw", Robot.GetMotorCurrentRaw);
         req->AddFunction("GetAmpEnable", Robot.GetAmpEnable);
         req->AddFunction("GetAmpStatus", Robot.GetAmpStatus);
+        req->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
+        req->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
         req->AddFunction("SetMotorCurrentRaw", Robot.SetMotorCurrentRaw);
     }
 }
@@ -80,6 +84,8 @@ void displayTask::Startup(void)
     mvprintw( 9, 4, "Current Ctrl");
     mvprintw(10, 4, "Amp Enable");
     mvprintw(11, 4, "Amp Status");
+    mvprintw(12, 4, "Power");
+    mvprintw(12, 22, "Safety Relay");
 }
 
 void displayTask::Run(void)
@@ -95,6 +101,13 @@ void displayTask::Run(void)
         else
             Robot.EnablePower();
         power_on = !power_on;
+    }
+    else if (c == 's') {
+        if (safety_relay)
+            Robot.DisableSafetyRelay();
+        else
+            Robot.EnableSafetyRelay();
+        safety_relay = !safety_relay;
     }
     else if (c == '+') {
         for (i = 0; i < motorControlCurrentRaw.size(); i++)
@@ -129,6 +142,8 @@ void displayTask::Run(void)
         Robot.GetMotorCurrentRaw(motorFeedbackCurrentRaw);
         Robot.GetAmpEnable(ampEnable);
         Robot.GetAmpStatus(ampStatus);
+        Robot.GetPowerStatus(powerStatus);
+        Robot.GetSafetyRelay(safetyRelay);
         for (i = 0; i < posRaw.size(); i++) {
             mvprintw( 5, 14+5+i*13, "0x%07X", posRaw[i]);
             mvprintw( 6, 14+8+i*13, "0x%04X", velRaw[i]);
@@ -138,6 +153,8 @@ void displayTask::Run(void)
             mvprintw(10, 14+8+i*13, (ampEnable[i]?" On":"Off"));
             mvprintw(11, 14+8+i*13, (ampStatus[i]?" On":"Off"));
         }
+        mvprintw(12, 14, (powerStatus ? " On":"Off"));
+        mvprintw(12, 35, ((safetyRelay != 0) ? " On":"Off"));
         Robot.SetMotorCurrentRaw(motorControlCurrentRaw);
     }
 
@@ -148,5 +165,6 @@ void displayTask::Run(void)
 void displayTask::Cleanup(void)
 {
     Robot.DisablePower();
+    Robot.DisableSafetyRelay();
     endwin();
 }
