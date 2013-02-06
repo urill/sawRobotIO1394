@@ -33,15 +33,15 @@ class mtsStateTable;
 class AmpIO;
 
 class mtsRobotIO1394::RobotInternal {
-public:
+protected:
     //Nested class stores Joint-Axis info
     class JointInfo {
       public:
-        int boardid;
+        AmpIO *board;
         int axisid;
       public:
         JointInfo();
-        JointInfo(int bid, int aid);
+        JointInfo(AmpIO *bptr, int aid);
         ~JointInfo();
     };
     std::string robotName;              // Robot name (from config file)
@@ -49,11 +49,10 @@ public:
 
     // State data
     bool           valid;
+    bool           powerStatus;
     unsigned short safetyRelay;
-    bool           safetyRelayControl;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
     vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
-    vctBoolVec     ampControl;          // Desired amplifier enable state (to write to boards)
     vctLongVec     encPosRaw;
     vctDoubleVec   encPos;
     vctLongVec     encVelRaw;
@@ -71,6 +70,7 @@ public:
     void DisablePower(void);
     void EnableSafetyRelay(void);
     void DisableSafetyRelay(void);
+    void SetAmpEnable(const vctBoolVec &ampControl);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
 
@@ -82,17 +82,21 @@ public:
     void ADCToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const;
     void ADCToMotorCurrent(const vctLongVec &fromData, vctDoubleVec &toData) const;
 
-    void GetData(size_t index, const AmpIO *board, int axis);
-    void ConvertRawToSI(void);
+public:
 
     RobotInternal(const std::string &name, size_t numJoints);
     ~RobotInternal();
 
+    void SetJointInfo(int index, AmpIO *board, int axis);
+
     void SetupStateTable(mtsStateTable &stateTable);
     void SetupProvidedInterface(mtsInterfaceProvided *prov, mtsStateTable &stateTable);
 
-    void SetValid(bool flag) { valid = flag; }
+    bool CheckIfValid(void);
     bool IsValid(void) const { return valid; }
+
+    void GetData(void);
+    void ConvertRawToSI(void);
 };
 
 #endif  //__RobotInternal_H__

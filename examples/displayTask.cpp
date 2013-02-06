@@ -25,7 +25,8 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(displayTask, mtsTaskContinuous, std::strin
 
 // passing false to mtsTaskContinuous causes it to use the main thread
 displayTask::displayTask(const std::string & taskName) : mtsTaskContinuous(taskName, 256, false),
-    debugStream(std::stringstream::in), last_debug_line(DEBUG_START_LINE), power_on(false)
+    debugStream(std::stringstream::out|std::stringstream::in),
+    last_debug_line(DEBUG_START_LINE), power_on(false)
 {
     mtsInterfaceRequired *req = AddInterfaceRequired("Robot");
     if (req) {
@@ -70,7 +71,8 @@ void displayTask::Startup(void)
     noecho();
     nodelay(stdscr, TRUE);
     mvprintw( 1, 4, "Robot Sensor Display (ESC to exit)");
-    mvprintw( 2, 4, "Press: p to toggle power, +/- to increase/decrease commanded current");
+    mvprintw( 2, 4, "Press: p to toggle power, s to toggle safety relay");
+    mvprintw( 3, 4, "       +/- to increase/decrease commanded current");
     mvprintw( 5, 4, "Enc Pos");
     mvprintw( 6, 4, "Enc Vel");
     mvprintw( 7, 4, "Analog In");
@@ -133,8 +135,8 @@ void displayTask::Run(void)
             mvprintw( 7, 14+8+i*13, "0x%04X", analogInRaw[i]);
             mvprintw( 8, 14+8+i*13, "0x%04X", motorFeedbackCurrentRaw[i]);
             mvprintw( 9, 14+8+i*13, "0x%04X", motorControlCurrentRaw[i]);
-            mvprintw(10, 14+8+i*13, (ampEnable[i]?"On":"Off"));
-            mvprintw(11, 14+8+i*13, (ampStatus[i]?"On":"Off"));
+            mvprintw(10, 14+8+i*13, (ampEnable[i]?" On":"Off"));
+            mvprintw(11, 14+8+i*13, (ampStatus[i]?" On":"Off"));
         }
         Robot.SetMotorCurrentRaw(motorControlCurrentRaw);
     }
@@ -145,5 +147,6 @@ void displayTask::Run(void)
 
 void displayTask::Cleanup(void)
 {
+    Robot.DisablePower();
     endwin();
 }

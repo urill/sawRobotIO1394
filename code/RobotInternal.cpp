@@ -28,10 +28,10 @@
 #include "AmpIO.h"
 
 // JointInfo Constructor
-mtsRobotIO1394::RobotInternal::JointInfo::JointInfo() : boardid(-1), axisid(-1)
+mtsRobotIO1394::RobotInternal::JointInfo::JointInfo() : board(0), axisid(-1)
 {}
 
-mtsRobotIO1394::RobotInternal::JointInfo::JointInfo(int bid, int aid): boardid(bid), axisid(aid)
+mtsRobotIO1394::RobotInternal::JointInfo::JointInfo(AmpIO *bptr, int aid): board(bptr), axisid(aid)
 {}
 
 // JointInfo Destructor
@@ -40,7 +40,7 @@ mtsRobotIO1394::RobotInternal::JointInfo::~JointInfo()
 
 mtsRobotIO1394::RobotInternal::RobotInternal(const std::string &name, size_t numJoints) :
     robotName(name), JointList(numJoints), valid(false),
-    ampStatus(numJoints, false), ampEnable(numJoints, false), ampControl(numJoints, false),
+    ampStatus(numJoints, false), ampEnable(numJoints, false),
     encPosRaw(numJoints), encPos(numJoints),
     encVelRaw(numJoints), encVel(numJoints),
     analogInRaw(numJoints), analogIn(numJoints),
@@ -53,14 +53,18 @@ mtsRobotIO1394::RobotInternal::~RobotInternal()
 {
 }
 
+void mtsRobotIO1394::RobotInternal::SetJointInfo(int index, AmpIO *board, int axis)
+{
+    JointList[index] = JointInfo(board, axis);
+}
+
 void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable &stateTable)
 {
     stateTable.AddData(valid, robotName + "Valid");
+    stateTable.AddData(powerStatus, robotName + "PowerStatus");
     stateTable.AddData(safetyRelay, robotName + "SafetyRelay");
-    stateTable.AddData(safetyRelayControl, robotName + "SafetyRelayControl");
     stateTable.AddData(ampStatus, robotName + "AmpStatus");
     stateTable.AddData(ampEnable, robotName + "AmpEnable");
-    stateTable.AddData(ampControl, robotName + "AmpControl");
     stateTable.AddData(encPosRaw, robotName + "PosRaw");
     stateTable.AddData(encPos, robotName + "Pos");
     stateTable.AddData(encVelRaw, robotName + "VelRaw");
@@ -84,10 +88,12 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
     prov->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisablePower, this, "DisablePower");
     prov->AddCommandVoid(&mtsRobotIO1394::RobotInternal::EnableSafetyRelay, this, "EnableSafetyRelay");
     prov->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisableSafetyRelay, this, "DisableSafetyRelay");
+    prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
+                          this->ampEnable);
 
     prov->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable");
     prov->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus");
-    prov->AddCommandWriteState(stateTable, this->ampControl, "SetAmpStatus");
+    prov->AddCommandReadState(stateTable, this->powerStatus, "GetPowerStatus");
     prov->AddCommandReadState(stateTable, this->safetyRelay, "GetSafetyRelay");
 
     prov->AddCommandReadState(stateTable, this->encPosRaw, "GetPositionRaw");
@@ -122,6 +128,47 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
                                   "ADCToMotorCurrent",motorFeedbackCurrentRaw, motorFeedbackCurrent);
 }
 
+bool mtsRobotIO1394::RobotInternal::CheckIfValid(void)
+{
+    size_t i;
+    for (i = 0; i < JointList.size(); i++) {
+        JointInfo &jt = JointList[i];
+        if (!jt.board || (jt.axisid < 0)) break;  // should not happen
+        if (!jt.board->ValidRead()) break;
+    }
+    valid = (i == JointList.size());
+    return valid;
+}
+
+void mtsRobotIO1394::RobotInternal::GetData(void)
+{
+    powerStatus = true;
+    safetyRelay = true;
+    for (size_t index = 0; index < JointList.size(); index++) {
+        AmpIO *board = JointList[index].board;
+        int axis = JointList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        encPosRaw[index] = board->GetEncoderPosition(axis);
+        encVelRaw[index] = board->GetEncoderVelocity(axis);
+        analogInRaw[index] = board->GetAnalogInput(axis);
+        motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);
+        ampEnable[index] = board->GetAmpEnable(axis);
+        ampStatus[index] = board->GetAmpStatus(axis);
+        powerStatus &= board->GetPowerStatus();
+        safetyRelay &= board->GetSafetyRelayStatus();
+    }
+}
+
+void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
+{
+    EncoderToDegree(encPosRaw, encPos);
+    EncoderToDegPerSec(encVelRaw, encVel);
+    ADCToVolts(analogInRaw, analogIn);
+    ADCToMotorCurrent(motorFeedbackCurrentRaw, motorFeedbackCurrent);
+}
+
+//************************ PROTECTED METHODS ******************************
+
 void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int &num) const
 {
     num = JointList.size();
@@ -129,22 +176,58 @@ void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int &num) const
 
 void mtsRobotIO1394::RobotInternal::EnablePower(void)
 {
-    ampControl.SetAll(true);
+    for (size_t index = 0; index < JointList.size(); index++) {
+        AmpIO *board = JointList[index].board;
+        int axis = JointList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        // Make sure all boards are enabled
+        board->SetPowerEnable(true);
+        // For now, also enable all amplifiers
+        board->SetAmpEnable(axis, true);
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::DisablePower(void)
 {
-    ampControl.SetAll(false);
+    for (size_t index = 0; index < JointList.size(); index++) {
+        AmpIO *board = JointList[index].board;
+        int axis = JointList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        // Make sure all boards are disabled
+        board->SetPowerEnable(false);
+        // For now, also disable all amplifiers
+        board->SetAmpEnable(axis, false);
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::EnableSafetyRelay(void)
 {
-    safetyRelayControl = true;
+    for (size_t index = 0; index < JointList.size(); index++) {
+        AmpIO *board = JointList[index].board;
+        int axis = JointList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        board->SetSafetyRelay(true);
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
 {
-    safetyRelayControl = false;
+    for (size_t index = 0; index < JointList.size(); index++) {
+        AmpIO *board = JointList[index].board;
+        int axis = JointList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        board->SetSafetyRelay(false);
+    }
+}
+
+void mtsRobotIO1394::RobotInternal::SetAmpEnable(const vctBoolVec &ampControl)
+{
+    for (size_t index = 0; index < JointList.size(); index++) {
+        AmpIO *board = JointList[index].board;
+        int axis = JointList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        board->SetAmpEnable(axis, ampControl[index]);
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw(const vctLongVec &mcur)
@@ -156,6 +239,12 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw(const vctLongVec &mcur)
     }
     motorControlCurrentRaw = mcur;
     // TODO: unit conversion to motorControlCurrent
+    for (size_t index = 0; index < JointList.size(); index++) {
+        AmpIO *board = JointList[index].board;
+        int axis = JointList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        board->SetMotorCurrent(axis, motorControlCurrentRaw[index]);
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec &mcur)
@@ -167,6 +256,7 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec &mcur)
     }
     motorControlCurrent = mcur;
     MotorCurrentToDAC(motorControlCurrent, motorControlCurrentRaw);
+    SetMotorCurrentRaw(motorControlCurrentRaw);
 }
 
 // Unit Conversions (TBD)
@@ -199,23 +289,3 @@ void mtsRobotIO1394::RobotInternal::ADCToMotorCurrent(const vctLongVec &fromData
 {
     toData.SetAll(0.0);
 }
-
-void mtsRobotIO1394::RobotInternal::GetData(size_t index, const AmpIO *board, int axis)
-{
-    // Assumes that index and axis were already verified to be in range
-    encPosRaw[index] = board->GetEncoderPosition(axis);
-    encVelRaw[index] = board->GetEncoderVelocity(axis);
-    analogInRaw[index] = board->GetAnalogInput(axis);
-    motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);
-    ampEnable[index] = board->GetAmpEnable(axis);
-    ampStatus[index] = board->GetAmpStatus(axis);
-}
-
-void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
-{
-    EncoderToDegree(encPosRaw, encPos);
-    EncoderToDegPerSec(encVelRaw, encVel);
-    ADCToVolts(analogInRaw, analogIn);
-    ADCToMotorCurrent(motorFeedbackCurrentRaw, motorFeedbackCurrent);
-}
-

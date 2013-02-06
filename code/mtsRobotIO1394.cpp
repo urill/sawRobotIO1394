@@ -29,23 +29,6 @@
 #include "AmpIO.h"
 #include "RobotInternal.h"
 
-class mtsRobotIO1394::BoardInfo : public AmpIO {
-    bool safetyRelayControl;
-    bool powerControl;
-
-public:
-    BoardInfo(unsigned int board_id) : AmpIO(board_id),
-                                          safetyRelayControl(false), powerControl(false) {}
-    ~BoardInfo() {}
-
-    void InitControl(void) {
-        safetyRelayControl = false;
-        powerControl = false;
-    }
-    // Do quad read/write for power, safety relay, if necessary
-    void DoControl(void) {} // TBD
-};
-
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
@@ -105,12 +88,12 @@ void mtsRobotIO1394::Configure(const std::string &filename)
     unsigned int i, j;
     for (i = 0, j = 0; i < numBoards; i++, j += 4) {
         int bd = atoi(tokens.GetToken(i));
-        BoardList[bd] = new mtsRobotIO1394::BoardInfo(bd);
+        BoardList[bd] = new AmpIO(bd);
         Port->AddBoard(BoardList[bd]);
-        robot->JointList[j] = RobotInternal::JointInfo(bd, j);
-        robot->JointList[j+1] = RobotInternal::JointInfo(bd, j+1);
-        robot->JointList[j+2] = RobotInternal::JointInfo(bd, j+2);
-        robot->JointList[j+3] = RobotInternal::JointInfo(bd, j+3);
+        robot->SetJointInfo(j, BoardList[bd], j);
+        robot->SetJointInfo(j+1, BoardList[bd], j+1);
+        robot->SetJointInfo(j+2, BoardList[bd], j+2);
+        robot->SetJointInfo(j+3, BoardList[bd], j+3);
     }
     robot->SetupStateTable(StateTable);
     mtsInterfaceProvided* prov = AddInterfaceProvided("Robot");
@@ -124,43 +107,23 @@ void mtsRobotIO1394::Startup(void)
 
 void mtsRobotIO1394::Run(void)
 {
-    size_t i, j;
-    // Initialize power and relay control
-    for (i = 0; i < mtsRobotIO1394::MAX_BOARDS; i++)
-        if (BoardList[i]) BoardList[i]->InitControl();
+    size_t i;
+    // Read from all boards
     Port->ReadAllBoards();
-    // First, check which robots have valid data
+    // Loop through the robots, processing feedback
     for (i = 0; i < RobotList.size(); i++) {
-        for (j = 0; j < RobotList[i]->JointList.size(); j++) {
-            RobotInternal::JointInfo &jt = RobotList[i]->JointList[j];
-            if ((jt.boardid < 0) || (jt.axisid < 0)) break;  // should not happen
-            if (!BoardList[jt.boardid]) break;   // should not happen
-            if (!BoardList[jt.boardid]->ValidRead()) break;
+        if (RobotList[i]->CheckIfValid()) {
+            // Copy data to state table
+            RobotList[i]->GetData();
+            // Convert from raw to SI units (TBD)
+            RobotList[i]->ConvertRawToSI();
         }
-        RobotList[i]->SetValid(j == RobotList[i]->JointList.size());
     }
-    // Loop through the valid robots, processing feedback
-    for (i = 0; i < RobotList.size(); i++) {
-        if (!RobotList[i]->IsValid()) continue;
-        for (j = 0; j < RobotList[i]->JointList.size(); j++) {
-            RobotInternal::JointInfo &jt = RobotList[i]->JointList[j];
-            RobotList[i]->GetData(j, BoardList[jt.boardid], jt.axisid);
-        }
-        // Convert from raw to SI units (TBD)
-        RobotList[i]->ConvertRawToSI();
-    }
+    // Invoke connected components (if any)
     RunEvent();
+    // Process queued commands (e.g., to set motor current)
     ProcessQueuedCommands();
-    // Do power and relay control
-    // (TBD)
-    // Loop through the valid robots, setting outputs
-    for (i = 0; i < RobotList.size(); i++) {
-        if (!RobotList[i]->IsValid()) continue;
-        for (j = 0; j < RobotList[i]->JointList.size(); j++) {
-            RobotInternal::JointInfo &jt = RobotList[i]->JointList[j];
-            BoardList[jt.boardid]->SetMotorCurrent(jt.axisid, RobotList[i]->motorControlCurrentRaw[j]);
-        }
-    }
+    // Write to all boards
     Port->WriteAllBoards();
 }
 

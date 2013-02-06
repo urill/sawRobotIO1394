@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "displayTask.h"
+#include <cisstOSAbstraction/osaSleep.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
 int main(int argc, char ** argv)
@@ -71,6 +72,12 @@ int main(int argc, char ** argv)
 
     // start the periodic Run
     LCM->StartAll();
+
+    // On exit, wait for displayTask to be finished before killing
+    // other tasks (such as mtsRobotIO1394), so that displayTask::Cleanup
+    // can still invoke commands in mtsRobotIO1394.
+    // For now, we just sleep for 1 second.
+    osaSleep(1.0);
 
     // cleanup
     LCM->KillAll();

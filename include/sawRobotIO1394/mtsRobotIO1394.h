@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 
 class FirewirePort;
+class AmpIO;
 
 class mtsRobotIO1394 : public mtsTaskPeriodic {
 
@@ -37,12 +38,11 @@ public:
 
 protected:
 
-    class BoardInfo;
     class RobotInternal;
 
     FirewirePort *Port;                       // Pointer to IEEE-1394 port handler
     std::vector<RobotInternal *> RobotList;   // List of robots (provided interfaces)
-    BoardInfo *BoardList[MAX_BOARDS];         // List of boards
+    AmpIO *BoardList[MAX_BOARDS];             // List of boards
 
 ///////////// Public Class Methods ///////////////////////////
 public:
