@@ -39,6 +39,27 @@ protected:
       public:
         AmpIO *board;
         int axisid;
+
+        // ZC: temp, may change based on final xml file
+        // encoder
+        int countsperturn;
+        double gearratio;
+        double pitch;
+        double offsetdeg;
+        // motor
+        double torquecurrent;
+        // pot
+        double maxpotvolt;
+        double slope;
+        double intercept;
+        // current
+        double maxcurrent;
+        // adc
+        double cntstocurrent;
+        double cntstoanalogvolt;
+        // dac
+        double currenttocnts;
+
       public:
         JointInfo();
         JointInfo(AmpIO *bptr, int aid);
@@ -63,6 +84,8 @@ protected:
     vctDoubleVec   motorFeedbackCurrent;
     vctLongVec     motorControlCurrentRaw;
     vctDoubleVec   motorControlCurrent;
+    vctLongVec     encSetPosRaw;
+    vctDoubleVec   encSetPos;
 
     // Methods for provided interface
     void GetNumberOfJoints(int &num) const;
@@ -73,6 +96,9 @@ protected:
     void SetAmpEnable(const vctBoolVec &ampControl);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
+    void SetEncoderPositionRaw(const vctLongVec &epos);
+    void SetEncoderPosition(const vctDoubleVec &epos);
+//    void SetEncoderFromPot(void);  // TODO: Implement 
 
     // Unit conversion Raw -- SI (partial implementation)
     void EncoderToDegree(const vctLongVec &fromData, vctDoubleVec &toData) const;
@@ -81,11 +107,15 @@ protected:
     void MotorCurrentToDAC(const vctDoubleVec &fromData, vctLongVec &toData) const;
     void ADCToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const;
     void ADCToMotorCurrent(const vctLongVec &fromData, vctDoubleVec &toData) const;
+    void PotVoltsToDegree(const vctDoubleVec &fromData, vctDoubleVec &toData) const;
 
 public:
 
     RobotInternal(const std::string &name, size_t numJoints);
     ~RobotInternal();
+
+    // ZC: parse XML file here
+    void Configure(const std::string &filename);
 
     void SetJointInfo(int index, AmpIO *board, int axis);
 
