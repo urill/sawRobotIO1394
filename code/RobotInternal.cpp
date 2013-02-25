@@ -36,6 +36,7 @@ const double        ENC_VEL_CLK  = 1000000.0;    // TMEP need check clock (Hz) u
 const double        ENC_ACC_CLK  =      12.0;    // TEMP need check
 const unsigned long MIDRANGE_ADC = 0x0008000;    // 16 bits ADC mid range value
 const unsigned long ENC_OFFSET   = 0x007FFFFF;   // Encoder offset
+const unsigned long WD_MSTOCOUNT =       192;    // watchdog counts per ms (note counter width, e.g. 16 bits)
 
 
 // JointInfo Constructor
@@ -102,6 +103,9 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
     prov->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisableSafetyRelay, this, "DisableSafetyRelay");
     prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
                           this->ampEnable);
+
+    prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetWatchdogPeriod, this, "SetWatchdogPeriod",
+                          this->watchdogPeriod);
 
     prov->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable");
     prov->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus");
@@ -235,6 +239,29 @@ void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
         int axis = JointList[index].axisid;
         if (!board || (axis < 0)) continue;
         board->SetSafetyRelay(false);
+    }
+}
+
+void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const unsigned long &period_ms)
+{
+    // assume MAX_BOARDS < 255
+    vctUCharVec board_list(BoardIO::MAX_BOARDS, (unsigned char)0xff);
+    watchdogPeriod = period_ms;
+
+    // TODO: a more direct way of accessing the board list from this class?
+    for (size_t index = 0; index < JointList.size(); index++)
+    {
+        // get board associated with each joint
+        AmpIO *board = JointList[index].board;
+        if (!board || !board->IsValid()) continue;
+
+        // check board id to skip boards already written to
+        unsigned char board_id = board->GetBoardId();
+        if (board_list[board_id] == board_id) continue;
+        board_list[board_id] = board_id;
+
+        // write timeout period, converted to counts
+        board->WriteWatchdogPeriod(period_ms*WD_MSTOCOUNT);
     }
 }
 

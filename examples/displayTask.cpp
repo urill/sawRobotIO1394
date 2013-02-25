@@ -26,7 +26,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(displayTask, mtsTaskContinuous, std::strin
 // passing false to mtsTaskContinuous causes it to use the main thread
 displayTask::displayTask(const std::string & taskName) : mtsTaskContinuous(taskName, 256, false),
     debugStream(std::stringstream::out|std::stringstream::in),
-    last_debug_line(DEBUG_START_LINE), power_on(false), safety_relay(false)
+    last_debug_line(DEBUG_START_LINE), power_on(false), safety_relay(false), watchdog(false)
 {
     mtsInterfaceRequired *req = AddInterfaceRequired("Robot");
     if (req) {
@@ -45,6 +45,7 @@ displayTask::displayTask(const std::string & taskName) : mtsTaskContinuous(taskN
         req->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
         req->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
         req->AddFunction("SetMotorCurrentRaw", Robot.SetMotorCurrentRaw);
+        req->AddFunction("SetWatchdogPeriod", Robot.SetWatchdogPeriod);
     }
 }
 
@@ -116,6 +117,11 @@ void displayTask::Run(void)
     else if (c == '-') {
         for (i = 0; i < motorControlCurrentRaw.size(); i++)
             motorControlCurrentRaw[i] -= 0x100;   // 0x100 is about 50 mA
+    }
+    else if (c == 'w') {
+        const unsigned long period_ms = (watchdog ? 0 : 250);
+        Robot.SetWatchdogPeriod(period_ms);
+        watchdog = !watchdog;
     }
 
     if (!debugStream.str().empty()) {

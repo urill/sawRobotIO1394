@@ -72,6 +72,7 @@ protected:
     bool           valid;
     bool           powerStatus;
     unsigned short safetyRelay;
+    unsigned long  watchdogPeriod;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
     vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
     vctLongVec     encPosRaw;
@@ -93,6 +94,7 @@ protected:
     void DisablePower(void);
     void EnableSafetyRelay(void);
     void DisableSafetyRelay(void);
+    void SetWatchdogPeriod(const unsigned long &period_ms);
     void SetAmpEnable(const vctBoolVec &ampControl);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);

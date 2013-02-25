@@ -30,7 +30,7 @@ protected:
     std::stringstream debugStream;
     enum { DEBUG_START_LINE = 15 };
     unsigned int last_debug_line;
-    bool power_on, safety_relay;
+    bool power_on, safety_relay, watchdog;
 
     struct RobotStruct {
         mtsFunctionRead GetNumberOfJoints;
@@ -48,6 +48,7 @@ protected:
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
         mtsFunctionWrite SetMotorCurrentRaw;
+        mtsFunctionWrite SetWatchdogPeriod;
     } Robot;
 
     vctLongVec posRaw;
