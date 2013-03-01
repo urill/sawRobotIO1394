@@ -23,3 +23,5 @@ else (CURSES_FOUND)
   message ("sawRobotIO1394 examples not available -- curses lib not found")
 endif (CURSES_FOUND)
 
+# Tests programs, will only get compiled if cisstTestsDriver has been compiled
+add_subdirectory (tests)
