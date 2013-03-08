@@ -20,10 +20,16 @@
 
 #include <iostream>
 
-#include <cisstCommon/cmnTokenizer.h>   // TEMP
+#include <cisstCommon/cmnXMLPath.h>
+
+#include <cisstCommon/cmnPath.h>
+#include <cisstCommon/cmnLogger.h>
+#include <cisstCommon/cmnUnits.h>
+
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
+
 
 #include "FirewirePort.h"
 #include "AmpIO.h"
@@ -75,30 +81,84 @@ void mtsRobotIO1394::Init(void)
 
 void mtsRobotIO1394::Configure(const std::string &filename)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configuring from " << filename << std::endl;
+    //CMN_LOG_CLASS_INIT_VERBOSE << "Configuring from " << filename << std::endl;
 
-    // For now, use filename to specify boards (and assume just one robot)
-    // In the future, change this to be an XML file
-    cmnTokenizer tokens;
-    tokens.Parse(filename);
+    cmnPath localPath;
 
-    unsigned int numBoards = tokens.GetNumTokens()-1;  // -1 for NULL at end
-    unsigned int numJoints = 4*numBoards;
-    RobotInternal *robot = new RobotInternal("Robot", numJoints);
-    unsigned int i, j;
-    for (i = 0, j = 0; i < numBoards; i++, j += 4) {
-        int bd = atoi(tokens.GetToken(i));
-        BoardList[bd] = new AmpIO(bd);
-        Port->AddBoard(BoardList[bd]);
-        robot->SetJointInfo(j+0, BoardList[bd], 0);
-        robot->SetJointInfo(j+1, BoardList[bd], 1);
-        robot->SetJointInfo(j+2, BoardList[bd], 2);
-        robot->SetJointInfo(j+3, BoardList[bd], 3);
+    localPath.Add("config");
+    std::string localFile = localPath.Find(filename);
+
+    cmnXMLPath xmlConfig;
+
+    xmlConfig.SetInputSource(localFile);
+    char path[64];
+
+    //std::cout<<"The number of robots detected are " << RobotCounter << std::endl;
+
+    int tmpNumActuator=0;
+    int tmpBoardID=0;
+    int tmpAxisID=0;
+
+    std::string context = "Config";
+
+    std::string tmpRobotName = "ConfigStart";
+
+
+    //Let's activate the boards implied in the XML config file.
+    //Go robot by robot, Actuator by Actuator, and look for BoardID.
+    //This will not check for conflicting BoardID/AxisID assignments.
+    //Infinite loop for configuring for each robot.
+    int k=0;
+
+    while(true){
+        //Incrementing Counter for Robot.
+        k = k + 1;
+        std::cout<<"This is Run Number " << k <<"."<< std::endl;
+
+        sprintf(path, "Robot[%d]/@Name",k);
+        xmlConfig.GetXMLValue(context.c_str(),path,tmpRobotName);
+        if(tmpRobotName.empty()){
+            //Reached the End of File For Robot
+            //Break from infinite loop.
+            //std::cout<<"Run Number "<< k <<" stopped." << std::endl;
+            //std::cin.ignore();
+            break;
+        }
+        sprintf(path, "Robot[%d]/@NumOfActuator",k);
+        xmlConfig.GetXMLValue(context.c_str(),path,tmpNumActuator);
+
+        //Create new temporary RobotInternal Initialized.
+        RobotInternal *robot = new RobotInternal(tmpRobotName,tmpNumActuator);
+
+        //Set ActuatorInfo for all Actuators under this robot.
+        int j = 0;
+        for(j = 0; j < tmpNumActuator; j++) {
+            sprintf(path,"Robot[%d]/Actuator[%d]/@BoardID",k,j+1);
+            xmlConfig.GetXMLValue(context.c_str(),path,tmpBoardID);
+            //Check and initalize AmpIOs for new boards.
+            if(BoardList[tmpBoardID] == 0){
+                BoardList[tmpBoardID] = new AmpIO(tmpBoardID);
+                Port->AddBoard(BoardList[tmpBoardID]);
+            }
+            //Config this Actuator info.
+            sprintf(path,"Robot[%d]/Actuator[%d]/@AxisID",k,j+1);
+            xmlConfig.GetXMLValue(context.c_str(),path,tmpAxisID);
+            robot->SetJointInfo(j,BoardList[tmpBoardID],tmpAxisID);
+        }
+        //Configure conversion factors and other variables.
+        robot->Configure(xmlConfig, k);
+        //Configure StateTable for this Robot
+        robot->SetupStateTable(StateTable);
+
+        //Add new InterfaceProvided for this Robot with Name.
+        //Ensure all tmpRobotNames from XML Config file are UNIQUE!
+        mtsInterfaceProvided* prov=AddInterfaceProvided(tmpRobotName);
+        robot->SetupProvidedInterface(prov,StateTable);
+
+        //Store the robot to RobotList
+        RobotList.push_back(robot);
+
     }
-    robot->SetupStateTable(StateTable);
-    mtsInterfaceProvided* prov = AddInterfaceProvided("Robot");
-    robot->SetupProvidedInterface(prov, StateTable);
-    RobotList.push_back(robot);
 }
 
 void mtsRobotIO1394::Startup(void)

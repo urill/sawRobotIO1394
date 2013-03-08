@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <vector>
 
 #include <cisstVector/vctDynamicVectorTypes.h>
+#include <cisstCommon/cmnXMLPath.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
@@ -37,28 +38,36 @@ protected:
     //Nested class stores Joint-Axis info
     class JointInfo {
       public:
+        struct Drive{
+            double AmpsToBitsScale;
+            double AmpsToBitsOffset;
+            double BitsToFbAmpsScale;
+            double BitsToFbAmpsOffset;
+            double NmToAmpsScale;
+            double MaxCurrentValue;
+        };
+        struct Encoder{
+            double BitsToPosSIScale;
+            double BitsToPosSIOffset;
+            double BitsToDeltaPosSIScale;
+            double BitsToDeltaPosSIOffset;
+            double BitsToDeltaTScale;
+            double BitsToDeltaTOffset;
+            int CountsPerTurnValue;
+        };
+        struct AnalogIn{
+            double BitsToVoltsScale;
+            double BitsToVoltsOffset;
+            double VoltsToPosSIScale;
+            double VoltsToPosSIOffset;
+        };
         AmpIO *board;
         int axisid;
-
-        // ZC: temp, may change based on final xml file
-        // encoder
-        int countsperturn;
-        double gearratio;
-        double pitch;
-        double offsetdeg;
-        // motor
-        double torquecurrent;
-        // pot
-        double maxpotvolt;
-        double slope;
-        double intercept;
-        // current
-        double maxcurrent;
-        // adc
-        double cntstocurrent;
-        double cntstoanalogvolt;
-        // dac
-        double currenttocnts;
+        std::string primaryPosSensor;
+        std::string secondaryPosSensor;
+        Drive drive;
+        Encoder encoder;
+        AnalogIn analogIn;
 
       public:
         JointInfo();
@@ -72,7 +81,6 @@ protected:
     bool           valid;
     bool           powerStatus;
     unsigned short safetyRelay;
-    unsigned long  watchdogPeriod;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
     vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
     vctLongVec     encPosRaw;
@@ -80,13 +88,13 @@ protected:
     vctLongVec     encVelRaw;
     vctDoubleVec   encVel;
     vctLongVec     analogInRaw;
-    vctDoubleVec   analogIn;
+    vctDoubleVec   analogInVolts;
+    vctDoubleVec   analogInPosSI;
     vctLongVec     motorFeedbackCurrentRaw;
     vctDoubleVec   motorFeedbackCurrent;
     vctLongVec     motorControlCurrentRaw;
     vctDoubleVec   motorControlCurrent;
-    vctLongVec     encSetPosRaw;
-    vctDoubleVec   encSetPos;
+    vctDoubleVec   motorControlTorque;
 
     // Methods for provided interface
     void GetNumberOfJoints(int &num) const;
@@ -94,35 +102,33 @@ protected:
     void DisablePower(void);
     void EnableSafetyRelay(void);
     void DisableSafetyRelay(void);
-    void SetWatchdogPeriod(const unsigned long &period_ms);
     void SetAmpEnable(const vctBoolVec &ampControl);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
-    void SetEncoderPositionRaw(const vctLongVec &epos);
-    void SetEncoderPosition(const vctDoubleVec &epos);
-//    void SetEncoderFromPot(void);  // TODO: Implement 
 
     // Unit conversion Raw -- SI (partial implementation)
-    void EncoderToDegree(const vctLongVec &fromData, vctDoubleVec &toData) const;
-    void DegreeToEncoder(const vctDoubleVec &fromData, vctLongVec &toData) const;
-    void EncoderToDegPerSec(const vctLongVec &fromData, vctDoubleVec &toData) const;
-    void MotorCurrentToDAC(const vctDoubleVec &fromData, vctLongVec &toData) const;
-    void ADCToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const;
-    void ADCToMotorCurrent(const vctLongVec &fromData, vctDoubleVec &toData) const;
-    void PotVoltsToDegree(const vctDoubleVec &fromData, vctDoubleVec &toData) const;
+    void EncoderRawToSI(const vctLongVec &fromData, vctDoubleVec &toData) const;
+    void EncoderSIToRaw(const vctDoubleVec &fromData, vctLongVec &toData) const;
+    void EncoderRawToDeltaPosSI(const vctLongVec &fromData, vctDoubleVec &toData) const;
+    void EncoderRawToDeltaPosT(const vctLongVec &fromData, vctDoubleVec &toData) const;
+    void DriveAmpsToBits(const vctDoubleVec &fromData, vctLongVec &toData) const;
+    void DriveBitsToFbAmps(const vctLongVec &fromData, vctDoubleVec &toData) const;
+    void DriveNmToAmps(const vctDoubleVec &fromData, vctDoubleVec &toData) const;
+    void DriveAmpsToNm(const vctDoubleVec &fromData, vctDoubleVec &toData) const;
+    void AnalogInBitsToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const;
+    void AnalogInVoltsToPosSI(const vctDoubleVec &fromData, vctDoubleVec &toData) const;
 
 public:
 
     RobotInternal(const std::string &name, size_t numJoints);
     ~RobotInternal();
-
-    // ZC: parse XML file here
     void Configure(const std::string &filename);
-
+    void Configure (cmnXMLPath &xmlConfigFile, int robotNumber);
     void SetJointInfo(int index, AmpIO *board, int axis);
 
     void SetupStateTable(mtsStateTable &stateTable);
     void SetupProvidedInterface(mtsInterfaceProvided *prov, mtsStateTable &stateTable);
+
 
     bool CheckIfValid(void);
     bool IsValid(void) const { return valid; }

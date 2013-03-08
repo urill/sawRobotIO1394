@@ -60,8 +60,8 @@ int main(int argc, char ** argv)
     // add the tasks to the component manager
     LCM->AddComponent(disp);
     LCM->AddComponent(robot);
-
-    robot->Configure(boardList);
+    std::string xmlFileName = "XMLConfig.xml"
+    robot->Configure(xmlFileName);
     disp->Configure();
 
     LCM->Connect("disp", "Robot", "robot", "Robot");

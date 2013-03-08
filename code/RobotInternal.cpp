@@ -21,23 +21,15 @@
 #include <iostream>
 
 #include <cisstCommonXML.h>
+#include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnLogger.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsStateTable.h>
 
+
+
 #include "RobotInternal.h"
 #include "AmpIO.h"
-
-
-// ZC: MOVE to configuration file
-const unsigned int      ENC_CPT  =      4000;    // OK  1000 x 4 quadrature
-const unsigned long ENC_VEL_MAX  =  0x00FFFF;    // TEMP need check // maximum value of encoder pulse period
-const double        ENC_VEL_CLK  = 1000000.0;    // TMEP need check clock (Hz) used to measure encoder pulse
-const double        ENC_ACC_CLK  =      12.0;    // TEMP need check
-const unsigned long MIDRANGE_ADC = 0x0008000;    // 16 bits ADC mid range value
-const unsigned long ENC_OFFSET   = 0x007FFFFF;   // Encoder offset
-const unsigned long WD_MSTOCOUNT =       192;    // watchdog counts per ms (note counter width, e.g. 16 bits)
-
 
 // JointInfo Constructor
 mtsRobotIO1394::RobotInternal::JointInfo::JointInfo() : board(0), axisid(-1)
@@ -55,15 +47,85 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string &name, size_t num
     ampStatus(numJoints, false), ampEnable(numJoints, false),
     encPosRaw(numJoints), encPos(numJoints),
     encVelRaw(numJoints), encVel(numJoints),
-    analogInRaw(numJoints), analogIn(numJoints),
+    analogInRaw(numJoints), analogInVolts(numJoints), analogInPosSI(numJoints),
     motorFeedbackCurrentRaw(numJoints), motorFeedbackCurrent(numJoints),
-    motorControlCurrentRaw(numJoints), motorControlCurrent(numJoints),
-    encSetPosRaw(numJoints), encSetPos(numJoints)
+    motorControlCurrentRaw(numJoints), motorControlCurrent(numJoints)
 {
 }
 
 mtsRobotIO1394::RobotInternal::~RobotInternal()
 {
+}
+void mtsRobotIO1394::RobotInternal::Configure(const std::string &filename){
+    //This configuration will go by default method. Will assume there is only one robot, and the first one is it.
+    //If there are more than one robot per configuration file, then this method should not be used.
+
+    cmnXMLPath xmlConfig;
+    xmlConfig.SetInputSource(filename);
+
+    Configure(xmlConfig,1);
+}
+
+void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  &xmlConfigFile, int robotNumber){
+    char path[64];
+    std::string context = "Config";
+
+    int  tmpNumOfJoint;
+    sprintf(path, "Robot[%i]/@NumOfJoint",robotNumber);
+    xmlConfigFile.GetXMLValue(context.c_str(),path,tmpNumOfJoint);
+
+    for(int i=0; i<tmpNumOfJoint; i++)    {
+        sprintf(path,"Robot[%i]/Joint[%d]/Drive/AmpsToBits/@Scale",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].drive.AmpsToBitsScale);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Drive/AmpsToBits/@Offset",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].drive.AmpsToBitsOffset);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Drive/BitsToFbAmps/@Scale",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].drive.BitsToFbAmpsScale);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Drive/BitsToFbAmps/@Offset",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].drive.BitsToFbAmpsOffset);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Drive/NmToAmps/@Scale",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].drive.NmToAmpsScale);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Drive/MaxCurrent/@Value",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].drive.MaxCurrentValue);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Encoder/BitsToPosSI/@Scale",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].encoder.BitsToPosSIScale);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Encoder/BitsToPosSI/@Offset",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].encoder.BitsToPosSIOffset);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Encoder/BitsToDeltaPosSI/@Scale",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].encoder.BitsToDeltaPosSIScale);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Encoder/BitsToDeltaPosSI/@Offset",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].encoder.BitsToDeltaPosSIOffset);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Encoder/BitsToDeltaT/@Scale",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].encoder.BitsToDeltaTScale);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Encoder/BitsToDeltaT/@Offset",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].encoder.BitsToDeltaTOffset);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/Encoder/CountsPerTurn/@Value",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].encoder.CountsPerTurnValue);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/AnalogIn/BitsToVolts/@Scale",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].analogIn.BitsToVoltsScale);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/AnalogIn/BitsToVolts/@Offset",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].analogIn.BitsToVoltsOffset);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/AnalogIn/VoltsToPosSI/@Scale",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].analogIn.VoltsToPosSIScale);
+
+        sprintf(path,"Robot[%i]/Joint[%d]/AnalogIn/VoltsToPosSI/@Offset",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,JointList[i].analogIn.VoltsToPosSIOffset);
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::SetJointInfo(int index, AmpIO *board, int axis)
@@ -83,7 +145,8 @@ void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable &stateTable)
     stateTable.AddData(encVelRaw, robotName + "VelRaw");
     stateTable.AddData(encVel, robotName + "Vel");
     stateTable.AddData(analogInRaw, robotName + "AnalogInRaw");
-    stateTable.AddData(analogIn, robotName + "AnalogIn");
+    stateTable.AddData(analogInVolts, robotName + "AnalogInVolts");
+    stateTable.AddData(analogInPosSI, robotName + "AnalogInPosSI");
     stateTable.AddData(motorFeedbackCurrentRaw, robotName + "MotorFeedbackCurrentRaw");
     stateTable.AddData(motorFeedbackCurrent, robotName + "MotorFeedbackCurrent");
     stateTable.AddData(motorControlCurrentRaw, robotName + "MotorControlCurrentRaw");
@@ -104,9 +167,6 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
     prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
                           this->ampEnable);
 
-    prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetWatchdogPeriod, this, "SetWatchdogPeriod",
-                          this->watchdogPeriod);
-
     prov->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable");
     prov->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus");
     prov->AddCommandReadState(stateTable, this->powerStatus, "GetPowerStatus");
@@ -119,7 +179,8 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
     prov->AddCommandReadState(stateTable, this->encVel, "GetVelocity");
 
     prov->AddCommandReadState(stateTable, this->analogInRaw, "GetAnalogInputRaw");
-    prov->AddCommandReadState(stateTable, this->analogIn, "GetAnalogInput");
+    prov->AddCommandReadState(stateTable, this->analogInVolts, "GetAnalogInputVolts");
+    prov->AddCommandReadState(stateTable, this->analogInPosSI, "GetAnalogInputPosSI");
 
     prov->AddCommandReadState(stateTable, this->motorFeedbackCurrentRaw, "GetMotorFeedbackCurrentRaw");
     prov->AddCommandReadState(stateTable, this->motorFeedbackCurrent, "GetMotorFeedbackCurrent");
@@ -128,26 +189,26 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
                           motorControlCurrentRaw);
     prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetMotorCurrent, this, "SetMotorCurrent",
                           motorControlCurrent);
-    prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw, this, "SetEncoderPositionRaw",
-                          encSetPosRaw);
-    prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetEncoderPosition, this, "SetEncoderPosition",
-                          encSetPos);
 
     // unit conversion methods (Qualified Read)
-    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderToDegree, this,
-                                  "EncoderToDegree", encPosRaw, encPos);
-    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::DegreeToEncoder, this,
-                                  "DegreeToEncoder", encPos, encPosRaw);
-    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderToDegPerSec, this,
-                                  "EncoderToDegPerSec", encVelRaw, encVel);
-    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::MotorCurrentToDAC, this,
-                                  "MotorCurrentToDAC", motorControlCurrent, motorControlCurrentRaw);
-    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::ADCToVolts, this,
-                                  "ADCToVolts",analogInRaw, analogIn);
-    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::ADCToMotorCurrent, this,
-                                  "ADCToMotorCurrent",motorFeedbackCurrentRaw, motorFeedbackCurrent);
-    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::PotVoltsToDegree, this,
-                                  "PotVoltsToDegree", analogIn, analogIn); //TODO: CHECK this
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderRawToSI, this,
+                                  "EncoderRawToSI", encPosRaw, encPos);
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderSIToRaw, this,
+                                  "EncoderSIToRaw", encPos, encPosRaw);
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosSI, this,
+                                  "EncoderRawToDeltaPosSI", encVelRaw, encVel);
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosT, this,
+                                  "EncoderRawToDeltaPosT", encVelRaw, encVel);
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::DriveAmpsToBits, this,
+                                  "DriveAmpsToFbBits", motorFeedbackCurrent, motorFeedbackCurrentRaw);
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::DriveAmpsToNm, this,
+                                  "DriveAmpsToNm", motorControlCurrent, motorControlTorque);
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::DriveNmToAmps, this,
+                                  "DriveNmToAmps", motorControlTorque, motorControlCurrent);
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts, this,
+                                  "AnalogInBitsToVolts",analogInRaw, analogInVolts);
+    prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::AnalogInVoltsToPosSI, this,
+                                  "AnalogInVoltsToPosSI",analogInVolts, analogInPosSI);
 }
 
 bool mtsRobotIO1394::RobotInternal::CheckIfValid(void)
@@ -170,7 +231,7 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
         AmpIO *board = JointList[index].board;
         int axis = JointList[index].axisid;
         if (!board || (axis < 0)) continue;
-        encPosRaw[index] = board->GetEncoderPosition(axis) - ENC_OFFSET;
+        encPosRaw[index] = board->GetEncoderPosition(axis);
         encVelRaw[index] = board->GetEncoderVelocity(axis);
         analogInRaw[index] = board->GetAnalogInput(axis);
         motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);
@@ -183,10 +244,10 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
 
 void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
 {
-    EncoderToDegree(encPosRaw, encPos);
-    EncoderToDegPerSec(encVelRaw, encVel);
-    ADCToVolts(analogInRaw, analogIn);
-    ADCToMotorCurrent(motorFeedbackCurrentRaw, motorFeedbackCurrent);
+    EncoderRawToSI(encPosRaw, encPos);
+    EncoderRawToDeltaPosSI(encVelRaw, encVel);
+    AnalogInBitsToVolts(analogInRaw, analogInVolts);
+    DriveBitsToFbAmps(motorFeedbackCurrentRaw, motorFeedbackCurrent);
 }
 
 //************************ PROTECTED METHODS ******************************
@@ -242,29 +303,6 @@ void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
     }
 }
 
-void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const unsigned long &period_ms)
-{
-    // assume MAX_BOARDS < 255
-    vctUCharVec board_list(BoardIO::MAX_BOARDS, (unsigned char)0xff);
-    watchdogPeriod = period_ms;
-
-    // TODO: a more direct way of accessing the board list from this class?
-    for (size_t index = 0; index < JointList.size(); index++)
-    {
-        // get board associated with each joint
-        AmpIO *board = JointList[index].board;
-        if (!board || !board->IsValid()) continue;
-
-        // check board id to skip boards already written to
-        unsigned char board_id = board->GetBoardId();
-        if (board_list[board_id] == board_id) continue;
-        board_list[board_id] = board_id;
-
-        // write timeout period, converted to counts
-        board->WriteWatchdogPeriod(period_ms*WD_MSTOCOUNT);
-    }
-}
-
 void mtsRobotIO1394::RobotInternal::SetAmpEnable(const vctBoolVec &ampControl)
 {
     for (size_t index = 0; index < JointList.size(); index++) {
@@ -300,282 +338,131 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec &mcur)
         return;
     }
     motorControlCurrent = mcur;
-    MotorCurrentToDAC(motorControlCurrent, motorControlCurrentRaw);
+    //MotorCurrentToDAC(motorControlCurrent, motorControlCurrentRaw);
+    DriveAmpsToBits(motorControlCurrent, motorControlCurrentRaw);
     SetMotorCurrentRaw(motorControlCurrentRaw);
 }
 
-
-
-void mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw(const vctLongVec &epos)
-{
-    if (epos.size() != encSetPosRaw.size()) {
-        CMN_LOG_RUN_ERROR << robotName << "::SetEncoderPositionRaw: size mismatch ("
-                          << epos.size() << ", " << encSetPosRaw.size() << ")" << std::endl;
-        return;
-    }
-    encSetPosRaw = epos;
-    for (size_t index = 0; index < JointList.size(); index++){
-        AmpIO *board = JointList[index].board;
-        int axis = JointList[index].axisid;
-        if (!board || (axis < 0)) continue;
-        board->WriteEncoderPreload(axis, encSetPosRaw[index] + ENC_OFFSET);
-    }
-}
-
-void mtsRobotIO1394::RobotInternal::SetEncoderPosition(const vctDoubleVec &epos)
-{
-    if (epos.size() != encSetPos.size()) {
-        CMN_LOG_RUN_ERROR << robotName << "::SetEncoderPosition: size mismatch ("
-                          << epos.size() << ", " << encSetPos.size() << ")" << std::endl;
-        return;
-    }
-    encSetPos = epos;
-    DegreeToEncoder(encSetPos, encSetPosRaw);
-    SetEncoderPositionRaw(encSetPosRaw);
-}
-
-
-// Unit Conversions (TBD)
-void mtsRobotIO1394::RobotInternal::EncoderToDegree(const vctLongVec &fromData, vctDoubleVec &toData) const
+// Unit Conversions
+void mtsRobotIO1394::RobotInternal::EncoderRawToSI(const vctLongVec &fromData, vctDoubleVec &toData) const
 {
     toData.SetAll(0.0);
+    for (size_t index = 0; index<JointList.size();index++){
+        double bitsToPosSIScale = JointList[index].encoder.BitsToPosSIScale;
+        double bitsToPosSIOffset = JointList[index].encoder.BitsToPosSIOffset;
 
-    for (size_t index = 0; index < JointList.size(); index++) {
-        AmpIO *board = JointList[index].board;
-        int axis = JointList[index].axisid;
-        if (!board || (axis < 0)) continue;
-
-        int countsperturn = JointList[index].countsperturn;
-        double pitch = JointList[index].pitch;
-        double gearratio = JointList[index].gearratio;
-
-        // divide by CPT get get number of turns
-        // multiply by 360 degs per turn
-        // multiply by Pitch (1 for revolute, n mm/deg for prismatic joint)
-        // divide by gearratio to get joint deg
-        toData[index] = 360.0 * fromData[index] / countsperturn
-                * pitch / gearratio;
+        toData[index] = (fromData[index] * bitsToPosSIScale) + bitsToPosSIOffset;
     }
 }
 
-// used in SetPosition
-void mtsRobotIO1394::RobotInternal::DegreeToEncoder(const vctDoubleVec &fromData, vctLongVec &toData) const
+void mtsRobotIO1394::RobotInternal::EncoderSIToRaw(const vctDoubleVec &fromData, vctLongVec &toData) const
 {
     toData.SetAll(0L);
-
     for (size_t index = 0; index < JointList.size(); index++) {
-        AmpIO *board = JointList[index].board;
-        int axis = JointList[index].axisid;
-        if (!board || (axis < 0)) continue;
+        double bitsToPosSIScale = JointList[index].encoder.BitsToPosSIScale;
+        double bitsToPosSIOffset = JointList[index].encoder.BitsToPosSIOffset;
 
-        int countsperturn = JointList[index].countsperturn;
-        double pitch = JointList[index].pitch;
-        double gearratio = JointList[index].gearratio;
-
-        // multiply by gearratio to get motor degree
-        // divide by pitch (revolute:1 prismatic:mm/deg)
-        // divide by 360 to get num of turn
-        // multiply by CPT to get number of counts
-        toData[index] = (fromData[index]) * gearratio / pitch
-                * countsperturn / 360.0;
+        toData[index] = (fromData[index]-bitsToPosSIOffset) / bitsToPosSIScale;
     }
 }
 
-void mtsRobotIO1394::RobotInternal::EncoderToDegPerSec(const vctLongVec &fromData, vctDoubleVec &toData) const
+void mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosSI(const vctLongVec &fromData, vctDoubleVec &toData) const
 {
     toData.SetAll(0.0);
+    for (size_t index = 0; index<JointList.size();index++){
+        double bitsToDeltaPosSIScale = JointList[index].encoder.BitsToDeltaPosSIScale;
+        double bitsToDeltaPosSIOffset = JointList[index].encoder.BitsToDeltaPosSIOffset;
 
-    for (size_t index = 0; index < JointList.size(); index++) {
-        AmpIO *board = JointList[index].board;
-        int axis = JointList[index].axisid;
-        if (!board || (axis < 0)) continue;
-
-        int countsperturn = JointList[index].countsperturn;
-
-        // negate for sign to match that of motor command voltage
-        // subtract half of max to get direction/sign of motion
-        // divide clocks/s by #clocks to get counts per second
-        // divide by CPT to get number of turns per second
-        // mutiply by 360 degrees per turn for deg/s
-        toData[index] = (-360.0 * ENC_VEL_CLK /
-                                   ((double)fromData[index]- ENC_VEL_MAX/2) / (countsperturn/4.0));
+        toData[index] = (fromData[index] * bitsToDeltaPosSIScale) + bitsToDeltaPosSIOffset;
     }
 }
 
-void mtsRobotIO1394::RobotInternal::MotorCurrentToDAC(const vctDoubleVec &fromData, vctLongVec &toData) const
+void mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosT(const vctLongVec &fromData, vctDoubleVec &toData) const
+{
+    toData.SetAll(0.0);
+    for (size_t index = 0; index<JointList.size();index++){
+        double bitsToDeltaTScale = JointList[index].encoder.BitsToDeltaTScale;
+        double bitsToDeltaTOffset = JointList[index].encoder.BitsToDeltaTOffset;
+
+        toData[index]=(fromData[index] * bitsToDeltaTScale) + bitsToDeltaTOffset ;
+    }
+}
+
+void mtsRobotIO1394::RobotInternal::DriveAmpsToBits(const vctDoubleVec &fromData, vctLongVec &toData) const
 {
     toData.SetAll(0L);
+    for (size_t index=0; index<JointList.size();index++){
+        double ampToBitsScale = JointList[index].drive.AmpsToBitsScale;
+        double ampToBitsOffset = JointList[index].drive.AmpsToBitsOffset;
+        double maxAmps = JointList[index].drive.MaxCurrentValue;
 
-    for (size_t index = 0; index < JointList.size(); index++) {
-        AmpIO *board = JointList[index].board;
-        int axis = JointList[index].axisid;
-        if (!board || (axis < 0)) continue;
-
-        int currenttocnts = JointList[index].currenttocnts;
-
-        // conversion
-        // DAC 16 bits 0x0000 - 0xffff  mid 0x8000
-        long dacCounts;
-        dacCounts = static_cast<long>(currenttocnts * fromData[index]) + 0x8000;
-        if (dacCounts > 0xffff) {dacCounts = 0xffff;}
-        if (dacCounts < 0x0000) {dacCounts = 0x0000;}
-        toData[index] = dacCounts;
+        double tmpValue;
+        if(fromData[index] > maxAmps){
+            tmpValue = maxAmps;
+        }
+        else if(fromData[index] < -maxAmps){
+            tmpValue = -maxAmps;
+        }
+        else{
+            tmpValue = fromData[index];
+        }
+        toData[index] = (tmpValue * ampToBitsScale) + ampToBitsOffset;
     }
 }
 
-void mtsRobotIO1394::RobotInternal::ADCToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const
+void mtsRobotIO1394::RobotInternal::DriveBitsToFbAmps(const vctLongVec &fromData, vctDoubleVec &toData) const
 {
     toData.SetAll(0.0);
+    for (size_t index=0; index<JointList.size();index++){
+        double bitsToFbAmpsScale = JointList[index].drive.BitsToFbAmpsScale;
+        double bitsToFbAmpsOffset = JointList[index].drive.BitsToFbAmpsOffset;
 
-    for (size_t index = 0; index < JointList.size(); index++) {
-        AmpIO *board = JointList[index].board;
-        int axis = JointList[index].axisid;
-        if (!board || (axis < 0)) continue;
-
-        double cntstoanalogvolt = JointList[index].cntstoanalogvolt;
-
-        // conversion
-        toData[index] = cntstoanalogvolt * fromData[index];
+        toData[index] = (fromData[index] * bitsToFbAmpsScale) + bitsToFbAmpsOffset;
     }
 }
 
-void mtsRobotIO1394::RobotInternal::ADCToMotorCurrent(const vctLongVec &fromData, vctDoubleVec &toData) const
+void mtsRobotIO1394::RobotInternal::DriveNmToAmps(const vctDoubleVec &fromData, vctDoubleVec &toData) const
+{
+    toData.SetAll(0L);
+    for (size_t index=0; index<JointList.size(); index++){
+        double nmToAmps = JointList[index].drive.NmToAmpsScale;
+
+        toData[index] = fromData[index]*nmToAmps;
+    }
+}
+
+void mtsRobotIO1394::RobotInternal::DriveAmpsToNm(const vctDoubleVec &fromData, vctDoubleVec &toData) const
 {
     toData.SetAll(0.0);
+    for (size_t index=0; index<JointList.size(); index++){
+        double nmToAmps = JointList[index].drive.NmToAmpsScale;
 
-    for (size_t index = 0; index < JointList.size(); index++) {
-        AmpIO *board = JointList[index].board;
-        int axis = JointList[index].axisid;
-        if (!board || (axis < 0)) continue;
-
-        double cntstocurrent = JointList[index].cntstocurrent;
-
-        // conversion
-        toData[index] = cntstocurrent * (fromData[index]-MIDRANGE_ADC);
+        toData[index] = fromData[index] / nmToAmps;
     }
 }
 
-
-void mtsRobotIO1394::RobotInternal::PotVoltsToDegree(const vctDoubleVec &fromData, vctDoubleVec &toData) const
+void mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const
 {
     toData.SetAll(0.0);
+    for (size_t index=0; index<JointList.size(); index++){
+        double bitsToVoltsScale = JointList[index].analogIn.BitsToVoltsScale;
+        double bitsToVoltsOffset = JointList[index].analogIn.BitsToVoltsOffset;
 
-    for (size_t index = 0; index < JointList.size(); index++) {
-        AmpIO *board = JointList[index].board;
-        int axis = JointList[index].axisid;
-        if (!board || (axis < 0)) continue;
-
-        double slope = JointList[index].slope;
-        double intercept = JointList[index].intercept;
-
-        // conversion
-        toData[index] = fromData[index] * slope + intercept;
+        toData[index] = (fromData[index] * bitsToVoltsScale) + bitsToVoltsOffset;
     }
 }
 
-
-
-//ZC: parse XML file for jointinfo
-void mtsRobotIO1394::RobotInternal::Configure(const std::string &filename)
+void mtsRobotIO1394::RobotInternal::AnalogInVoltsToPosSI(const vctDoubleVec &fromData, vctDoubleVec &toData) const
 {
-    // TODO: replace Robot with robot name
-    if (filename == "") {
-        CMN_LOG_INIT_ERROR << "Configure: could not configure Robot" << std::endl;
-        return;
+    toData.SetAll(0.0);
+    for (size_t index=0; index<JointList.size(); index++){
+        double voltsToPosSIScale = JointList[index].analogIn.VoltsToPosSIScale;
+        double voltsToPosSIOffset = JointList[index].analogIn.VoltsToPosSIOffset;
+
+        toData[index] = (fromData[index]  * voltsToPosSIScale) + voltsToPosSIOffset;
     }
-
-    // log configure file path
-    CMN_LOG_INIT_VERBOSE << "Configuring Robot with \"" << filename << "\"" << std::endl;
-
-    // set cmnXMLPath
-    cmnXMLPath xmlConfig;
-    xmlConfig.SetInputSource(filename);
-
-    char path[64];
-    int numOfBoards;
-    int numOfJoints;
-    std::string context("/config/robot");
-    xmlConfig.GetXMLValue(context.c_str(), "/@name", robotName);
-    xmlConfig.GetXMLValue(context.c_str(), "/@numofboards", numOfBoards);
-    xmlConfig.GetXMLValue(context.c_str(), "/@numofjoints", numOfJoints);
-
-    std::cout << "name: " << robotName << std::endl;
-    std::cout << "numofboards: " << numOfBoards << std::endl;
-    std::cout << "numofjoints: " << numOfBoards << std::endl;
-
-    // read board info
-    for (int i = 0; i < numOfBoards; i++){
-        int bid;
-        std::string type;
-        sprintf(path, "board[%d]/@id", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, bid);
-        sprintf(path, "board[%d]/@id", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, type);
-    }
-
-    // read in the conversion factors
-    for (int i = 0; i < numOfJoints; i++) {
-
-        // joint
-        int index, boardid, axisid;
-        sprintf(path, "joints/joint[%d]/@index", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, index);
-        sprintf(path, "joints/joint[%d]/@boardid", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, boardid);
-        sprintf(path, "joints/joint[%d]/@axisid", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, axisid);
-
-        // encoder
-        sprintf(path, "joints/joint[%d]/encoder/@countsperturn", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].countsperturn);
-        sprintf(path, "joints/joint[%d]/encoder/@gearratio", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].gearratio);
-        sprintf(path, "joints/joint[%d]/encoder/@pitch", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].pitch);
-        sprintf(path, "joints/joint[%d]/encoder/@offsetdeg", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].offsetdeg);
-
-        // motor
-        sprintf(path, "joints/joint[%d]/motor/@ktorque", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].torquecurrent);
-
-        // pot
-        sprintf(path, "joints/joint[%d]/pot/@maxvol", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].maxpotvolt);
-        sprintf(path, "joints/joint[%d]/pot/@slope", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].slope);
-        sprintf(path, "joints/joint[%d]/pot/@intercept", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].intercept);
-
-        // current
-        sprintf(path, "joints/joint[%d]/current/@maxcur", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].maxcurrent);
-
-        // adc
-        sprintf(path, "joints/joint[%d]/adc/@cntstocurrent", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].cntstocurrent);
-        sprintf(path, "joints/joint[%d]/adc/@cntstoanalogvolt", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].cntstoanalogvolt);
-
-        // dac
-        sprintf(path, "joints/joint[%d]/dac/@currenttocnts", i+1);
-        xmlConfig.GetXMLValue(context.c_str(), path, JointList[index].currenttocnts);
-    }
-    CMN_LOG_INIT_VERBOSE << "Configured RobotInternal" << std::endl;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//Future Works:
+//Variable config file with ENC/POT. Set flags so Get/Set is properly configured. Configure Function should account for different
+//Layouts.

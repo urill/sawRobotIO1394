@@ -22,18 +22,30 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cppunit/TestCase.h>
 #include <cppunit/extensions/HelperMacros.h>
-
 #include <sawRobotIO1394/mtsRobotIO1394.h>
+#include <cisstVector/vctDynamicVectorTypes.h>
+
+
+const double MINIMUM_THRESHOLD_DOUBLE = 0.000001;
+const long MINIMUM_THRESHOLD_LONG = 0.00001;
+
 
 class mtsRobotIO1394Test : public CppUnit::TestFixture
 {
+protected:
     CPPUNIT_TEST_SUITE(mtsRobotIO1394Test);
     {
         CPPUNIT_TEST(TestCreate);
+//        CPPUNIT_TEST(TestConfigure);
+//        CPPUNIT_TEST(TestEncoder);
+//        CPPUNIT_TEST(TestDriveAmps);
+//        CPPUNIT_TEST(TestDriveNm);
+//        CPPUNIT_TEST(TestAnalogIn);
     }
     CPPUNIT_TEST_SUITE_END();
 
  public:
+
     void setUp(void) {
     }
 
@@ -42,8 +54,15 @@ class mtsRobotIO1394Test : public CppUnit::TestFixture
 
     /*! Test constructor */
     void TestCreate(void);
+//    void TestConfigure(void);
+//    void TestEncoder(void);
+//    void TestDriveAmps(void);
+//    void TestDriveNm(void);
+//    void TestAnalogIn(void);
 };
 
+//Some of the test cases I would like to see.
+//Is the XML config good?
 
 CPPUNIT_TEST_SUITE_REGISTRATION(mtsRobotIO1394Test);
 
