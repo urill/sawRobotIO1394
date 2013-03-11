@@ -31,6 +31,8 @@
 #include "RobotInternal.h"
 #include "AmpIO.h"
 
+const unsigned long WD_MSTOCOUNT =       192;    // watchdog counts per ms (note counter width, e.g. 16 bits)
+
 // ActuatorInfo Constructor
 mtsRobotIO1394::RobotInternal::ActuatorInfo::ActuatorInfo() : board(0), axisid(-1)
 {}
@@ -168,6 +170,9 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
     prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
                           this->ampEnable);
 
+    prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetWatchdogPeriod, this, "SetWatchdogPeriod",
+                          this->watchdogPeriod);
+
     prov->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable");
     prov->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus");
     prov->AddCommandReadState(stateTable, this->powerStatus, "GetPowerStatus");
@@ -304,6 +309,30 @@ void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
         int axis = ActuatorList[index].axisid;
         if (!board || (axis < 0)) continue;
         board->SetSafetyRelay(false);
+    }
+}
+
+
+void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const unsigned long &period_ms)
+{
+    // assume MAX_BOARDS < 255
+    vctUCharVec board_list(BoardIO::MAX_BOARDS, (unsigned char)0xff);
+    watchdogPeriod = period_ms;
+
+    // TODO: a more direct way of accessing the board list from this class?
+    for (size_t index = 0; index < ActuatorList.size(); index++)
+    {
+        // get board associated with each joint
+        AmpIO *board = ActuatorList[index].board;
+        if (!board || !board->IsValid()) continue;
+
+        // check board id to skip boards already written to
+        unsigned char board_id = board->GetBoardId();
+        if (board_list[board_id] == board_id) continue;
+        board_list[board_id] = board_id;
+
+        // write timeout period, converted to counts
+        board->WriteWatchdogPeriod(period_ms*WD_MSTOCOUNT);
     }
 }
 
