@@ -14,7 +14,7 @@
 project(sawRobotIO1394)
 
 add_subdirectory(code)
-
+file(COPY share DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 # Example program uses curses for text-based display
 find_package (Curses)
 if (CURSES_FOUND)

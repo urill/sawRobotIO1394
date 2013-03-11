@@ -81,12 +81,12 @@ void mtsRobotIO1394::Init(void)
 
 void mtsRobotIO1394::Configure(const std::string &filename)
 {
-    //CMN_LOG_CLASS_INIT_VERBOSE << "Configuring from " << filename << std::endl;
-
     cmnPath localPath;
 
-    localPath.Add("config");
+    localPath.Add("../components/sawRobotIO1394/share");
     std::string localFile = localPath.Find(filename);
+
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configuring from " << localFile << std::endl;
 
     cmnXMLPath xmlConfig;
 
