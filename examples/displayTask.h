@@ -33,7 +33,7 @@ protected:
     bool power_on, safety_relay, watchdog;
 
     struct RobotStruct {
-        mtsFunctionRead GetNumberOfJoints;
+        mtsFunctionRead GetNumberOfActuators;
         mtsFunctionRead IsValid;
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;

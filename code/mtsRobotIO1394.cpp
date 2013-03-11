@@ -79,83 +79,73 @@ void mtsRobotIO1394::Init(void)
     }
 }
 
-void mtsRobotIO1394::Configure(const std::string &filename)
+void mtsRobotIO1394::Configure(const std::string & filename)
 {
-    cmnPath localPath;
-
-    localPath.Add("../components/sawRobotIO1394/share");
-    std::string localFile = localPath.Find(filename);
-
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configuring from " << localFile << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configuring from " << filename << std::endl;
 
     cmnXMLPath xmlConfig;
-
-    xmlConfig.SetInputSource(localFile);
+    xmlConfig.SetInputSource(filename);
     char path[64];
 
     //std::cout<<"The number of robots detected are " << RobotCounter << std::endl;
 
-    int tmpNumActuator=0;
-    int tmpBoardID=0;
-    int tmpAxisID=0;
+    int tmpNumActuator = 0;
+    int tmpBoardID = 0;
+    int tmpAxisID = 0;
 
     std::string context = "Config";
-
     std::string tmpRobotName = "ConfigStart";
-
 
     //Let's activate the boards implied in the XML config file.
     //Go robot by robot, Actuator by Actuator, and look for BoardID.
     //This will not check for conflicting BoardID/AxisID assignments.
     //Infinite loop for configuring for each robot.
-    int k=0;
+    int k = 0;
 
-    while(true){
+    while (true) {
         //Incrementing Counter for Robot.
         k = k + 1;
-        std::cout<<"This is Run Number " << k <<"."<< std::endl;
-
         sprintf(path, "Robot[%d]/@Name",k);
         xmlConfig.GetXMLValue(context.c_str(),path,tmpRobotName);
-        if(tmpRobotName.empty()){
+        if (tmpRobotName.empty()) {
             //Reached the End of File For Robot
             //Break from infinite loop.
             //std::cout<<"Run Number "<< k <<" stopped." << std::endl;
             //std::cin.ignore();
             break;
         }
-        sprintf(path, "Robot[%d]/@NumOfActuator",k);
-        xmlConfig.GetXMLValue(context.c_str(),path,tmpNumActuator);
+        sprintf(path, "Robot[%d]/@NumOfActuator", k);
+        xmlConfig.GetXMLValue(context.c_str(), path, tmpNumActuator);
 
         //Create new temporary RobotInternal Initialized.
-        RobotInternal *robot = new RobotInternal(tmpRobotName,tmpNumActuator);
+        RobotInternal * robot = new RobotInternal(tmpRobotName, tmpNumActuator);
 
         //Set ActuatorInfo for all Actuators under this robot.
         int j = 0;
-        for(j = 0; j < tmpNumActuator; j++) {
+        for (j = 0; j < tmpNumActuator; j++) {
             sprintf(path,"Robot[%d]/Actuator[%d]/@BoardID",k,j+1);
-            xmlConfig.GetXMLValue(context.c_str(),path,tmpBoardID);
-            //Check and initalize AmpIOs for new boards.
+            xmlConfig.GetXMLValue(context.c_str(), path, tmpBoardID);
+            // Check and initalize AmpIOs for new boards.
             if(BoardList[tmpBoardID] == 0){
                 BoardList[tmpBoardID] = new AmpIO(tmpBoardID);
                 Port->AddBoard(BoardList[tmpBoardID]);
             }
-            //Config this Actuator info.
+            // Config this Actuator info.
             sprintf(path,"Robot[%d]/Actuator[%d]/@AxisID",k,j+1);
-            xmlConfig.GetXMLValue(context.c_str(),path,tmpAxisID);
-            robot->SetJointInfo(j,BoardList[tmpBoardID],tmpAxisID);
+            xmlConfig.GetXMLValue(context.c_str(), path, tmpAxisID);
+            robot->SetActuatorInfo(j, BoardList[tmpBoardID], tmpAxisID);
         }
-        //Configure conversion factors and other variables.
+        // Configure conversion factors and other variables.
         robot->Configure(xmlConfig, k);
-        //Configure StateTable for this Robot
+        // Configure StateTable for this Robot
         robot->SetupStateTable(StateTable);
 
-        //Add new InterfaceProvided for this Robot with Name.
-        //Ensure all tmpRobotNames from XML Config file are UNIQUE!
-        mtsInterfaceProvided* prov=AddInterfaceProvided(tmpRobotName);
-        robot->SetupProvidedInterface(prov,StateTable);
+        // Add new InterfaceProvided for this Robot with Name.
+        // Ensure all tmpRobotNames from XML Config file are UNIQUE!
+        mtsInterfaceProvided* prov = AddInterfaceProvided(tmpRobotName);
+        robot->SetupProvidedInterface(prov, StateTable);
 
-        //Store the robot to RobotList
+        // Store the robot to RobotList
         RobotList.push_back(robot);
 
     }

@@ -19,16 +19,18 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include "displayTask.h"
+#include <cisstCommon/cmnPath.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
 int main(int argc, char ** argv)
 {
     // log configuration
-    cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     // get all messages to log file
+    cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
-    cmnLogger::AddChannel(std::cout, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
+    // get only errors and warnings to cerr
+    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
     int i;
 
@@ -60,8 +62,15 @@ int main(int argc, char ** argv)
     // add the tasks to the component manager
     LCM->AddComponent(disp);
     LCM->AddComponent(robot);
-    std::string xmlFileName = "sawRobotIO1394Example.xml";
-    robot->Configure(xmlFileName);
+    
+    cmnPath path;
+    path.AddRelativeToCisstShare("sawRobotIO1394");
+    const std::string fileName = "sawRobotIO1394TestBoard.xml";
+    std::string fullFileName = path.Find(fileName);
+    if (fullFileName == "") {
+        return 0;
+    }
+    robot->Configure(fullFileName);
     disp->Configure();
 
     LCM->Connect("disp", "Robot", "robot", "Robot");
@@ -89,7 +98,7 @@ int main(int argc, char ** argv)
     delete robot;
 
     // stop all logs
-    cmnLogger::SetMask(CMN_LOG_ALLOW_NONE);
+    cmnLogger::Kill();
 
     return 0;
 }

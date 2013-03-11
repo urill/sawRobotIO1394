@@ -3,10 +3,10 @@
 
 /*
   $Id$
-  
+
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
-  
+
   (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
@@ -35,10 +35,10 @@ class AmpIO;
 
 class mtsRobotIO1394::RobotInternal {
 protected:
-    //Nested class stores Joint-Axis info
-    class JointInfo {
+    //Nested class stores Actuator-Axis info
+    class ActuatorInfo {
       public:
-        struct Drive{
+        struct Drive {
             double AmpsToBitsScale;
             double AmpsToBitsOffset;
             double BitsToFbAmpsScale;
@@ -46,7 +46,7 @@ protected:
             double NmToAmpsScale;
             double MaxCurrentValue;
         };
-        struct Encoder{
+        struct Encoder {
             double BitsToPosSIScale;
             double BitsToPosSIOffset;
             double BitsToDeltaPosSIScale;
@@ -55,7 +55,7 @@ protected:
             double BitsToDeltaTOffset;
             int CountsPerTurnValue;
         };
-        struct AnalogIn{
+        struct AnalogIn {
             double BitsToVoltsScale;
             double BitsToVoltsOffset;
             double VoltsToPosSIScale;
@@ -70,12 +70,12 @@ protected:
         AnalogIn analogIn;
 
       public:
-        JointInfo();
-        JointInfo(AmpIO *bptr, int aid);
-        ~JointInfo();
+        ActuatorInfo();
+        ActuatorInfo(AmpIO *bptr, int aid);
+        ~ActuatorInfo();
     };
     std::string robotName;              // Robot name (from config file)
-    std::vector<JointInfo> JointList;   // Joint information
+    std::vector<ActuatorInfo> ActuatorList;   // Actuator information
 
     // State data
     bool           valid;
@@ -90,6 +90,7 @@ protected:
     vctLongVec     analogInRaw;
     vctDoubleVec   analogInVolts;
     vctDoubleVec   analogInPosSI;
+    vctULongVec    digitalIn;
     vctLongVec     motorFeedbackCurrentRaw;
     vctDoubleVec   motorFeedbackCurrent;
     vctLongVec     motorControlCurrentRaw;
@@ -97,7 +98,7 @@ protected:
     vctDoubleVec   motorControlTorque;
 
     // Methods for provided interface
-    void GetNumberOfJoints(int &num) const;
+    void GetNumberOfActuators(int &num) const;
     void EnablePower(void);
     void DisablePower(void);
     void EnableSafetyRelay(void);
@@ -120,11 +121,11 @@ protected:
 
 public:
 
-    RobotInternal(const std::string &name, size_t numJoints);
+    RobotInternal(const std::string &name, size_t numActuators);
     ~RobotInternal();
     void Configure(const std::string &filename);
     void Configure (cmnXMLPath &xmlConfigFile, int robotNumber);
-    void SetJointInfo(int index, AmpIO *board, int axis);
+    void SetActuatorInfo(int index, AmpIO *board, int axis);
 
     void SetupStateTable(mtsStateTable &stateTable);
     void SetupProvidedInterface(mtsInterfaceProvided *prov, mtsStateTable &stateTable);

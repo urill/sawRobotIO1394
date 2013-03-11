@@ -30,7 +30,7 @@ displayTask::displayTask(const std::string & taskName) : mtsTaskContinuous(taskN
 {
     mtsInterfaceRequired *req = AddInterfaceRequired("Robot");
     if (req) {
-        req->AddFunction("GetNumberOfJoints", Robot.GetNumberOfJoints);
+        req->AddFunction("GetNumberOfActuators", Robot.GetNumberOfActuators);
         req->AddFunction("IsValid", Robot.IsValid);
         req->AddFunction("EnablePower", Robot.EnablePower);
         req->AddFunction("DisablePower", Robot.DisablePower);
@@ -59,15 +59,15 @@ void displayTask::Configure(const std::string & CMN_UNUSED(filename))
 
 void displayTask::Startup(void)
 {
-    int numJoints = 0;
-    Robot.GetNumberOfJoints(numJoints);
-    posRaw.SetSize(numJoints);
-    velRaw.SetSize(numJoints);
-    analogInRaw.SetSize(numJoints);
-    motorFeedbackCurrentRaw.SetSize(numJoints);
-    ampEnable.SetSize(numJoints);
-    ampStatus.SetSize(numJoints);
-    motorControlCurrentRaw.SetSize(numJoints);
+    int numActuators = 0;
+    Robot.GetNumberOfActuators(numActuators);
+    posRaw.SetSize(numActuators);
+    velRaw.SetSize(numActuators);
+    analogInRaw.SetSize(numActuators);
+    motorFeedbackCurrentRaw.SetSize(numActuators);
+    ampEnable.SetSize(numActuators);
+    ampStatus.SetSize(numActuators);
+    motorControlCurrentRaw.SetSize(numActuators);
     motorControlCurrentRaw.SetAll(0x8000);
 
     initscr();

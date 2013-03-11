@@ -6,7 +6,7 @@
   <!-- This one is MODIFIED!!! -->
   <!-- Check the conversion functions and values after -->
 
-  <Robot Name="Robot" NumOfActuator="7" >
+  <Robot Name="Robot" NumOfActuator="4" >
     <Actuator ActuatorID="0" BoardID="0" AxisID="0" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5.2428" Offset="0"/>
@@ -64,78 +64,6 @@
         </AnalogIn>
     </Actuator>
     <Actuator ActuatorID="3" BoardID="0" AxisID="3" Pos1="ENC" Pos2="POT">
-        <Drive>
-            <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
-            <NmToAmps Scale="1"/>
-            <MaxCurrent Value="6.5"/>
-        </Drive>
-        <Encoder>
-            <BitsToPosSI Scale="-3000.00" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
-            <BitsToDeltaT Scale="1" Offset="0"/>
-            <CountsPerTurn Value="-4000.00"/>
-        </Encoder>
-        <AnalogIn>
-            <BitsToVolts Scale="0.0000686656" Offset="0"/>
-            <VoltsToPosSI Scale="1" Offset="0"/>
-        </AnalogIn>
-    </Actuator>
-    <Actuator ActuatorID="4" BoardID="3" AxisID="0" Pos1="ENC" Pos2="POT">
-        <Drive>
-            <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
-            <NmToAmps Scale="1"/>
-            <MaxCurrent Value="6.5"/>
-        </Drive>
-        <Encoder>
-            <BitsToPosSI Scale="-3000.00" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
-            <BitsToDeltaT Scale="1" Offset="0"/>
-            <CountsPerTurn Value="-4000.00"/>
-        </Encoder>
-        <AnalogIn>
-            <BitsToVolts Scale="0.0000686656" Offset="0"/>
-            <VoltsToPosSI Scale="1" Offset="0"/>
-        </AnalogIn>
-    </Actuator>
-    <Actuator ActuatorID="5" BoardID="3" AxisID="1" Pos1="ENC" Pos2="POT">
-        <Drive>
-            <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
-            <NmToAmps Scale="1"/>
-            <MaxCurrent Value="6.5"/>
-        </Drive>
-        <Encoder>
-            <BitsToPosSI Scale="-3000.00" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
-            <BitsToDeltaT Scale="1" Offset="0"/>
-            <CountsPerTurn Value="-4000.00"/>
-        </Encoder>
-        <AnalogIn>
-            <BitsToVolts Scale="0.0000686656" Offset="0"/>
-            <VoltsToPosSI Scale="1" Offset="0"/>
-        </AnalogIn>
-    </Actuator>
-    <Actuator ActuatorID="6" BoardID="3" AxisID="2" Pos1="ENC" Pos2="POT">
-        <Drive>
-            <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
-            <NmToAmps Scale="1"/>
-            <MaxCurrent Value="6.5"/>
-        </Drive>
-        <Encoder>
-            <BitsToPosSI Scale="-3000.00" Offset="0"/>
-            <BitsToDeltaPosSI Scale="-3000.00" Offset="0"/>
-            <BitsToDeltaT Scale="1" Offset="0"/>
-            <CountsPerTurn Value="-4000.00"/>
-        </Encoder>
-        <AnalogIn>
-            <BitsToVolts Scale="0.0000686656" Offset="0"/>
-            <VoltsToPosSI Scale="1" Offset="0"/>
-        </AnalogIn>
-    </Actuator>
-    <Actuator ActuatorID="7" BoardID="3" AxisID="3" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5.2428" Offset="0"/>
             <BitsToFbAmps Scale="0.190737774" Offset="0"/>
