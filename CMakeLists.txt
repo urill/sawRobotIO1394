@@ -18,13 +18,8 @@ add_subdirectory(code)
 # Examples of config files
 add_subdirectory (share)
 
-# Example program uses curses for text-based display
-find_package (Curses)
-if (CURSES_FOUND)
-  add_subdirectory(examples)
-else (CURSES_FOUND)
-  message ("sawRobotIO1394 examples not available -- curses lib not found")
-endif (CURSES_FOUND)
+# Examples
+add_subdirectory(examples)
 
 # Tests programs, will only get compiled if cisstTestsDriver has been compiled
 add_subdirectory (tests)

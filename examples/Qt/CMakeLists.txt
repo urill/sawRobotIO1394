@@ -1,10 +1,7 @@
 #
-# $Id: CMakeLists.txt 3993 2013-03-01 15:09:20Z adeguet1 $
+# $Id$
 #
-# CMakeLists for sawRobotIO1394 tests
-#
-# (C) Copyright 2013 Johns Hopkins University (JHU), All Rights
-# Reserved.
+# (C) Copyright 2009-2013 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -20,7 +17,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstOSAbstraction
                               cisstMultiTask
                               cisstParameterTypes
-			      cisstTestsDriver)
+                              cisstQt)
 
 # find cisst and make sure the required libraries have been compiled
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
@@ -35,22 +32,20 @@ if (cisst_FOUND_AS_REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 
-    include_directories (${CURSES_INCLUDE_DIR})
-
     # sawRobotIO1394 configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR})
     link_directories (${sawRobotIO1394_LIBRARY_DIR})
 
-    add_executable (sawRobotIO1394Tests mtsRobotIO1394Test.cpp mtsRobotIO1394Test.h)
-    set_property (TARGET sawRobotIO1394Tests PROPERTY FOLDER "sawRobotIO1394")
+    add_executable (sawRobotIO1394ExampleQt mainQt.cpp)
+    set_property (TARGET sawRobotIO1394ExampleQt PROPERTY FOLDER "sawRobotIO1394")
 
     # link against non cisst libraries and cisst components
-    target_link_libraries (sawRobotIO1394Tests
+    target_link_libraries (sawRobotIO1394ExampleQt
                            ${sawRobotIO1394_LIBRARIES}
                            ${CURSES_LIBRARIES})
 
     # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawRobotIO1394Tests ${REQUIRED_CISST_LIBRARIES})
+    cisst_target_link_libraries (sawRobotIO1394ExampleQt ${REQUIRED_CISST_LIBRARIES})
 
   endif (sawRobotIO1394_FOUND)
 

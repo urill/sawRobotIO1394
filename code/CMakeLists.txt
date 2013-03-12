@@ -19,7 +19,6 @@ set (REQUIRED_CISST_LIBRARIES
      cisstMultiTask
      cisstParameterTypes)
 
-
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
@@ -58,6 +57,10 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # link cisst lib
   cisst_target_link_libraries (sawRobotIO1394 ${REQUIRED_CISST_LIBRARIES})
+
+  # add Qt code
+  add_subdirectory (Qt)
+  set (sawRobotIO1394_LIBRARIES ${sawRobotIO1394_LIBRARIES} ${sawRobotIO1394Qt_LIBRARIES})
 
   configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawRobotIO1394Config.cmake.in"
                   "${sawRobotIO1394_BINARY_DIR}/sawRobotIO1394Config.cmake"

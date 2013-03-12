@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "displayTask.h"
 #include <cisstCommon/cmnPath.h>
+#include <cisstCommon/cmnCommandLineOptions.h>
 #include <cisstOSAbstraction/osaSleep.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
@@ -32,44 +33,45 @@ int main(int argc, char ** argv)
     // get only errors and warnings to cerr
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
-    int i;
+    cmnCommandLineOptions options;
+    std::list<int> ports;
+    std::string configFile;
+    options.AddOptionOneValue("c", "config",
+                              "configuration file, can be an absolute path or relative to CISST_ROOT share",
+                              cmnCommandLineOptions::REQUIRED, &configFile);
+    options.AddOptionMultipleValues("p", "port",
+                                    "firefire port number(s)",
+                                    cmnCommandLineOptions::REQUIRED, &ports);
+    std::string errorMessage;
+    if (!options.Parse(argc, argv, errorMessage)) {
+        std::cerr << "Error: " << errorMessage << std::endl;
+        options.PrintUsage(std::cerr);
+        return -1;
+    }
 
-    int port = 0;
-    int args_found = 0;
-    std::string boardList;
-    for (i = 1; i < argc; i++) {
-        if ((argv[i][0] == '-') && (argv[i][1] == 'p')) {
-            port = atoi(argv[i]+2);
-            std::cerr << "Selecting port " << port << std::endl;
-        }
-        else {
-            boardList.append(argv[i]);
-            boardList.append(" ");
-            args_found++;
+    std::string fullFileName;
+    if (cmnPath::Exists(configFile)) {
+        fullFileName = configFile;
+    } else {
+        cmnPath path;
+        path.AddRelativeToCisstShare("sawRobotIO1394");
+        fullFileName = path.Find(configFile);
+        if (fullFileName == "") {
+            return 0;
         }
     }
-    if (args_found < 1) {
-        std::cerr << "Usage: RobotDisplay <board0> [<board1> ...] [-pP]" << std::endl
-                  << "       where P = port number (default 0)" << std::endl;
-        return 0;
-    }
+    std::cout << "Configuration file: " << fullFileName << std::endl
+              << "Port: " << ports.front() << std::endl;
 
     mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
 
     displayTask *disp = new displayTask("disp");
-    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 0.01, port, disp->GetOutputStream());
+    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 0.01, ports.front(), disp->GetOutputStream());
 
     // add the tasks to the component manager
     LCM->AddComponent(disp);
     LCM->AddComponent(robot);
     
-    cmnPath path;
-    path.AddRelativeToCisstShare("sawRobotIO1394");
-    const std::string fileName = "sawRobotIO1394TestBoard.xml";
-    std::string fullFileName = path.Find(fileName);
-    if (fullFileName == "") {
-        return 0;
-    }
     robot->Configure(fullFileName);
     disp->Configure();
 
@@ -86,7 +88,7 @@ int main(int argc, char ** argv)
     // other tasks (such as mtsRobotIO1394), so that displayTask::Cleanup
     // can still invoke commands in mtsRobotIO1394.
     // For now, we just sleep for 1 second.
-    osaSleep(1.0);
+    osaSleep(1.0 * cmn_s);
 
     // cleanup
     LCM->KillAll();
