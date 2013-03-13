@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <vector>
 
 #include <cisstVector/vctDynamicVectorTypes.h>
+#include <cisstVector/vctDynamicMatrixTypes.h>
 #include <cisstCommon/cmnXMLPath.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
@@ -80,6 +81,7 @@ protected:
     // State data
     bool           valid;
     bool           powerStatus;
+    bool           couplingStatus;
     unsigned short safetyRelay;
     unsigned long  watchdogPeriod;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
@@ -97,6 +99,11 @@ protected:
     vctLongVec     motorControlCurrentRaw;
     vctDoubleVec   motorControlCurrent;
     vctDoubleVec   motorControlTorque;
+
+    vctDoubleMat actuatorToJoint;
+    vctDoubleMat jointToActuator;
+    vctDoubleMat actTorqueToJointTorque;
+    vctDoubleMat jointTorqueToActTorque;
 
     // Methods for provided interface
     void GetNumberOfActuators(int &num) const;
@@ -127,6 +134,15 @@ public:
     ~RobotInternal();
     void Configure(const std::string &filename);
     void Configure (cmnXMLPath &xmlConfigFile, int robotNumber);
+    void ConfigureCoupling (cmnXMLPath &xmlConfigFile, int robotNumber, bool &couplingEnable);
+    void ConfigureCouplingA2J (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
+                                                              int numOfJoint, vctDoubleMat &A2JMatrix);
+    void ConfigureCouplingJ2A (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
+                                                              int numOfJoint, vctDoubleMat &J2AMatrix);
+    void ConfigureCouplingAT2JT (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
+                                                              int numOfJoint, vctDoubleMat &AT2JTMatrix);
+    void ConfigureCouplingJT2AT (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
+                                                              int numOfJoint, vctDoubleMat &JT2ATMatrix);
     void SetActuatorInfo(int index, AmpIO *board, int axis);
 
     void SetupStateTable(mtsStateTable &stateTable);

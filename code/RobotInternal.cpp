@@ -25,6 +25,7 @@
 #include <cisstCommon/cmnLogger.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsStateTable.h>
+#include <cisstVector/vctDynamicVectorTypes.h>
 
 
 
@@ -127,6 +128,137 @@ void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  &xmlConfigFile, int r
 
         sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Offset", robotNumber, i+1);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn. VoltsToPosSIOffset);
+    }
+
+    ConfigureCoupling (xmlConfigFile, robotNumber, couplingStatus);
+}
+
+void mtsRobotIO1394::RobotInternal::ConfigureCoupling (cmnXMLPath &xmlConfigFile, int robotNumber, bool &couplingEnable){
+    char path[64];
+    std::string context = "Config";
+    int tmpNumOfActuator = 0;
+    int tmpNumOfJoint = 0;
+
+    bool tmpCouplingAvailable=false;
+    int buff=0;
+    sprintf(path,"Robot[%i]/Coupling/@Value",robotNumber);
+    xmlConfigFile.GetXMLValue(context.c_str(),path,buff);
+
+    if(buff==1) {
+        //The Coupling Value must be equal to 1 for this configuration to work.
+        tmpCouplingAvailable=true;
+    }
+    else {
+        tmpCouplingAvailable=false;
+    }
+    tmpCouplingAvailable=true;
+    if(tmpCouplingAvailable) {
+        sprintf(path, "Robot[%i]/@NumOfActuator", robotNumber);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpNumOfActuator);
+        sprintf(path, "Robot[%i]/@NumOfJoint", robotNumber);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpNumOfJoint);
+        actuatorToJoint.SetSize(tmpNumOfJoint,tmpNumOfActuator,0.0);
+        jointToActuator.SetSize(tmpNumOfActuator,tmpNumOfJoint,0.0);
+        actTorqueToJointTorque.SetSize(tmpNumOfJoint,tmpNumOfActuator,0.0);
+        jointTorqueToActTorque.SetSize(tmpNumOfActuator,tmpNumOfJoint,0.0);
+
+        ConfigureCouplingA2J(xmlConfigFile,robotNumber,tmpNumOfActuator,tmpNumOfJoint,actuatorToJoint);
+        ConfigureCouplingJ2A(xmlConfigFile,robotNumber,tmpNumOfActuator,tmpNumOfJoint,jointToActuator);
+        ConfigureCouplingAT2JT(xmlConfigFile,robotNumber,tmpNumOfActuator,tmpNumOfJoint,actTorqueToJointTorque);
+        ConfigureCouplingJT2AT(xmlConfigFile,robotNumber,tmpNumOfActuator,tmpNumOfJoint,jointTorqueToActTorque);
+        //Still need to do proper alignment and such for joint/actuator situ for each matrix.
+    }
+    couplingEnable = tmpCouplingAvailable;
+}
+
+void mtsRobotIO1394::RobotInternal::ConfigureCouplingA2J (cmnXMLPath &xmlConfigFile,
+                                                          int robotNumber, int numOfActuator,
+                                                          int numOfJoint, vctDoubleMat &A2JMatrix) {
+    char path[64];
+    std::string context = "Config";
+    std::string tmpRow = "";
+    size_t i=0;
+
+    for (i=0; i<numOfJoint;i++) {
+        vctDoubleVec tmpRowVec;
+        tmpRowVec.SetSize(numOfActuator);
+
+        std::stringstream tmpStringStream;
+        sprintf(path,"Robot[%i]/Coupling/ActuatorToJoint/Row[%i]/@Val",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpRow);
+        tmpStringStream.str (tmpRow);
+
+        tmpRowVec.FromStreamRaw(tmpStringStream);
+        A2JMatrix.Row(i).Assign(tmpRowVec);
+    }
+    //std::cout<<"A2JMatrix: "<<std::endl<<A2JMatrix<<std::endl<<std::endl;
+}
+
+void mtsRobotIO1394::RobotInternal::ConfigureCouplingJ2A (cmnXMLPath &xmlConfigFile,
+                                                          int robotNumber, int numOfActuator,
+                                                          int numOfJoint, vctDoubleMat &J2AMatrix) {
+    char path[64];
+    std::string context = "Config";
+    std::string tmpRow = "";
+    size_t i=0;
+
+    for (i=0; i<numOfJoint;i++) {
+        vctDoubleVec tmpRowVec;
+        tmpRowVec.SetSize(numOfActuator);
+        std::stringstream tmpStringStream;
+        sprintf(path,"Robot[%i]/Coupling/JointToActuator/Row[%i]/@Val",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpRow);
+        tmpStringStream.str (tmpRow);
+
+        tmpRowVec.FromStreamRaw(tmpStringStream);
+
+        J2AMatrix.Row(i).Assign(tmpRowVec);
+    }
+    //std::cout<<"J2AMatrix: "<<std::endl<<J2AMatrix<<std::endl<<std::endl;
+}
+
+void mtsRobotIO1394::RobotInternal::ConfigureCouplingAT2JT (cmnXMLPath &xmlConfigFile,
+                                                          int robotNumber, int numOfActuator,
+                                                          int numOfJoint, vctDoubleMat &AT2JTMatrix) {
+    char path[64];
+    std::string context = "Config";
+    std::string tmpRow = "";
+    size_t i=0;
+
+    for (i=0; i<numOfJoint;i++) {
+        vctDoubleVec tmpRowVec;
+        tmpRowVec.SetSize(numOfActuator);
+
+        std::stringstream tmpStringStream;
+        sprintf(path,"Robot[%i]/Coupling/ActuatorTorqueToJointTorque/Row[%i]/@Val",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpRow);
+        tmpStringStream.str (tmpRow);
+
+        tmpRowVec.FromStreamRaw(tmpStringStream);
+
+        AT2JTMatrix.Row(i).Assign(tmpRowVec);
+    }
+}
+
+void mtsRobotIO1394::RobotInternal::ConfigureCouplingJT2AT (cmnXMLPath &xmlConfigFile,
+                                                          int robotNumber, int numOfActuator,
+                                                          int numOfJoint, vctDoubleMat &JT2ATMatrix) {
+    char path[64];
+    std::string context = "Config";
+    std::string tmpRow = "";
+    size_t i=0;
+
+    for (i=0; i<numOfJoint;i++) {
+        vctDoubleVec tmpRowVec;
+        tmpRowVec.SetSize(numOfActuator);
+
+        std::stringstream tmpStringStream;
+        sprintf(path,"Robot[%i]/Coupling/JointTorqueToActuatorTorque/Row[%i]/@Val",robotNumber,i+1);
+        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpRow);
+        tmpStringStream.str (tmpRow);
+
+        tmpRowVec.FromStreamRaw(tmpStringStream);
+        JT2ATMatrix.Row(i).Assign(tmpRowVec);
     }
 }
 
@@ -311,7 +443,6 @@ void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
         board->SetSafetyRelay(false);
     }
 }
-
 
 void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const unsigned long &period_ms)
 {
