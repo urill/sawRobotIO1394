@@ -99,6 +99,8 @@ protected:
     vctLongVec     motorControlCurrentRaw;
     vctDoubleVec   motorControlCurrent;
     vctDoubleVec   motorControlTorque;
+    vctLongVec     encSetPosRaw;
+    vctDoubleVec   encSetPos;
 
     vctDoubleMat actuatorToJoint;
     vctDoubleMat jointToActuator;
@@ -115,6 +117,8 @@ protected:
     void SetAmpEnable(const vctBoolVec &ampControl);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
+    void SetEncoderPositionRaw(const vctLongVec &epos);
+    void SetEncoderPosition(const vctDoubleVec &epos);
 
     // Unit conversion Raw -- SI (partial implementation)
     void EncoderRawToSI(const vctLongVec &fromData, vctDoubleVec &toData) const;

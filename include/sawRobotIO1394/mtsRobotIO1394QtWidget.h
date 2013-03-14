@@ -116,7 +116,7 @@ protected:
 
         mtsFunctionRead GetPosition;
         mtsFunctionRead GetVelocity;
-        mtsFunctionRead GetAnalogInput;
+        mtsFunctionRead GetAnalogInputVolts;
         mtsFunctionRead GetMotorCurrent;
         mtsFunctionRead GetAmpEnable;
         mtsFunctionRead GetAmpStatus;
@@ -126,8 +126,8 @@ protected:
         mtsFunctionWrite SetMotorCurrent;
         mtsFunctionWrite SetEncoderPosition;
 
-        mtsFunctionQualifiedRead PotVoltsToDegree;
-        mtsFunctionQualifiedRead MotorCurrentToDAC;
+        mtsFunctionQualifiedRead AnalogInVoltsToPosSI;
+        mtsFunctionQualifiedRead DriveAmpsToBits;
     } Robot;
 
 #if HAS_GC

@@ -238,7 +238,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     if (flag) {
         Robot.GetPosition(pos);
         Robot.GetVelocity(vel);
-        Robot.GetAnalogInput(analogIn);
+        Robot.GetAnalogInputVolts(analogIn);
         Robot.GetMotorCurrent(motorFeedbackCurrent);
         Robot.GetAmpEnable(ampEnable);
         Robot.GetAmpStatus(ampStatus);
@@ -308,7 +308,7 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
 
         req->AddFunction("GetPosition", Robot.GetPosition);
         req->AddFunction("GetVelocity", Robot.GetVelocity);
-        // adeguet1: temporary - req->AddFunction("GetAnalogInput", Robot.GetAnalogInput);
+        req->AddFunction("GetAnalogInputVolts", Robot.GetAnalogInputVolts);
         req->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorCurrent);
         req->AddFunction("GetAmpEnable", Robot.GetAmpEnable);
         req->AddFunction("GetAmpStatus", Robot.GetAmpStatus);
@@ -316,10 +316,10 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
         req->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
 
         req->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
-        // adeguet1: temporary - req->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
+        req->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
 
-        // adeguet1: temporary - req->AddFunction("PotVoltsToDegree", Robot.PotVoltsToDegree);
-        // adeguet1: temporary - req->AddFunction("MotorCurrentToDAC", Robot.MotorCurrentToDAC);
+        req->AddFunction("AnalogInToPosSI", Robot.AnalogInVoltsToPosSI);
+        req->AddFunction("DriveAmpsToBits", Robot.DriveAmpsToBits);
     }
 
 #if HAS_GC

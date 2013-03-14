@@ -27,11 +27,16 @@
 #include <cisstMultiTask/mtsStateTable.h>
 #include <cisstVector/vctDynamicVectorTypes.h>
 
-
-
 #include "RobotInternal.h"
 #include "AmpIO.h"
 
+// ZC: MOVE to configuration file
+const unsigned int      ENC_CPT  =      4000;    // OK  1000 x 4 quadrature
+const unsigned long ENC_VEL_MAX  =  0x00FFFF;    // TEMP need check // maximum value of encoder pulse period
+const double        ENC_VEL_CLK  = 1000000.0;    // TMEP need check clock (Hz) used to measure encoder pulse
+const double        ENC_ACC_CLK  =      12.0;    // TEMP need check
+const unsigned long MIDRANGE_ADC = 0x0008000;    // 16 bits ADC mid range value
+const unsigned long ENC_OFFSET   = 0x007FFFFF;   // Encoder offset
 const unsigned long WD_MSTOCOUNT =       192;    // watchdog counts per ms (note counter width, e.g. 16 bits)
 
 // ActuatorInfo Constructor
@@ -52,7 +57,8 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string &name, size_t num
     encVelRaw(numActuators), encVel(numActuators),
     analogInRaw(numActuators), analogInVolts(numActuators), analogInPosSI(numActuators),
     motorFeedbackCurrentRaw(numActuators), motorFeedbackCurrent(numActuators),
-    motorControlCurrentRaw(numActuators), motorControlCurrent(numActuators)
+    motorControlCurrentRaw(numActuators), motorControlCurrent(numActuators),
+    encSetPosRaw(numActuators), encSetPos(numActuators)
 {
 }
 
@@ -330,6 +336,11 @@ void mtsRobotIO1394::RobotInternal::SetupProvidedInterface(mtsInterfaceProvided 
     prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetMotorCurrent, this, "SetMotorCurrent",
                           motorControlCurrent);
 
+    prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw, this, "SetEncoderPositionRaw",
+                          encSetPosRaw);
+    prov->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetEncoderPosition, this, "SetEncoderPosition",
+                          encSetPos);
+
     // unit conversion methods (Qualified Read)
     prov->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderRawToSI, this,
                                   "EncoderRawToSI", encPosRaw, encPos);
@@ -505,6 +516,34 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec &mcur)
     //MotorCurrentToDAC(motorControlCurrent, motorControlCurrentRaw);
     DriveAmpsToBits(motorControlCurrent, motorControlCurrentRaw);
     SetMotorCurrentRaw(motorControlCurrentRaw);
+}
+
+void mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw(const vctLongVec &epos)
+{
+    if (epos.size() != encSetPosRaw.size()) {
+        CMN_LOG_RUN_ERROR << robotName << "::SetEncoderPositionRaw: size mismatch ("
+                          << epos.size() << ", " << encSetPosRaw.size() << ")" << std::endl;
+        return;
+    }
+    encSetPosRaw = epos;
+    for (size_t index = 0; index < ActuatorList.size(); index++){
+        AmpIO *board = ActuatorList[index].board;
+        int axis = ActuatorList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        board->WriteEncoderPreload(axis, encSetPosRaw[index] + ENC_OFFSET);
+    }
+}
+
+void mtsRobotIO1394::RobotInternal::SetEncoderPosition(const vctDoubleVec &epos)
+{
+    if (epos.size() != encSetPos.size()) {
+        CMN_LOG_RUN_ERROR << robotName << "::SetEncoderPosition: size mismatch ("
+                          << epos.size() << ", " << encSetPos.size() << ")" << std::endl;
+        return;
+    }
+    encSetPos = epos;
+    EncoderSIToRaw(encSetPos, encSetPosRaw);
+    SetEncoderPositionRaw(encSetPosRaw);
 }
 
 // Unit Conversions
