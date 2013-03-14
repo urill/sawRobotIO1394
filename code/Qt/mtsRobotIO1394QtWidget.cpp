@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  $Id: mtsWAMCalibrationQt.cpp 3034 2011-10-09 01:53:36Z adeguet1 $
+  $Id$
 
   Author(s):  Zihan Chen
   Created on: 2013-02-16
@@ -44,7 +44,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED(mtsRobotIO1394QtWidget, mtsComponent);
 mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string &taskName)
     :mtsComponent(taskName)
 {
-    numOfAxis = 8;
+    numOfAxis = 4;
     curFBState = false;
     curFBPGain = 1.0;
     curFBOffset = 30.0;
@@ -123,7 +123,7 @@ void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
     }
 }
 
-void mtsRobotIO1394QtWidget::slot_qcbEnable(bool toggle)
+void mtsRobotIO1394QtWidget::slot_qcbEnable(bool CMN_UNUSED(toggle))
 {
     for(int i = 0; i < numOfAxis; i++){
         ampEnable[i] = qcbEnable[i]->isChecked();
@@ -308,7 +308,7 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
 
         req->AddFunction("GetPosition", Robot.GetPosition);
         req->AddFunction("GetVelocity", Robot.GetVelocity);
-        req->AddFunction("GetAnalogInput", Robot.GetAnalogInput);
+        // adeguet1: temporary - req->AddFunction("GetAnalogInput", Robot.GetAnalogInput);
         req->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorCurrent);
         req->AddFunction("GetAmpEnable", Robot.GetAmpEnable);
         req->AddFunction("GetAmpStatus", Robot.GetAmpStatus);
@@ -316,10 +316,10 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
         req->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
 
         req->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
-        req->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
+        // adeguet1: temporary - req->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
 
-        req->AddFunction("PotVoltsToDegree", Robot.PotVoltsToDegree);
-        req->AddFunction("MotorCurrentToDAC", Robot.MotorCurrentToDAC);
+        // adeguet1: temporary - req->AddFunction("PotVoltsToDegree", Robot.PotVoltsToDegree);
+        // adeguet1: temporary - req->AddFunction("MotorCurrentToDAC", Robot.MotorCurrentToDAC);
     }
 
 #if HAS_GC

@@ -1,5 +1,5 @@
 #
-# $Id: CMakeLists.txt 3993 2013-03-01 15:09:20Z adeguet1 $
+# $Id$
 #
 # CMakeLists for sawRobotIO1394 tests
 #

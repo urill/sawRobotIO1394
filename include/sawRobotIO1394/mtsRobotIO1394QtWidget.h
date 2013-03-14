@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  $Id: mtsNDISerialToolQtComponent.h 3536 2012-03-13 02:25:59Z adeguet1 $
+  $Id$
 
   Author(s):  Zihan Chen
   Created on: 2012-07-20

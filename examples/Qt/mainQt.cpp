@@ -38,14 +38,14 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    std::list<int> ports;
+    int port;
     std::string configFile;
     options.AddOptionOneValue("c", "config",
                               "configuration file, can be an absolute path or relative to CISST_ROOT share",
                               cmnCommandLineOptions::REQUIRED, &configFile);
-    options.AddOptionMultipleValues("p", "port",
-                                    "firefire port number(s)",
-                                    cmnCommandLineOptions::REQUIRED, &ports);
+    options.AddOptionOneValue("p", "port",
+                              "firefire port number(s)",
+                              cmnCommandLineOptions::REQUIRED, &port);
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -65,7 +65,7 @@ int main(int argc, char ** argv)
         }
     }
     std::cout << "Configuration file: " << fullFileName << std::endl
-              << "Port: " << ports.front() << std::endl;
+              << "Port: " << port << std::endl;
 
     mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
 
@@ -75,7 +75,7 @@ int main(int argc, char ** argv)
     LCM->AddComponent(disp);
 
     // Robot
-    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 1 * cmn_ms, ports.front(), disp->GetOutputStream());
+    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 1 * cmn_ms, port, disp->GetOutputStream());
     robot->Configure(fullFileName);
     LCM->AddComponent(robot);
 
