@@ -147,6 +147,9 @@ public:
                                                               int numOfJoint, vctDoubleMat &AT2JTMatrix);
     void ConfigureCouplingJT2AT (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
                                                               int numOfJoint, vctDoubleMat &JT2ATMatrix);
+    void ConfigureCouplingMatrix (cmnXMLPath &xmlConfigFile, const std::string pathToMatrix, int numRows,
+                                                              int numCols, vctDoubleMat &resultMatrix);
+
     void SetActuatorInfo(int index, AmpIO *board, int axis);
 
     void SetupStateTable(mtsStateTable &stateTable);

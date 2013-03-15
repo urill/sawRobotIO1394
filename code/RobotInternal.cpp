@@ -180,92 +180,72 @@ void mtsRobotIO1394::RobotInternal::ConfigureCoupling (cmnXMLPath &xmlConfigFile
 void mtsRobotIO1394::RobotInternal::ConfigureCouplingA2J (cmnXMLPath &xmlConfigFile,
                                                           int robotNumber, int numOfActuator,
                                                           int numOfJoint, vctDoubleMat &A2JMatrix) {
+    std::string tmpPathString="";
     char path[64];
-    std::string context = "Config";
-    std::string tmpRow = "";
-    size_t i=0;
-
-    for (i=0; i<numOfJoint;i++) {
-        vctDoubleVec tmpRowVec;
-        tmpRowVec.SetSize(numOfActuator);
-
-        std::stringstream tmpStringStream;
-        sprintf(path,"Robot[%i]/Coupling/ActuatorToJoint/Row[%i]/@Val",robotNumber,i+1);
-        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpRow);
-        tmpStringStream.str (tmpRow);
-
-        tmpRowVec.FromStreamRaw(tmpStringStream);
-        A2JMatrix.Row(i).Assign(tmpRowVec);
-    }
-    //std::cout<<"A2JMatrix: "<<std::endl<<A2JMatrix<<std::endl<<std::endl;
+    sprintf(path,"Robot[%i]/Coupling/ActuatorToJoint",robotNumber);
+    tmpPathString = path;
+    ConfigureCouplingMatrix(xmlConfigFile,tmpPathString,numOfJoint,numOfActuator,A2JMatrix);
 }
 
 void mtsRobotIO1394::RobotInternal::ConfigureCouplingJ2A (cmnXMLPath &xmlConfigFile,
                                                           int robotNumber, int numOfActuator,
                                                           int numOfJoint, vctDoubleMat &J2AMatrix) {
+    std::string tmpPathString="";
     char path[64];
-    std::string context = "Config";
-    std::string tmpRow = "";
-    size_t i=0;
-
-    for (i=0; i<numOfJoint;i++) {
-        vctDoubleVec tmpRowVec;
-        tmpRowVec.SetSize(numOfActuator);
-        std::stringstream tmpStringStream;
-        sprintf(path,"Robot[%i]/Coupling/JointToActuator/Row[%i]/@Val",robotNumber,i+1);
-        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpRow);
-        tmpStringStream.str (tmpRow);
-
-        tmpRowVec.FromStreamRaw(tmpStringStream);
-
-        J2AMatrix.Row(i).Assign(tmpRowVec);
-    }
-    //std::cout<<"J2AMatrix: "<<std::endl<<J2AMatrix<<std::endl<<std::endl;
+    sprintf(path,"Robot[%i]/Coupling/JointToActuator",robotNumber);
+    tmpPathString = path;
+    ConfigureCouplingMatrix(xmlConfigFile,tmpPathString,numOfActuator,numOfJoint,J2AMatrix);
 }
 
 void mtsRobotIO1394::RobotInternal::ConfigureCouplingAT2JT (cmnXMLPath &xmlConfigFile,
                                                           int robotNumber, int numOfActuator,
                                                           int numOfJoint, vctDoubleMat &AT2JTMatrix) {
+    std::string tmpPathString="";
     char path[64];
-    std::string context = "Config";
-    std::string tmpRow = "";
-    size_t i=0;
-
-    for (i=0; i<numOfJoint;i++) {
-        vctDoubleVec tmpRowVec;
-        tmpRowVec.SetSize(numOfActuator);
-
-        std::stringstream tmpStringStream;
-        sprintf(path,"Robot[%i]/Coupling/ActuatorTorqueToJointTorque/Row[%i]/@Val",robotNumber,i+1);
-        xmlConfigFile.GetXMLValue(context.c_str(),path,tmpRow);
-        tmpStringStream.str (tmpRow);
-
-        tmpRowVec.FromStreamRaw(tmpStringStream);
-
-        AT2JTMatrix.Row(i).Assign(tmpRowVec);
-    }
+    sprintf(path,"Robot[%i]/Coupling/ActuatorTorqueToJointTorque",robotNumber);
+    tmpPathString = path;
+    ConfigureCouplingMatrix(xmlConfigFile,tmpPathString,numOfJoint,numOfActuator,AT2JTMatrix);
 }
 
 void mtsRobotIO1394::RobotInternal::ConfigureCouplingJT2AT (cmnXMLPath &xmlConfigFile,
                                                           int robotNumber, int numOfActuator,
                                                           int numOfJoint, vctDoubleMat &JT2ATMatrix) {
+    std::string tmpPathString="";
     char path[64];
+    sprintf(path,"Robot[%i]/Coupling/JointTorqueToActuatorTorque",robotNumber);
+    tmpPathString = path;
+    ConfigureCouplingMatrix(xmlConfigFile,tmpPathString,numOfActuator,numOfJoint,JT2ATMatrix);
+}
+void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath &xmlConfigFile, const std::string pathToMatrix,
+                                                             int numRows, int numCols, vctDoubleMat &resultMatrix) {
+    char path[64];
+
     std::string context = "Config";
     std::string tmpRow = "";
+    bool ssTest=false;
     size_t i=0;
 
-    for (i=0; i<numOfJoint;i++) {
+    for (i=0;i < numRows;i++) {
         vctDoubleVec tmpRowVec;
-        tmpRowVec.SetSize(numOfActuator);
-
+        tmpRowVec.SetSize(numCols);
         std::stringstream tmpStringStream;
-        sprintf(path,"Robot[%i]/Coupling/JointTorqueToActuatorTorque/Row[%i]/@Val",robotNumber,i+1);
+        tmpRow="";
+        ssTest=false;
+        char tmpPath[10];
+        sprintf(tmpPath,"/Row[%i]/@Val",i+1);
+        strcpy(path,pathToMatrix.c_str());
+        strcat(path,tmpPath);
         xmlConfigFile.GetXMLValue(context.c_str(),path,tmpRow);
         tmpStringStream.str (tmpRow);
-
-        tmpRowVec.FromStreamRaw(tmpStringStream);
-        JT2ATMatrix.Row(i).Assign(tmpRowVec);
+        ssTest = tmpRowVec.FromStreamRaw(tmpStringStream);
+        if(!ssTest) {
+            std::cerr<<"Row vector Assign failed on row "<<i<<", path: "<<pathToMatrix<<std::endl;
+            std::cout<<"Row vector Assign failed on row "<<i<<", path: "<<pathToMatrix<<std::endl;
+        }
+        resultMatrix.Row(i).Assign(tmpRowVec);
     }
+    //Debug
+    //std::cout<<"Matrix output for path: " << pathToMatrix<<std::endl<<resultMatrix<<std::endl<<std::endl;;
 }
 
 void mtsRobotIO1394::RobotInternal::SetActuatorInfo(int index, AmpIO *board, int axis)

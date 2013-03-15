@@ -91,7 +91,7 @@
         <JointToActuator>
             <Row Val="0 1 0 0"/>
             <Row Val="1 0 0 0"/>
-            <Row Val="0 0 1 1"/>
+            <Row Val="0 0 1 -1"/>
             <Row Val="0 0 0 1"/>
         </JointToActuator>
 
@@ -105,7 +105,7 @@
         <JointTorqueToActuatorTorque>
             <Row Val="0 1 0 0"/>
             <Row Val="1 0 0 0"/>
-            <Row Val="0 0 1 1"/>
+            <Row Val="0 0 1 -1"/>
             <Row Val="0 0 0 1"/>
         </JointTorqueToActuatorTorque>
     </Coupling>
