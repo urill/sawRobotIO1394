@@ -81,6 +81,7 @@ int main(int argc, char ** argv)
 
     // connect disp to Robot & Controller interface
     LCM->Connect("disp", "Robot", "robot", "Robot");
+    LCM->Connect("disp", "RobotActuators", "robot", "RobotActuators");
 
     //-------------- create the components ------------------
     LCM->CreateAll();

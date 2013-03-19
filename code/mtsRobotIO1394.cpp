@@ -72,10 +72,13 @@ void mtsRobotIO1394::Init(void)
     for (int i = 0; i < mtsRobotIO1394::MAX_BOARDS; i++)
         BoardList[i] = 0;
 
-    mtsInterfaceProvided* prov = AddInterfaceProvided("MainInterface");
-    if (prov) {
-        prov->AddCommandRead(&mtsRobotIO1394::GetNumberOfBoards, this, "GetNumberOfBoards");
-        prov->AddCommandRead(&mtsRobotIO1394::GetNumberOfRobots, this, "GetNumberOfRobots");
+    mtsInterfaceProvided * mainInterface = AddInterfaceProvided("MainInterface");
+    if (mainInterface) {
+        mainInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfBoards, this, "GetNumberOfBoards");
+        mainInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfRobots, this, "GetNumberOfRobots");
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "Init: failed to create provided interface \"MainInterface\", method Init should be called only once."
+                                 << std::endl;
     }
 }
 
@@ -118,7 +121,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         xmlConfig.GetXMLValue(context.c_str(), path, tmpNumActuator);
 
         //Create new temporary RobotInternal Initialized.
-        RobotInternal * robot = new RobotInternal(tmpRobotName, tmpNumActuator);
+        RobotInternal * robot = new RobotInternal(tmpRobotName, *this, tmpNumActuator);
 
         //Set ActuatorInfo for all Actuators under this robot.
         int j = 0;
@@ -138,16 +141,32 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         // Configure conversion factors and other variables.
         robot->Configure(xmlConfig, k);
         // Configure StateTable for this Robot
-        robot->SetupStateTable(StateTable);
+        robot->SetupStateTable(this->StateTable);
 
         // Add new InterfaceProvided for this Robot with Name.
         // Ensure all tmpRobotNames from XML Config file are UNIQUE!
-        mtsInterfaceProvided* prov = AddInterfaceProvided(tmpRobotName);
-        robot->SetupProvidedInterface(prov, StateTable);
+        mtsInterfaceProvided * robotInterface = this->AddInterfaceProvided(tmpRobotName);
+        if (!robotInterface) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create robot interface \""
+                                     << tmpRobotName << "\", do we have multiple robots with the same name?" << std::endl;
+            delete robot;
+            robot = 0;
+        }
+        std::string actuatorInterfaceName = tmpRobotName;
+        actuatorInterfaceName.append("Actuators");
+        mtsInterfaceProvided * actuatorInterface = this->AddInterfaceProvided(actuatorInterfaceName);
+        if (!actuatorInterface) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create robot actuator interface \""
+                                     << actuatorInterfaceName << "\", do we have multiple robots with the same name?" << std::endl;
+            delete robot;
+            robot = 0;
+        }
+        if (robot) {
+            robot->SetupInterfaces(robotInterface, actuatorInterface, this->StateTable);
+        }
 
         // Store the robot to RobotList
         RobotList.push_back(robot);
-
     }
 }
 

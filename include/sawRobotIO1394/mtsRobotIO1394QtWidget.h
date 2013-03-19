@@ -112,23 +112,27 @@ protected:
         mtsFunctionVoid DisablePower;
         mtsFunctionVoid EnableSafetyRelay;
         mtsFunctionVoid DisableSafetyRelay;
-        mtsFunctionWrite SetAmpEnable;
 
         mtsFunctionRead GetPosition;
         mtsFunctionRead GetVelocity;
         mtsFunctionRead GetAnalogInputVolts;
         mtsFunctionRead GetMotorCurrent;
-        mtsFunctionRead GetAmpEnable;
-        mtsFunctionRead GetAmpStatus;
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
 
         mtsFunctionWrite SetMotorCurrent;
         mtsFunctionWrite SetEncoderPosition;
+    } Robot;
+
+    struct ActuatorStruct {
+        mtsFunctionWrite SetAmpEnable;
+
+        mtsFunctionRead GetAmpEnable;
+        mtsFunctionRead GetAmpStatus;
 
         mtsFunctionQualifiedRead AnalogInVoltsToPosSI;
         mtsFunctionQualifiedRead DriveAmpsToBits;
-    } Robot;
+    } Actuators;
 
 #if HAS_GC
     struct GCStruct {

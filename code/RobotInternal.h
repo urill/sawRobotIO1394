@@ -18,15 +18,18 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef __RobotInternal_H__
-#define __RobotInternal_H__
+#ifndef _RobotInternal_h_
+#define _RobotInternal_h_
 
 #include <string>
 #include <vector>
 
+#include <cisstCommon/cmnXMLPath.h>
+
 #include <cisstVector/vctDynamicVectorTypes.h>
 #include <cisstVector/vctDynamicMatrixTypes.h>
-#include <cisstCommon/cmnXMLPath.h>
+
+#include <cisstParameterTypes/prmPositionJointGet.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
@@ -36,6 +39,25 @@ class AmpIO;
 
 class mtsRobotIO1394::RobotInternal {
 protected:
+
+    /*! Pointer on existing services.  This allows to use the class
+      name and level of detail of another class, e.g. the class that
+      owns this map.  To set the "Owner", use the method SetOwner
+      after the cmnNamedMap is constructed. */
+    const cmnClassServicesBase * OwnerServices;
+
+    /*! Method use to emulate the cmnGenericObject interface used by
+      CMN_LOG_CLASS macros. */
+    //@{
+    inline const cmnClassServicesBase * Services(void) const {
+        return this->OwnerServices;
+    }
+
+    inline cmnLogger::StreamBufType * GetLogMultiplexer(void) const {
+        return cmnLogger::GetMultiplexer();
+    }
+    //@}
+
     //Nested class stores Actuator-Axis info
     class ActuatorInfo {
       public:
@@ -77,17 +99,20 @@ protected:
     };
     std::string robotName;              // Robot name (from config file)
     std::vector<ActuatorInfo> ActuatorList;   // Actuator information
+    int NumberOfJoints;
+    bool HasActuatorToJointCoupling;
 
     // State data
-    bool           valid;
-    bool           powerStatus;
-    bool           couplingStatus;
-    unsigned short safetyRelay;
+    bool           Valid;
+    bool           PowerStatus;
+    unsigned short SafetyRelay;
     unsigned long  watchdogPeriod;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
     vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
     vctLongVec     encPosRaw;
-    vctDoubleVec   encPos;
+    vctDoubleVec   PositionJoint;
+    prmPositionJointGet PositionJointGet;
+    prmPositionJointGet PositionActuatorGet;
     vctLongVec     encVelRaw;
     vctDoubleVec   encVel;
     vctLongVec     analogInRaw;
@@ -102,13 +127,14 @@ protected:
     vctLongVec     encSetPosRaw;
     vctDoubleVec   encSetPos;
 
-    vctDoubleMat actuatorToJoint;
-    vctDoubleMat jointToActuator;
-    vctDoubleMat actTorqueToJointTorque;
-    vctDoubleMat jointTorqueToActTorque;
+    vctDoubleMat ActuatorToJoint;
+    vctDoubleMat JointToActuator;
+    vctDoubleMat ActuatorToJointTorque;
+    vctDoubleMat JointToActuatorTorque;
 
     // Methods for provided interface
-    void GetNumberOfActuators(int &num) const;
+    void GetNumberOfActuators(int & placeHolder) const;
+    void GetNumberOfJoints(int & placeHolder) const;
     void EnablePower(void);
     void DisablePower(void);
     void EnableSafetyRelay(void);
@@ -134,33 +160,34 @@ protected:
 
 public:
 
-    RobotInternal(const std::string &name, size_t numActuators);
+    RobotInternal(const std::string & name, const cmnGenericObject & owner, size_t numActuators);
     ~RobotInternal();
     void Configure(const std::string &filename);
     void Configure (cmnXMLPath &xmlConfigFile, int robotNumber);
-    void ConfigureCoupling (cmnXMLPath &xmlConfigFile, int robotNumber, bool &couplingEnable);
-    void ConfigureCouplingA2J (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
-                                                              int numOfJoint, vctDoubleMat &A2JMatrix);
-    void ConfigureCouplingJ2A (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
-                                                              int numOfJoint, vctDoubleMat &J2AMatrix);
-    void ConfigureCouplingAT2JT (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
-                                                              int numOfJoint, vctDoubleMat &AT2JTMatrix);
-    void ConfigureCouplingJT2AT (cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
-                                                              int numOfJoint, vctDoubleMat &JT2ATMatrix);
-    void ConfigureCouplingMatrix (cmnXMLPath &xmlConfigFile, const std::string pathToMatrix, int numRows,
-                                                              int numCols, vctDoubleMat &resultMatrix);
+    void ConfigureCoupling (cmnXMLPath & xmlConfigFile, int robotNumber);
+    void ConfigureCouplingA2J(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
+                              int numOfJoint, vctDoubleMat &A2JMatrix);
+    void ConfigureCouplingJ2A(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
+                              int numOfJoint, vctDoubleMat &J2AMatrix);
+    void ConfigureCouplingAT2JT(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
+                                int numOfJoint, vctDoubleMat &AT2JTMatrix);
+    void ConfigureCouplingJT2AT(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
+                                int numOfJoint, vctDoubleMat &JT2ATMatrix);
+    void ConfigureCouplingMatrix(cmnXMLPath &xmlConfigFile, const std::string pathToMatrix, int numRows,
+                                 int numCols, vctDoubleMat &resultMatrix);
 
     void SetActuatorInfo(int index, AmpIO *board, int axis);
 
-    void SetupStateTable(mtsStateTable &stateTable);
-    void SetupProvidedInterface(mtsInterfaceProvided *prov, mtsStateTable &stateTable);
-
+    void SetupStateTable(mtsStateTable & stateTable);
+    void SetupInterfaces(mtsInterfaceProvided * robotInterface,
+                         mtsInterfaceProvided * actuatorInterface,
+                         mtsStateTable & stateTable);
 
     bool CheckIfValid(void);
-    bool IsValid(void) const { return valid; }
+    inline bool IsValid(void) const { return this->Valid; }
 
     void GetData(void);
     void ConvertRawToSI(void);
 };
 
-#endif  //__RobotInternal_H__
+#endif  // _RobotInternal_h_

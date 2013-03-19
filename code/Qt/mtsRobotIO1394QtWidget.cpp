@@ -128,7 +128,7 @@ void mtsRobotIO1394QtWidget::slot_qcbEnable(bool CMN_UNUSED(toggle))
     for(int i = 0; i < numOfAxis; i++){
         ampEnable[i] = qcbEnable[i]->isChecked();
     }
-    Robot.SetAmpEnable(ampEnable);
+    Actuators.SetAmpEnable(ampEnable);
 }
 
 
@@ -240,11 +240,11 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
         Robot.GetVelocity(vel);
         Robot.GetAnalogInputVolts(analogIn);
         Robot.GetMotorCurrent(motorFeedbackCurrent);
-        Robot.GetAmpEnable(ampEnable);
-        Robot.GetAmpStatus(ampStatus);
+        Actuators.GetAmpEnable(ampEnable);
+        Actuators.GetAmpStatus(ampStatus);
         Robot.GetPowerStatus(powerStatus);
         Robot.GetSafetyRelay(safetyRelay);
-    }else{
+    } else {
         pos.SetAll(tmpStatic);
         vel.SetAll(tmpStatic);
         analogIn.SetAll(tmpStatic);
@@ -252,9 +252,6 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     }
 
     CMN_LOG_CLASS_RUN_VERBOSE << (QDateTime::currentMSecsSinceEpoch() - startTime)/1000.0 << std::endl;
-
-//    CMN_LOG_CLASS_RUN_ERROR << motorFeedbackCurrent << std::endl;
-
 
     tmpStatic += 0.1;
     updateEncoderDisplay();
@@ -296,32 +293,38 @@ void mtsRobotIO1394QtWidget::setupMenu()
 void mtsRobotIO1394QtWidget::setupCisstInterface()
 {
     // Required Interface
-    mtsInterfaceRequired *req = AddInterfaceRequired("Robot");
-    if (req) {
-        req->AddFunction("GetNumberOfActuators", Robot.GetNumberOfActuators);
-        req->AddFunction("IsValid", Robot.IsValid);
-        req->AddFunction("EnablePower", Robot.EnablePower);
-        req->AddFunction("DisablePower", Robot.DisablePower);
-        req->AddFunction("EnableSafetyRelay", Robot.EnableSafetyRelay);
-        req->AddFunction("DisableSafetyRelay", Robot.DisableSafetyRelay);
-        req->AddFunction("SetAmpEnable", Robot.SetAmpEnable);
+    mtsInterfaceRequired * robotInterface = AddInterfaceRequired("Robot");
+    if (robotInterface) {
+        robotInterface->AddFunction("GetNumberOfActuators", Robot.GetNumberOfActuators);
+        robotInterface->AddFunction("IsValid", Robot.IsValid);
+        robotInterface->AddFunction("EnablePower", Robot.EnablePower);
+        robotInterface->AddFunction("DisablePower", Robot.DisablePower);
+        robotInterface->AddFunction("EnableSafetyRelay", Robot.EnableSafetyRelay);
+        robotInterface->AddFunction("DisableSafetyRelay", Robot.DisableSafetyRelay);
 
-        req->AddFunction("GetPosition", Robot.GetPosition);
-        req->AddFunction("GetVelocity", Robot.GetVelocity);
-        req->AddFunction("GetAnalogInputVolts", Robot.GetAnalogInputVolts);
-        req->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorCurrent);
-        req->AddFunction("GetAmpEnable", Robot.GetAmpEnable);
-        req->AddFunction("GetAmpStatus", Robot.GetAmpStatus);
-        req->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
-        req->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
+        robotInterface->AddFunction("GetPosition", Robot.GetPosition);
+        robotInterface->AddFunction("GetVelocity", Robot.GetVelocity);
+        robotInterface->AddFunction("GetAnalogInputVolts", Robot.GetAnalogInputVolts);
+        robotInterface->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorCurrent);
+        robotInterface->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
+        robotInterface->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
 
-        req->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
-        req->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
-
-        req->AddFunction("AnalogInToPosSI", Robot.AnalogInVoltsToPosSI);
-        req->AddFunction("DriveAmpsToBits", Robot.DriveAmpsToBits);
+        robotInterface->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
+        robotInterface->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
     }
 
+    mtsInterfaceRequired * actuatorInterface = AddInterfaceRequired("RobotActuators");
+    if (actuatorInterface) {
+        actuatorInterface->AddFunction("SetAmpEnable", Actuators.SetAmpEnable);
+
+        actuatorInterface->AddFunction("GetAmpEnable", Actuators.GetAmpEnable);
+        actuatorInterface->AddFunction("GetAmpStatus", Actuators.GetAmpStatus);
+
+        actuatorInterface->AddFunction("AnalogInVoltsToPosSI", Actuators.AnalogInVoltsToPosSI);
+        actuatorInterface->AddFunction("DriveAmpsToBits", Actuators.DriveAmpsToBits);
+    }
+
+    mtsInterfaceRequired * req;
 #if HAS_GC
     req = AddInterfaceRequired("GC");
     if (req) {
