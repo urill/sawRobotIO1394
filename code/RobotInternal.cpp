@@ -86,61 +86,68 @@ void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int 
     int  tmpNumOfActuator;
     sprintf(path, "Robot[%i]/@NumOfActuator", robotNumber);
     xmlConfigFile.GetXMLValue(context.c_str(), path, tmpNumOfActuator);
+    
+    int xmlIndex;
 
-    for(int i = 0; i < tmpNumOfActuator; i++)    {
-        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Scale", robotNumber, i+1);
+    for (int i = 0; i < tmpNumOfActuator; i++) {
+        xmlIndex = i + 1;
+
+        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.AmpsToBitsScale);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Offset", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.AmpsToBitsOffset);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/BitsToFbAmps/@Scale", robotNumber, i+1);
-        xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.BitsToFbAmpsScale);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/BitsToFeedbackAmps/@Scale", robotNumber, xmlIndex);
+        xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.BitsToFeedbackAmpsScale);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/BitsToFbAmps/@Offset", robotNumber, i+1);
-        xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.BitsToFbAmpsOffset);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/BitsToFeedbackAmps/@Offset", robotNumber, xmlIndex);
+        xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.BitsToFeedbackAmpsOffset);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/NmToAmps/@Scale", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/NmToAmps/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.NmToAmpsScale);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/MaxCurrent/@Value", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Drive/MaxCurrent/@Value", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.MaxCurrentValue);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Scale", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToPosSIScale);
+        ActuatorList[i].encoder.BitsToPosSIScale *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Offset", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToPosSIOffset);
+        ActuatorList[i].encoder.BitsToPosSIOffset *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Scale", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToDeltaPosSIScale);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Offset", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToDeltaPosSIOffset);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Scale", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToDeltaTScale);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Offset", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToDeltaTOffset);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/CountsPerTurn/@Value", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/CountsPerTurn/@Value", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.CountsPerTurnValue);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/BitsToVolts/@Scale", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/BitsToVolts/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn.BitsToVoltsScale);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/BitsToVolts/@Offset", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/BitsToVolts/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn.BitsToVoltsOffset);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Scale", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn.VoltsToPosSIScale);
 
-        sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Offset", robotNumber, i+1);
+        sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn. VoltsToPosSIOffset);
     }
 
     ConfigureCoupling(xmlConfigFile, robotNumber);
+    // PreloadEncoders();
 }
 
 void
@@ -168,13 +175,13 @@ mtsRobotIO1394::RobotInternal::ConfigureCoupling(cmnXMLPath & xmlConfigFile, int
         xmlConfigFile.GetXMLValue(context.c_str(), path, tmpNumOfActuator);
         sprintf(path, "Robot[%i]/@NumOfJoint", robotNumber);
         xmlConfigFile.GetXMLValue(context.c_str(), path, tmpNumOfJoint);
-        ActuatorToJoint.SetSize(tmpNumOfJoint, tmpNumOfActuator, 0.0);
-        JointToActuator.SetSize(tmpNumOfActuator, tmpNumOfJoint, 0.0);
+        ActuatorToJointPosition.SetSize(tmpNumOfJoint, tmpNumOfActuator, 0.0);
+        JointToActuatorPosition.SetSize(tmpNumOfActuator, tmpNumOfJoint, 0.0);
         ActuatorToJointTorque.SetSize(tmpNumOfJoint, tmpNumOfActuator, 0.0);
         JointToActuatorTorque.SetSize(tmpNumOfActuator, tmpNumOfJoint, 0.0);
 
-        ConfigureCouplingA2J(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, ActuatorToJoint);
-        ConfigureCouplingJ2A(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, JointToActuator);
+        ConfigureCouplingA2J(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, ActuatorToJointPosition);
+        ConfigureCouplingJ2A(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, JointToActuatorPosition);
         ConfigureCouplingAT2JT(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, ActuatorToJointTorque);
         ConfigureCouplingJT2AT(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, JointToActuatorTorque);
         //Still need to do proper alignment and such for joint/actuator situ for each matrix.
@@ -188,7 +195,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingA2J (cmnXMLPath & xmlConfig
                                                           int numOfJoint, vctDoubleMat & A2JMatrix) {
     std::string tmpPathString = "";
     char path[64];
-    sprintf(path, "Robot[%i]/Coupling/ActuatorToJoint", robotNumber);
+    sprintf(path, "Robot[%i]/Coupling/ActuatorToJointPosition", robotNumber);
     tmpPathString = path;
     ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfJoint, numOfActuator, A2JMatrix);
 }
@@ -198,7 +205,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingJ2A (cmnXMLPath & xmlConfig
                                                           int numOfJoint, vctDoubleMat & J2AMatrix) {
     std::string tmpPathString = "";
     char path[64];
-    sprintf(path, "Robot[%i]/Coupling/JointToActuator", robotNumber);
+    sprintf(path, "Robot[%i]/Coupling/JointToActuatorPosition", robotNumber);
     tmpPathString = path;
     ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfActuator, numOfJoint, J2AMatrix);
 }
@@ -208,7 +215,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingAT2JT (cmnXMLPath & xmlConf
                                                           int numOfJoint, vctDoubleMat & AT2JTMatrix) {
     std::string tmpPathString = "";
     char path[64];
-    sprintf(path, "Robot[%i]/Coupling/ActuatorTorqueToJointTorque", robotNumber);
+    sprintf(path, "Robot[%i]/Coupling/ActuatorToJointTorque", robotNumber);
     tmpPathString = path;
     ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfJoint, numOfActuator, AT2JTMatrix);
 }
@@ -218,7 +225,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingJT2AT (cmnXMLPath & xmlConf
                                                           int numOfJoint, vctDoubleMat & JT2ATMatrix) {
     std::string tmpPathString = "";
     char path[64];
-    sprintf(path, "Robot[%i]/Coupling/JointTorqueToActuatorTorque", robotNumber);
+    sprintf(path, "Robot[%i]/Coupling/JointToActuatorTorque", robotNumber);
     tmpPathString = path;
     ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfActuator, numOfJoint, JT2ATMatrix);
 }
@@ -239,7 +246,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
         tmpRow = "";
         ssTest = false;
         char tmpPath[10];
-        sprintf(tmpPath, "/Row[%i]/@Val", i+1);
+        sprintf(tmpPath, "/Row[%i]/@Val", i + 1);
         strcpy(path, pathToMatrix.c_str());
         strcat(path, tmpPath);
         xmlConfigFile.GetXMLValue(context.c_str(), path, tmpRow);
@@ -347,6 +354,7 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
 
     actuatorInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
                                        this->ampEnable); // vector[bool]
+    actuatorInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::ResetSingleEncoder, this, "ResetSingleEncoder"); // int
     actuatorInterface->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable"); // vector[bool]
     actuatorInterface->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus"); // vector[bool]
 
@@ -376,11 +384,14 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
 {
     PowerStatus = true;
     SafetyRelay = true;
+    unsigned int singleEncoderPos;
+
     for (size_t index = 0; index < ActuatorList.size(); index++) {
         AmpIO *board = ActuatorList[index].board;
         int axis = ActuatorList[index].axisid;
         if (!board || (axis < 0)) continue;
-        encPosRaw[index] = board->GetEncoderPosition(axis);
+        singleEncoderPos = board->GetEncoderPosition(axis);
+        encPosRaw[index] = ((int)(singleEncoderPos << 8)) >> 8; // convert from 24 bits signed stored in 32 unsigned to 32 signed
         encVelRaw[index] = board->GetEncoderVelocity(axis);
         analogInRaw[index] = board->GetAnalogInput(axis);
         // digitalIn[index] = board->GetDigitalInput(axis);
@@ -397,10 +408,10 @@ void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
     EncoderRawToSI(encPosRaw, this->PositionActuatorGet.Position());
     EncoderRawToDeltaPosSI(encVelRaw, encVel);
     AnalogInBitsToVolts(analogInRaw, analogInVolts);
-    DriveBitsToFbAmps(motorFeedbackCurrentRaw, motorFeedbackCurrent);
+    DriveBitsToFeedbackAmps(motorFeedbackCurrentRaw, motorFeedbackCurrent);
 
     if (this->HasActuatorToJointCoupling) {
-        this->PositionJoint.ProductOf(this->ActuatorToJoint,
+        this->PositionJoint.ProductOf(this->ActuatorToJointPosition,
                                       this->PositionActuatorGet.Position());
     } else {
         this->PositionJoint.Assign(this->PositionActuatorGet.Position());
@@ -529,7 +540,22 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec & mcur)
     SetMotorCurrentRaw(motorControlCurrentRaw);
 }
 
-void mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw(const vctLongVec & epos)
+void mtsRobotIO1394::RobotInternal::PreloadEncoders(void)
+{
+    vctIntVec encoderValues(ActuatorList.size());
+    for (size_t index = 0; index < ActuatorList.size();index++) {
+        // encoderValues[index] = ActuatorList[index].encoder.BitsPreload;
+    }
+    this->SetEncoderPositionRaw(encoderValues);
+}
+
+void mtsRobotIO1394::RobotInternal::ResetSingleEncoder(const int & index)
+{
+    mtsRobotIO1394::RobotInternal::ActuatorInfo::Encoder * encoder = &(ActuatorList[index].encoder);
+    encoder->BitsToPosSIOffset = -(encPosRaw[index] * encoder->BitsToPosSIScale);
+}
+
+void mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw(const vctIntVec & epos)
 {
     if (epos.size() != encSetPosRaw.size()) {
         CMN_LOG_CLASS_RUN_ERROR << robotName << "::SetEncoderPositionRaw: size mismatch ("
@@ -541,7 +567,7 @@ void mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw(const vctLongVec & epo
         AmpIO *board = ActuatorList[index].board;
         int axis = ActuatorList[index].axisid;
         if (!board || (axis < 0)) continue;
-        board->WriteEncoderPreload(axis, encSetPosRaw[index] + ENC_OFFSET);
+        board->WriteEncoderPreload(axis, encSetPosRaw[index]);
     }
 }
 
@@ -554,21 +580,25 @@ void mtsRobotIO1394::RobotInternal::SetEncoderPosition(const vctDoubleVec & epos
     }
     encSetPos = epos;
     EncoderSIToRaw(encSetPos, encSetPosRaw);
-    SetEncoderPositionRaw(encSetPosRaw);
+    std::cerr << "=========================================== fix me " << CMN_LOG_DETAILS << std::endl;
 }
 
 // Unit Conversions
-void mtsRobotIO1394::RobotInternal::EncoderRawToSI(const vctLongVec & fromData, vctDoubleVec & toData) const
+void mtsRobotIO1394::RobotInternal::EncoderRawToSI(const vctIntVec & fromData, vctDoubleVec & toData) const
 {
+    const mtsRobotIO1394::RobotInternal::ActuatorInfo::Encoder * encoder;
     toData.SetAll(0.0);
-    for (size_t index = 0; index < ActuatorList.size();index++) {
-        double bitsToPosSIScale = ActuatorList[index].encoder.BitsToPosSIScale;
-        double bitsToPosSIOffset = ActuatorList[index].encoder.BitsToPosSIOffset;
-        toData[index] = (fromData[index] * bitsToPosSIScale) + bitsToPosSIOffset;
+    for (size_t index = 0; index < ActuatorList.size(); index++) {
+        encoder = &(ActuatorList[index].encoder);
+        toData[index] = fromData[index] * encoder->BitsToPosSIScale + encoder->BitsToPosSIOffset;
+        // toData[index] = (fromData[index] * bitsToPosSIScale) + bitsToPosSIOffset;
+        // toData[index] = (fromData[index] - bitsToPosSIOffset) * bitsToPosSIScale;
     }
+    encoder = &(ActuatorList[0].encoder);
+    std::cerr << toData[0] << " = " << fromData[0] << " * " << encoder->BitsToPosSIScale << " + " << encoder->BitsToPosSIOffset << std::endl;
 }
 
-void mtsRobotIO1394::RobotInternal::EncoderSIToRaw(const vctDoubleVec & fromData, vctLongVec & toData) const
+void mtsRobotIO1394::RobotInternal::EncoderSIToRaw(const vctDoubleVec & fromData, vctIntVec &toData) const
 {
     toData.SetAll(0L);
     for (size_t index = 0; index < ActuatorList.size(); index++) {
@@ -619,13 +649,13 @@ void mtsRobotIO1394::RobotInternal::DriveAmpsToBits(const vctDoubleVec & fromDat
     }
 }
 
-void mtsRobotIO1394::RobotInternal::DriveBitsToFbAmps(const vctLongVec & fromData, vctDoubleVec & toData) const
+void mtsRobotIO1394::RobotInternal::DriveBitsToFeedbackAmps(const vctLongVec & fromData, vctDoubleVec & toData) const
 {
     toData.SetAll(0.0);
     for (size_t index = 0; index < ActuatorList.size();index++){
-        double bitsToFbAmpsScale = ActuatorList[index].drive.BitsToFbAmpsScale;
-        double bitsToFbAmpsOffset = ActuatorList[index].drive.BitsToFbAmpsOffset;
-        toData[index] = (fromData[index] * bitsToFbAmpsScale) + bitsToFbAmpsOffset;
+        double bitsToFeedbackAmpsScale = ActuatorList[index].drive.BitsToFeedbackAmpsScale;
+        double bitsToFeedbackAmpsOffset = ActuatorList[index].drive.BitsToFeedbackAmpsOffset;
+        toData[index] = (fromData[index] * bitsToFeedbackAmpsScale) + bitsToFeedbackAmpsOffset;
     }
 }
 

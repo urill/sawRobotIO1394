@@ -80,8 +80,8 @@ int main(int argc, char ** argv)
     LCM->AddComponent(robot);
 
     // connect disp to Robot & Controller interface
-    LCM->Connect("disp", "Robot", "robot", "Robot");
-    LCM->Connect("disp", "RobotActuators", "robot", "RobotActuators");
+    LCM->Connect("disp", "Robot", "robot", "MTML");
+    LCM->Connect("disp", "RobotActuators", "robot", "MTMLActuators");
 
     //-------------- create the components ------------------
     LCM->CreateAll();

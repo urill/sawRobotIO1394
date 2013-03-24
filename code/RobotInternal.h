@@ -64,12 +64,12 @@ protected:
         struct Drive {
             double AmpsToBitsScale;
             double AmpsToBitsOffset;
-            double BitsToFbAmpsScale;
-            double BitsToFbAmpsOffset;
+            double BitsToFeedbackAmpsScale;
+            double BitsToFeedbackAmpsOffset;
             double NmToAmpsScale;
             double MaxCurrentValue;
         };
-        struct Encoder {
+        struct Encoder {  
             double BitsToPosSIScale;
             double BitsToPosSIOffset;
             double BitsToDeltaPosSIScale;
@@ -109,7 +109,7 @@ protected:
     unsigned long  watchdogPeriod;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
     vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
-    vctLongVec     encPosRaw;
+    vctIntVec     encPosRaw;
     vctDoubleVec   PositionJoint;
     prmPositionJointGet PositionJointGet;
     prmPositionJointGet PositionActuatorGet;
@@ -124,11 +124,11 @@ protected:
     vctLongVec     motorControlCurrentRaw;
     vctDoubleVec   motorControlCurrent;
     vctDoubleVec   motorControlTorque;
-    vctLongVec     encSetPosRaw;
+    vctIntVec      encSetPosRaw;
     vctDoubleVec   encSetPos;
 
-    vctDoubleMat ActuatorToJoint;
-    vctDoubleMat JointToActuator;
+    vctDoubleMat ActuatorToJointPosition;
+    vctDoubleMat JointToActuatorPosition;
     vctDoubleMat ActuatorToJointTorque;
     vctDoubleMat JointToActuatorTorque;
 
@@ -143,16 +143,18 @@ protected:
     void SetAmpEnable(const vctBoolVec &ampControl);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
-    void SetEncoderPositionRaw(const vctLongVec &epos);
-    void SetEncoderPosition(const vctDoubleVec &epos);
+    void PreloadEncoders(void);
+    void ResetSingleEncoder(const int & actuatorIndex);
+    void SetEncoderPositionRaw(const vctIntVec & epos);
+    void SetEncoderPosition(const vctDoubleVec & epos);
 
     // Unit conversion Raw -- SI (partial implementation)
-    void EncoderRawToSI(const vctLongVec &fromData, vctDoubleVec &toData) const;
-    void EncoderSIToRaw(const vctDoubleVec &fromData, vctLongVec &toData) const;
+    void EncoderRawToSI(const vctIntVec &fromData, vctDoubleVec &toData) const;
+    void EncoderSIToRaw(const vctDoubleVec &fromData, vctIntVec &toData) const;
     void EncoderRawToDeltaPosSI(const vctLongVec &fromData, vctDoubleVec &toData) const;
     void EncoderRawToDeltaPosT(const vctLongVec &fromData, vctDoubleVec &toData) const;
     void DriveAmpsToBits(const vctDoubleVec &fromData, vctLongVec &toData) const;
-    void DriveBitsToFbAmps(const vctLongVec &fromData, vctDoubleVec &toData) const;
+    void DriveBitsToFeedbackAmps(const vctLongVec &fromData, vctDoubleVec &toData) const;
     void DriveNmToAmps(const vctDoubleVec &fromData, vctDoubleVec &toData) const;
     void DriveAmpsToNm(const vctDoubleVec &fromData, vctDoubleVec &toData) const;
     void AnalogInBitsToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const;

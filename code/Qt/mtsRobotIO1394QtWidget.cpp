@@ -41,10 +41,10 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsRobotIO1394QtWidget, mtsComponent);
 
 
-mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string &taskName)
-    :mtsComponent(taskName)
+mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & taskName):
+    mtsComponent(taskName)
 {
-    numOfAxis = 4;
+    numOfAxis = 8;
     curFBState = false;
     curFBPGain = 1.0;
     curFBOffset = 30.0;
@@ -52,7 +52,9 @@ mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string &taskName)
     lastEnableState.SetSize(numOfAxis);
     lastEnableState.SetAll(false);
 
-    pos.SetSize(numOfAxis);
+    jointPos.SetSize(numOfAxis);
+    actuatorPos.SetSize(numOfAxis);
+    actuatorPosGet.Position().SetSize(numOfAxis);
     vel.SetSize(numOfAxis);
     analogIn.SetSize(numOfAxis);
     motorFeedbackCurrent.SetSize(numOfAxis);
@@ -191,30 +193,21 @@ void mtsRobotIO1394QtWidget::slot_qsliderMotorCurrent_valueChanged()
     }
 }
 
-
 void mtsRobotIO1394QtWidget::slot_qpbResetEncAll()
 {
-#if SWITCH
-//    for(int i = 0; i < numOfAxis; i++){
-//        QLA.ResetEncoders(mtsShort(i));
-//    }
-
-    std::cout << "ResetAllEncAll" << std::endl;
-#else
-    std::cout << "ResetAllEncAll" << std::endl;
-#endif
+    vctLongVec newEncoderValues(numOfAxis);
+    newEncoderValues.SetAll(0.0);
+    Robot.SetEncoderPosition(newEncoderValues);
 }
 
 void mtsRobotIO1394QtWidget::slot_qpbResetEnc()
 {
-    for (int i = 0; i < numOfAxis; i++){
-        if(sender() == qpbResetEnc[i]){
-//            QLA.ResetEncoders(mtsShort(i));
-            std::cout << "ResetAllEncAll: " << i << std::endl;
+    for (int i = 0; i < numOfAxis; i++) {
+        if (sender() == qpbResetEnc[i]) {
+            Actuators.ResetSingleEncoder(i);
         }
     }
 }
-
 
 void mtsRobotIO1394QtWidget::slot_qcbCurFBToggle(bool state)
 {
@@ -236,7 +229,11 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     bool flag;
     Robot.IsValid(flag);
     if (flag) {
-        Robot.GetPosition(pos);
+        Robot.GetPosition(jointPos); // vct
+        jointPos.Multiply(cmn180_PI); // to degrees
+        Actuators.GetPositionActuator(actuatorPosGet); // prm
+        actuatorPos.Assign(actuatorPosGet.Position()); // vct
+        actuatorPos.Multiply(cmn180_PI); // to degrees
         Robot.GetVelocity(vel);
         Robot.GetAnalogInputVolts(analogIn);
         Robot.GetMotorCurrent(motorFeedbackCurrent);
@@ -245,7 +242,8 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
         Robot.GetPowerStatus(powerStatus);
         Robot.GetSafetyRelay(safetyRelay);
     } else {
-        pos.SetAll(tmpStatic);
+        jointPos.SetAll(tmpStatic);
+        actuatorPos.SetAll(tmpStatic);
         vel.SetAll(tmpStatic);
         analogIn.SetAll(tmpStatic);
         motorFeedbackCurrent.SetAll(tmpStatic);
@@ -254,7 +252,8 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     CMN_LOG_CLASS_RUN_VERBOSE << (QDateTime::currentMSecsSinceEpoch() - startTime)/1000.0 << std::endl;
 
     tmpStatic += 0.1;
-    updateEncoderDisplay();
+    updateJointPositionDisplay();
+    updateActuatorPositionDisplay();
     updateVelocityDisplay();
     updatePotDisplay();
     updateCurrentDisplay();
@@ -315,7 +314,10 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
 
     mtsInterfaceRequired * actuatorInterface = AddInterfaceRequired("RobotActuators");
     if (actuatorInterface) {
+        actuatorInterface->AddFunction("GetPositionActuator", Actuators.GetPositionActuator);
+
         actuatorInterface->AddFunction("SetAmpEnable", Actuators.SetAmpEnable);
+        actuatorInterface->AddFunction("ResetSingleEncoder", Actuators.ResetSingleEncoder);
 
         actuatorInterface->AddFunction("GetAmpEnable", Actuators.GetAmpEnable);
         actuatorInterface->AddFunction("GetAmpStatus", Actuators.GetAmpStatus);
@@ -471,12 +473,14 @@ void mtsRobotIO1394QtWidget::setupUi()
     // Feedbacks Label
     QVBoxLayout* fbLabelLayout = new QVBoxLayout;
     QFrame* fbLabelFrame = new QFrame;
-    QLabel* encDegLabel = new QLabel("Encoder (deg)"); // motor deg
+    QLabel* jointPosLabel = new QLabel("Pos. joints (deg)");
+    QLabel* actuatorPosLabel = new QLabel("Pos. actuators (deg)");
     QLabel* velDegLabel = new QLabel("Velocity (deg/s)");
     QLabel* potVolLabel = new QLabel("PotMeter (V)");
     QLabel* curmALabel = new QLabel("Current (mA)");
     qpbResetEncAll = new QPushButton("Reset Enc");
-    fbLabelLayout->addWidget(encDegLabel);
+    fbLabelLayout->addWidget(jointPosLabel);
+    fbLabelLayout->addWidget(actuatorPosLabel);
     fbLabelLayout->addWidget(velDegLabel);
     fbLabelLayout->addWidget(potVolLabel);
 
@@ -489,26 +493,30 @@ void mtsRobotIO1394QtWidget::setupUi()
     QVBoxLayout** fbInfoLayout = new QVBoxLayout*[numOfAxis];
     QFrame** fbInfoFrame = new QFrame*[numOfAxis];
 
-    qleEncDeg = new QLineEdit*[numOfAxis];
+    qleJointPos = new QLineEdit*[numOfAxis];
+    qleActuatorPos = new QLineEdit*[numOfAxis];
     qleVelDeg = new QLineEdit*[numOfAxis];
     qlePotVolt = new QLineEdit*[numOfAxis];
     qleCurmA = new QLineEdit*[numOfAxis];
     qpbResetEnc = new QPushButton*[numOfAxis];
 
     for(int i = 0; i < numOfAxis; i++){
-        qleEncDeg[i] = new QLineEdit;
+        qleJointPos[i] = new QLineEdit;
+        qleActuatorPos[i] = new QLineEdit;
         qleVelDeg[i] = new QLineEdit;
         qlePotVolt[i] = new QLineEdit;
         qleCurmA[i] = new QLineEdit;
         qpbResetEnc[i] = new QPushButton("Reset Enc " + QString::number(i+1));
 
-        qleEncDeg[i]->setAlignment(Qt::AlignRight);
+        qleJointPos[i]->setAlignment(Qt::AlignRight);
+        qleActuatorPos[i]->setAlignment(Qt::AlignRight);
         qleVelDeg[i]->setAlignment(Qt::AlignRight);
         qlePotVolt[i]->setAlignment(Qt::AlignRight);
         qleCurmA[i]->setAlignment(Qt::AlignRight);
 
         fbInfoLayout[i] = new QVBoxLayout;
-        fbInfoLayout[i]->addWidget(qleEncDeg[i]);
+        fbInfoLayout[i]->addWidget(qleJointPos[i]);
+        fbInfoLayout[i]->addWidget(qleActuatorPos[i]);
         fbInfoLayout[i]->addWidget(qleVelDeg[i]);
         fbInfoLayout[i]->addWidget(qlePotVolt[i]);
         fbInfoLayout[i]->addWidget(qleCurmA[i]);
@@ -713,7 +721,7 @@ void mtsRobotIO1394QtWidget::setupUi()
 }
 
 
-void mtsRobotIO1394QtWidget::updateEncoderDisplay()
+void mtsRobotIO1394QtWidget::updateJointPositionDisplay(void)
 {
     // update GUI
     std::stringstream ssDeg;
@@ -721,11 +729,26 @@ void mtsRobotIO1394QtWidget::updateEncoderDisplay()
 
     for (int i = 0; i < numOfAxis; i++){
         ssDeg.str("");
-        ssDeg << pos.at(i);
-        qleEncDeg[i]->setText(ssDeg.str().c_str());
+        ssDeg << jointPos.at(i);
+        qleJointPos[i]->setText(ssDeg.str().c_str());
     }
 
-    CMN_LOG_CLASS_RUN_VERBOSE << pos << std::endl;
+    CMN_LOG_CLASS_RUN_VERBOSE << jointPos << std::endl;
+}
+
+void mtsRobotIO1394QtWidget::updateActuatorPositionDisplay(void)
+{
+    // update GUI
+    std::stringstream ssDeg;
+    ssDeg << std::fixed << std::setprecision(2);
+
+    for (int i = 0; i < numOfAxis; i++){
+        ssDeg.str("");
+        ssDeg << actuatorPos.at(i);
+        qleActuatorPos[i]->setText(ssDeg.str().c_str());
+    }
+
+    CMN_LOG_CLASS_RUN_VERBOSE << actuatorPos << std::endl;
 }
 
 void mtsRobotIO1394QtWidget::updateVelocityDisplay()

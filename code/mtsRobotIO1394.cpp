@@ -109,7 +109,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         //Incrementing Counter for Robot.
         k = k + 1;
         sprintf(path, "Robot[%d]/@Name",k);
-        xmlConfig.GetXMLValue(context.c_str(),path,tmpRobotName);
+        xmlConfig.GetXMLValue(context.c_str(), path, tmpRobotName);
         if (tmpRobotName.empty()) {
             //Reached the End of File For Robot
             //Break from infinite loop.

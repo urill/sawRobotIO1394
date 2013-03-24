@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommonXML.h>
 #include <cisstOSAbstraction/osaTimeServer.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstParameterTypes/prmPositionJointGet.h>
 
 #include <QtCore>
 #include <QtGui>
@@ -87,7 +88,8 @@ private:
     void setupUi(void);
 
     // gui update
-    void updateEncoderDisplay(void);
+    void updateJointPositionDisplay(void);
+    void updateActuatorPositionDisplay(void);
     void updateVelocityDisplay(void);
     void updatePotDisplay(void);
     void updateCurrentDisplay(void);
@@ -126,9 +128,11 @@ protected:
 
     struct ActuatorStruct {
         mtsFunctionWrite SetAmpEnable;
+        mtsFunctionWrite ResetSingleEncoder;
 
         mtsFunctionRead GetAmpEnable;
         mtsFunctionRead GetAmpStatus;
+        mtsFunctionRead GetPositionActuator;
 
         mtsFunctionQualifiedRead AnalogInVoltsToPosSI;
         mtsFunctionQualifiedRead DriveAmpsToBits;
@@ -158,7 +162,9 @@ private:
     vctLongVec potCnt;
     vctLongVec curCnt;
 
-    vctDoubleVec pos;
+    vctDoubleVec jointPos;
+    prmPositionJointGet actuatorPosGet;
+    vctDoubleVec actuatorPos;
     vctDoubleVec vel;
     vctDoubleVec analogIn;
     vctDoubleVec motorFeedbackCurrent;
@@ -183,7 +189,8 @@ private:
 
     // GUI: Feedbacks
     QPushButton* qpbResetEncAll;
-    QLineEdit** qleEncDeg;
+    QLineEdit** qleJointPos;
+    QLineEdit** qleActuatorPos;
     QLineEdit** qleVelDeg;
     QLineEdit** qlePotVolt;
     QLineEdit** qleCurmA;
