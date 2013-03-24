@@ -30,6 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstVector/vctDynamicMatrixTypes.h>
 
 #include <cisstParameterTypes/prmPositionJointGet.h>
+#include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
@@ -109,7 +110,7 @@ protected:
     unsigned long  watchdogPeriod;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
     vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
-    vctIntVec     encPosRaw;
+    vctIntVec      encPosRaw;
     vctDoubleVec   PositionJoint;
     prmPositionJointGet PositionJointGet;
     prmPositionJointGet PositionActuatorGet;
@@ -121,6 +122,7 @@ protected:
     vctULongVec    digitalIn;
     vctLongVec     motorFeedbackCurrentRaw;
     vctDoubleVec   motorFeedbackCurrent;
+    prmForceTorqueJointSet TorqueJoint;
     vctLongVec     motorControlCurrentRaw;
     vctDoubleVec   motorControlCurrent;
     vctDoubleVec   motorControlTorque;
@@ -141,6 +143,7 @@ protected:
     void DisableSafetyRelay(void);
     void SetWatchdogPeriod(const unsigned long &period_ms);
     void SetAmpEnable(const vctBoolVec &ampControl);
+    void SetTorqueJoint(const prmForceTorqueJointSet & torques);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
     void PreloadEncoders(void);

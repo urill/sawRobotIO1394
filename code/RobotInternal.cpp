@@ -61,6 +61,7 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
     encVelRaw(numActuators), encVel(numActuators),
     analogInRaw(numActuators), analogInVolts(numActuators), analogInPosSI(numActuators),
     motorFeedbackCurrentRaw(numActuators), motorFeedbackCurrent(numActuators),
+    TorqueJoint(numActuators),
     motorControlCurrentRaw(numActuators), motorControlCurrent(numActuators),
     encSetPosRaw(numActuators), encSetPos(numActuators)
 {
@@ -188,6 +189,11 @@ mtsRobotIO1394::RobotInternal::ConfigureCoupling(cmnXMLPath & xmlConfigFile, int
     }
     this->HasActuatorToJointCoupling = tmpCouplingAvailable;
     this->NumberOfJoints = tmpNumOfJoint;
+    std::cerr << "ConfigureCoupling: product of actuator to joint position coupling matrices (should be close to identity)" << std::endl
+              << this->ActuatorToJointPosition * this->JointToActuatorPosition << std::endl;
+    std::cerr << "ConfigureCoupling: product of actuator to joint torque coupling matrices (should be close to identity)" << std::endl
+              << this->ActuatorToJointTorque * this->JointToActuatorTorque << std::endl;
+
 }
 
 void mtsRobotIO1394::RobotInternal::ConfigureCouplingA2J (cmnXMLPath & xmlConfigFile,
@@ -326,6 +332,7 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandReadState(stateTable, this->motorFeedbackCurrentRaw, "GetMotorFeedbackCurrentRaw");
     robotInterface->AddCommandReadState(stateTable, this->motorFeedbackCurrent, "GetMotorFeedbackCurrent");
 
+    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetTorqueJoint, this, "SetTorqueJoint", TorqueJoint);
     robotInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw, this, "SetMotorCurrentRaw",
                                     motorControlCurrentRaw);
     robotInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetMotorCurrent, this, "SetMotorCurrent",
@@ -510,6 +517,16 @@ void mtsRobotIO1394::RobotInternal::SetAmpEnable(const vctBoolVec & ampControl)
     }
 }
 
+void mtsRobotIO1394::RobotInternal::SetTorqueJoint(const prmForceTorqueJointSet & jointTorques)
+{
+    // todo - put temporary variables as data members in class to avoid dynamic new/delete
+    vctDoubleVec actuatorTorques(ActuatorList.size());
+    actuatorTorques.ProductOf(this->JointToActuatorTorque, jointTorques.ForceTorque());
+    vctDoubleVec actuatorAmps(ActuatorList.size());
+    this->DriveNmToAmps(actuatorTorques, actuatorAmps);
+    this->SetMotorCurrent(actuatorAmps);
+}
+
 void mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw(const vctLongVec & mcur)
 {
     if (mcur.size() != motorControlCurrentRaw.size()) {
@@ -595,7 +612,6 @@ void mtsRobotIO1394::RobotInternal::EncoderRawToSI(const vctIntVec & fromData, v
         // toData[index] = (fromData[index] - bitsToPosSIOffset) * bitsToPosSIScale;
     }
     encoder = &(ActuatorList[0].encoder);
-    std::cerr << toData[0] << " = " << fromData[0] << " * " << encoder->BitsToPosSIScale << " + " << encoder->BitsToPosSIOffset << std::endl;
 }
 
 void mtsRobotIO1394::RobotInternal::EncoderSIToRaw(const vctDoubleVec & fromData, vctIntVec &toData) const
