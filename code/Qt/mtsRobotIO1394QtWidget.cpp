@@ -562,7 +562,7 @@ void mtsRobotIO1394QtWidget::setupUi()
     qdsbCurFBOffset->setSuffix("mA");
     qdsbCurFBOffset->setValue(curFBOffset);
 
-    quitButton = new QPushButton("Quit");
+    quitButton = new QPushButton("Close");
 
     QHBoxLayout* ctrlLayout = new QHBoxLayout;
     ctrlLayout->addWidget(qcbCurFBToggle);
