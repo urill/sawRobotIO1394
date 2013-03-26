@@ -41,8 +41,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # link against non cisst libraries and cisst components
     target_link_libraries (sawRobotIO1394ExampleQt
-                           ${sawRobotIO1394_LIBRARIES}
-                           ${CURSES_LIBRARIES})
+                           ${sawRobotIO1394_LIBRARIES})
 
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawRobotIO1394ExampleQt ${REQUIRED_CISST_LIBRARIES})

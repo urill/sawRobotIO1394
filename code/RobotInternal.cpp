@@ -148,7 +148,6 @@ void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int 
     }
 
     ConfigureCoupling(xmlConfigFile, robotNumber);
-    // PreloadEncoders();
 }
 
 void
@@ -189,11 +188,22 @@ mtsRobotIO1394::RobotInternal::ConfigureCoupling(cmnXMLPath & xmlConfigFile, int
     }
     this->HasActuatorToJointCoupling = tmpCouplingAvailable;
     this->NumberOfJoints = tmpNumOfJoint;
-    std::cerr << "ConfigureCoupling: product of actuator to joint position coupling matrices (should be close to identity)" << std::endl
-              << this->ActuatorToJointPosition * this->JointToActuatorPosition << std::endl;
-    std::cerr << "ConfigureCoupling: product of actuator to joint torque coupling matrices (should be close to identity)" << std::endl
-              << this->ActuatorToJointTorque * this->JointToActuatorTorque << std::endl;
+    this->NumberOfActuators = tmpNumOfActuator;
 
+    // make sure the coupling matrices make sense
+    vctDoubleMat product, identity;
+    identity.ForceAssign(vctDoubleMat::Eye(this->NumberOfActuators));
+    product.SetSize(this->NumberOfActuators, this->NumberOfActuators);
+    product.ProductOf(this->ActuatorToJointPosition, this->JointToActuatorPosition);
+    if (!product.AlmostEqual(identity)) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureCoupling: product of position coupling matrices not identity:"
+                                 << std::endl << product << std::endl;
+    }
+    product.ProductOf(this->ActuatorToJointTorque, this->JointToActuatorTorque);
+    if (!product.AlmostEqual(identity)) {
+        CMN_LOG_CLASS_INIT_ERROR << "ConfigureCoupling: product of torque coupling matrices not identity:"
+                                 << std::endl << product << std::endl;
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::ConfigureCouplingA2J (cmnXMLPath & xmlConfigFile,
@@ -297,19 +307,19 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
                                                     mtsInterfaceProvided * actuatorInterface,
                                                     mtsStateTable & stateTable)
 {
-    robotInterface->AddCommandRead(& mtsRobotIO1394::RobotInternal::GetNumberOfActuators, this,
+    robotInterface->AddCommandRead(&mtsRobotIO1394::RobotInternal::GetNumberOfActuators, this,
                                    "GetNumberOfActuators");
-    robotInterface->AddCommandRead(& mtsRobotIO1394::RobotInternal::GetNumberOfJoints, this,
+    robotInterface->AddCommandRead(&mtsRobotIO1394::RobotInternal::GetNumberOfJoints, this,
                                    "GetNumberOfJoints");
     robotInterface->AddCommandReadState(stateTable, this->Valid, "IsValid");
 
     // Enable // Disable
-    robotInterface->AddCommandVoid(& mtsRobotIO1394::RobotInternal::EnablePower, this, "EnablePower");
-    robotInterface->AddCommandVoid(& mtsRobotIO1394::RobotInternal::DisablePower, this, "DisablePower");
-    robotInterface->AddCommandVoid(& mtsRobotIO1394::RobotInternal::EnableSafetyRelay, this, "EnableSafetyRelay");
-    robotInterface->AddCommandVoid(& mtsRobotIO1394::RobotInternal::DisableSafetyRelay, this, "DisableSafetyRelay");
+    robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::EnablePower, this, "EnablePower");
+    robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisablePower, this, "DisablePower");
+    robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::EnableSafetyRelay, this, "EnableSafetyRelay");
+    robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisableSafetyRelay, this, "DisableSafetyRelay");
 
-    robotInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetWatchdogPeriod, this, "SetWatchdogPeriod",
+    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetWatchdogPeriod, this, "SetWatchdogPeriod",
                                     this->watchdogPeriod);
 
     robotInterface->AddCommandReadState(stateTable, this->PowerStatus, "GetPowerStatus"); // bool
@@ -333,44 +343,44 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandReadState(stateTable, this->motorFeedbackCurrent, "GetMotorFeedbackCurrent");
 
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetTorqueJoint, this, "SetTorqueJoint", TorqueJoint);
-    robotInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw, this, "SetMotorCurrentRaw",
+    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw, this, "SetMotorCurrentRaw",
                                     motorControlCurrentRaw);
-    robotInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetMotorCurrent, this, "SetMotorCurrent",
+    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetMotorCurrent, this, "SetMotorCurrent",
                                     motorControlCurrent);
 
-    robotInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw, this, "SetEncoderPositionRaw",
+    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw, this, "SetEncoderPositionRaw",
                                     encSetPosRaw);
-    robotInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetEncoderPosition, this, "SetEncoderPosition",
+    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetEncoderPosition, this, "SetEncoderPosition",
                                     encSetPos);
 
     // unit conversion methods (Qualified Read)
-    robotInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::EncoderRawToSI, this,
+    robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderRawToSI, this,
                                             "EncoderRawToSI", encPosRaw, vctDoubleVec());
-    robotInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::EncoderSIToRaw, this,
+    robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderSIToRaw, this,
                                             "EncoderSIToRaw", vctDoubleVec(), encPosRaw);
-    robotInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosSI, this,
+    robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosSI, this,
                                             "EncoderRawToDeltaPosSI", encVelRaw, encVel);
-    robotInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosT, this,
+    robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosT, this,
                                             "EncoderRawToDeltaPosT", encVelRaw, encVel);
-    robotInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::DriveAmpsToNm, this,
+    robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::DriveAmpsToNm, this,
                                             "DriveAmpsToNm", motorControlCurrent, motorControlTorque);
-    robotInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::DriveNmToAmps, this,
+    robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::DriveNmToAmps, this,
                                             "DriveNmToAmps", motorControlTorque, motorControlCurrent);
-    robotInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts, this,
+    robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts, this,
                                             "AnalogInBitsToVolts", analogInRaw, analogInVolts);
 
-    actuatorInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
+    actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
                                        this->ampEnable); // vector[bool]
-    actuatorInterface->AddCommandWrite(& mtsRobotIO1394::RobotInternal::ResetSingleEncoder, this, "ResetSingleEncoder"); // int
+    actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::ResetSingleEncoder, this, "ResetSingleEncoder"); // int
     actuatorInterface->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable"); // vector[bool]
     actuatorInterface->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus"); // vector[bool]
 
     actuatorInterface->AddCommandReadState(stateTable, this->PositionActuatorGet, "GetPositionActuator"); // prmPositionJointGet
 
-    actuatorInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::DriveAmpsToBits, this,
+    actuatorInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::DriveAmpsToBits, this,
                                                "DriveAmpsToBits", motorFeedbackCurrent, motorFeedbackCurrentRaw);
 
-    actuatorInterface->AddCommandQualifiedRead(& mtsRobotIO1394::RobotInternal::AnalogInVoltsToPosSI, this,
+    actuatorInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::AnalogInVoltsToPosSI, this,
                                                "AnalogInVoltsToPosSI", analogInVolts, analogInPosSI);
 
 }
@@ -557,19 +567,14 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec & mcur)
     SetMotorCurrentRaw(motorControlCurrentRaw);
 }
 
-void mtsRobotIO1394::RobotInternal::PreloadEncoders(void)
-{
-    vctIntVec encoderValues(ActuatorList.size());
-    for (size_t index = 0; index < ActuatorList.size();index++) {
-        // encoderValues[index] = ActuatorList[index].encoder.BitsPreload;
-    }
-    this->SetEncoderPositionRaw(encoderValues);
-}
-
 void mtsRobotIO1394::RobotInternal::ResetSingleEncoder(const int & index)
 {
-    mtsRobotIO1394::RobotInternal::ActuatorInfo::Encoder * encoder = &(ActuatorList[index].encoder);
-    encoder->BitsToPosSIOffset = -(encPosRaw[index] * encoder->BitsToPosSIScale);
+    AmpIO *board = ActuatorList[index].board;
+    int axis = ActuatorList[index].axisid;
+    if (!board || (axis < 0)) {
+        return;
+    }
+    board->WriteEncoderPreload(axis, 0);
 }
 
 void mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw(const vctIntVec & epos)
@@ -597,7 +602,7 @@ void mtsRobotIO1394::RobotInternal::SetEncoderPosition(const vctDoubleVec & epos
     }
     encSetPos = epos;
     EncoderSIToRaw(encSetPos, encSetPosRaw);
-    std::cerr << "=========================================== fix me " << CMN_LOG_DETAILS << std::endl;
+    SetEncoderPositionRaw(encSetPosRaw);
 }
 
 // Unit Conversions
@@ -647,7 +652,7 @@ void mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosT(const vctLongVec & fro
 void mtsRobotIO1394::RobotInternal::DriveAmpsToBits(const vctDoubleVec & fromData, vctLongVec & toData) const
 {
     toData.SetAll(0L);
-    for (size_t index = 0; index < ActuatorList.size();index++) {
+    for (size_t index = 0; index < ActuatorList.size(); index++) {
         double ampToBitsScale = ActuatorList[index].drive.AmpsToBitsScale;
         double ampToBitsOffset = ActuatorList[index].drive.AmpsToBitsOffset;
         double maxAmps = ActuatorList[index].drive.MaxCurrentValue;

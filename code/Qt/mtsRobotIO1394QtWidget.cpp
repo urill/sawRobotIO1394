@@ -195,9 +195,12 @@ void mtsRobotIO1394QtWidget::slot_qsliderMotorCurrent_valueChanged()
 
 void mtsRobotIO1394QtWidget::slot_qpbResetEncAll()
 {
-    vctLongVec newEncoderValues(numOfAxis);
+    vctDoubleVec newEncoderValues(numOfAxis);
     newEncoderValues.SetAll(0.0);
-    Robot.SetEncoderPosition(newEncoderValues);
+    mtsExecutionResult result = Robot.SetEncoderPosition(newEncoderValues);
+    if (!result.IsOK()) {
+        CMN_LOG_CLASS_RUN_WARNING << "slot_qpbResetEncAll: command failed \"" << result << "\"" << std::endl;
+     }
 }
 
 void mtsRobotIO1394QtWidget::slot_qpbResetEnc()
