@@ -613,8 +613,6 @@ void mtsRobotIO1394::RobotInternal::EncoderRawToSI(const vctIntVec & fromData, v
     for (size_t index = 0; index < ActuatorList.size(); index++) {
         encoder = &(ActuatorList[index].encoder);
         toData[index] = fromData[index] * encoder->BitsToPosSIScale + encoder->BitsToPosSIOffset;
-        // toData[index] = (fromData[index] * bitsToPosSIScale) + bitsToPosSIOffset;
-        // toData[index] = (fromData[index] - bitsToPosSIOffset) * bitsToPosSIScale;
     }
     encoder = &(ActuatorList[0].encoder);
 }

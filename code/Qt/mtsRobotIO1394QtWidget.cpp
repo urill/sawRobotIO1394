@@ -109,7 +109,7 @@ void mtsRobotIO1394QtWidget::closeEvent(QCloseEvent * event)
 
 void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
 {
-#if SWITCH
+#if 1
     if(toggle){
         Robot.EnablePower();
     }else{
@@ -580,7 +580,7 @@ void mtsRobotIO1394QtWidget::setupUi()
     //----------------- GC Controller -----------
     QCheckBox* qcbGCEnable = new QCheckBox("Enable GC");
     QPushButton* qpbAdjustEncoder = new QPushButton("Adjust Encoder");
-    quitButton = new QPushButton("Quit");
+    quitButton = new QPushButton("Close");
 
     QHBoxLayout* gcLayout = new QHBoxLayout;
     gcLayout->addWidget(qcbGCEnable);
