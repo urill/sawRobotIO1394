@@ -55,6 +55,8 @@ protected:
 private slots:
     void slot_qcbEnableAll(bool toggle);
     void slot_qcbEnable(bool toggle);
+    void slot_qpbResetCurrentAll(void);
+    void slot_qpbBiasCurrentAll(void);
     void slot_qdsbMotorCurrent_valueChanged(void);
     void slot_qsliderMotorCurrent_valueChanged(void);
     void slot_qpbResetEncAll(void);
@@ -127,6 +129,7 @@ protected:
     } Robot;
 
     struct ActuatorStruct {
+        mtsFunctionVoid  BiasCurrent;
         mtsFunctionWrite SetAmpEnable;
         mtsFunctionWrite ResetSingleEncoder;
 
@@ -184,6 +187,8 @@ private:
     // GUI: Commands
     QCheckBox* qcbEnableAll;
     QCheckBox** qcbEnable;
+    QPushButton* qpbResetCurrentAll;
+    QPushButton* qpbBiasCurrentAll;
     QDoubleSpinBox** qdsbMotorCurrent;
     QSlider** qsliderMotorCurrent;
 

@@ -125,6 +125,25 @@ void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
     }
 }
 
+void mtsRobotIO1394QtWidget::slot_qpbResetCurrentAll(void)
+{
+    // set GUI value
+    vctDoubleVec cmdCurA(numOfAxis);
+    cmdCurA.SetAll(0.0);
+    Robot.SetMotorCurrent(cmdCurA);
+    for (int i = 0; i < numOfAxis; i++){
+        qsliderMotorCurrent[i]->blockSignals(true);
+        qsliderMotorCurrent[i]->setValue(32768);
+        qdsbMotorCurrent[i]->setValue(0.0);
+        qsliderMotorCurrent[i]->blockSignals(false);
+    }
+}
+
+void mtsRobotIO1394QtWidget::slot_qpbBiasCurrentAll(void)
+{
+    Actuators.BiasCurrent();
+}
+
 void mtsRobotIO1394QtWidget::slot_qcbEnable(bool CMN_UNUSED(toggle))
 {
     for(int i = 0; i < numOfAxis; i++){
@@ -324,6 +343,7 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
 
     mtsInterfaceRequired * actuatorInterface = AddInterfaceRequired("RobotActuators");
     if (actuatorInterface) {
+        actuatorInterface->AddFunction("BiasCurrent", Actuators.BiasCurrent);
         actuatorInterface->AddFunction("GetPositionActuator", Actuators.GetPositionActuator);
 
         actuatorInterface->AddFunction("SetAmpEnable", Actuators.SetAmpEnable);
@@ -396,11 +416,14 @@ void mtsRobotIO1394QtWidget::setupUi()
     QLabel* motorCurLabel = new QLabel("Motor Current");
 //    motorCurLabel->setAlignment(Qt::AlignRight);
     cmdLabelLayout->addWidget(qcbEnableAll);
+    qpbResetCurrentAll = new QPushButton("Reset All");
+    cmdLabelLayout->addWidget(qpbResetCurrentAll);
+    qpbBiasCurrentAll = new QPushButton("Bias All");
+    cmdLabelLayout->addWidget(qpbBiasCurrentAll);
     cmdLabelLayout->addWidget(motorCurLabel);
     cmdLabelLayout->addWidget(new QLabel(""));
     cmdLabelFrame->setLayout(cmdLabelLayout);
     cmdLabelFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
-
 
     // Commands Info
     // [] Enable Axis i
@@ -703,6 +726,8 @@ void mtsRobotIO1394QtWidget::setupUi()
     // connect signals & slots
     // Commands
     connect(qcbEnableAll, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableAll(bool)));
+    connect(qpbResetCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetCurrentAll()));
+    connect(qpbBiasCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasCurrentAll()));
     connect(qpbResetEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetEncAll()));
     for(int i = 0; i < numOfAxis; i++){
         connect(qcbEnable[i], SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnable(bool)));

@@ -147,6 +147,7 @@ protected:
     void SetTorqueJoint(const prmForceTorqueJointSet & torques);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
+    void ResetAmpsToBitsOffsetUsingFeedbackAmps(void);
     void ResetSingleEncoder(const int & actuatorIndex);
     void SetEncoderPositionRaw(const vctIntVec & epos);
     void SetEncoderPosition(const vctDoubleVec & epos);

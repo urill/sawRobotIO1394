@@ -369,6 +369,7 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts, this,
                                             "AnalogInBitsToVolts", analogInRaw, analogInVolts);
 
+    actuatorInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps, this, "BiasCurrent");
     actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
                                        this->ampEnable); // vector[bool]
     actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::ResetSingleEncoder, this, "ResetSingleEncoder"); // int
@@ -448,6 +449,8 @@ void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int & placeHolder) const
     placeHolder = this->NumberOfJoints;
 }
 
+#include <cisstOSAbstraction/osaSleep.h>
+
 void mtsRobotIO1394::RobotInternal::EnablePower(void)
 {
     for (size_t index = 0; index < ActuatorList.size(); index++) {
@@ -455,10 +458,19 @@ void mtsRobotIO1394::RobotInternal::EnablePower(void)
         int axis = ActuatorList[index].axisid;
         if (!board || (axis < 0)) continue;
         // Make sure all boards are enabled
-        board->SetPowerEnable(true);
-        // For now, also enable all amplifiers
+        // Notice we use Write to board to make sure this is not buffered
+        // It would be nice to do this once per board, not once per axis!
+        board->WritePowerEnable(true);
+    }
+    osaSleep(100.0 * cmn_ms); // Without the sleep this we can get power jumps and joints without power enabled
+    for (size_t index = 0; index < ActuatorList.size(); index++) {
+        AmpIO *board = ActuatorList[index].board;
+        int axis = ActuatorList[index].axisid;
+        if (!board || (axis < 0)) continue;
+        // Make sure all boards are enabled
         board->SetAmpEnable(axis, true);
     }
+
 }
 
 void mtsRobotIO1394::RobotInternal::DisablePower(void)
@@ -565,6 +577,21 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec & mcur)
     //MotorCurrentToDAC(motorControlCurrent, motorControlCurrentRaw);
     DriveAmpsToBits(motorControlCurrent, motorControlCurrentRaw);
     SetMotorCurrentRaw(motorControlCurrentRaw);
+}
+
+void mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps(void)
+{
+    // last motor current in amps is in motorFeedbackCurrent
+    // last request current in amps is in motorControlCurrent
+    vctDoubleVec errorCurrent(NumberOfActuators);
+    errorCurrent.DifferenceOf(motorControlCurrent, motorFeedbackCurrent);
+    std::cerr << errorCurrent << std::endl;
+    for (size_t index = 0; index < ActuatorList.size(); index++) {
+        std::cerr << "before: " << ActuatorList[index].drive.AmpsToBitsOffset << std::endl;
+        std::cerr << "correction: " << static_cast<double>(errorCurrent[index]) / ActuatorList[index].drive.AmpsToBitsScale << std::endl;
+        ActuatorList[index].drive.AmpsToBitsOffset -= static_cast<double>(errorCurrent[index]) * ActuatorList[index].drive.AmpsToBitsScale;
+        std::cerr << "after: " << ActuatorList[index].drive.AmpsToBitsOffset << std::endl;
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::ResetSingleEncoder(const int & index)
