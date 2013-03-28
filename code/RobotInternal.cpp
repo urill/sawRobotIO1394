@@ -142,9 +142,11 @@ void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int 
 
         sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn.VoltsToPosSIScale);
+        ActuatorList[i].analogIn.VoltsToPosSIScale *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
 
         sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn. VoltsToPosSIOffset);
+        ActuatorList[i].analogIn. VoltsToPosSIOffset *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
     }
 
     ConfigureCoupling(xmlConfigFile, robotNumber);
@@ -369,7 +371,9 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts, this,
                                             "AnalogInBitsToVolts", analogInRaw, analogInVolts);
 
-    actuatorInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps, this, "BiasCurrent");
+    robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps, this, "BiasCurrent");
+    robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI, this, "BiasEncoder");
+
     actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
                                        this->ampEnable); // vector[bool]
     actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::ResetSingleEncoder, this, "ResetSingleEncoder"); // int
@@ -426,6 +430,7 @@ void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
     EncoderRawToSI(encPosRaw, this->PositionActuatorGet.Position());
     EncoderRawToDeltaPosSI(encVelRaw, encVel);
     AnalogInBitsToVolts(analogInRaw, analogInVolts);
+    AnalogInVoltsToPosSI(analogInVolts, analogInPosSI);
     DriveBitsToFeedbackAmps(motorFeedbackCurrentRaw, motorFeedbackCurrent);
 
     if (this->HasActuatorToJointCoupling) {
@@ -581,6 +586,8 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec & mcur)
 
 void mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps(void)
 {
+    std::cerr << "code not implemented " << CMN_LOG_DETAILS << std::endl;
+#if 0
     // last motor current in amps is in motorFeedbackCurrent
     // last request current in amps is in motorControlCurrent
     vctDoubleVec errorCurrent(NumberOfActuators);
@@ -591,6 +598,18 @@ void mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps(void)
         std::cerr << "correction: " << static_cast<double>(errorCurrent[index]) / ActuatorList[index].drive.AmpsToBitsScale << std::endl;
         ActuatorList[index].drive.AmpsToBitsOffset -= static_cast<double>(errorCurrent[index]) * ActuatorList[index].drive.AmpsToBitsScale;
         std::cerr << "after: " << ActuatorList[index].drive.AmpsToBitsOffset << std::endl;
+    }
+#endif
+}
+
+void mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI(void)
+{
+    vctDoubleVec posErrorJoint(NumberOfJoints);
+    posErrorJoint.DifferenceOf(this->PositionJointGet.Position(), this->analogInPosSI);
+    vctDoubleVec posErrorActuator(NumberOfActuators);
+    posErrorActuator.ProductOf(this->JointToActuatorPosition, posErrorJoint);
+    for (size_t index = 0; index < ActuatorList.size(); index++) {
+        ActuatorList[index].encoder.BitsToPosSIOffset -= posErrorActuator[index];
     }
 }
 

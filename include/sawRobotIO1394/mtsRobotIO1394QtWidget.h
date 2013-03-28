@@ -60,6 +60,7 @@ private slots:
     void slot_qdsbMotorCurrent_valueChanged(void);
     void slot_qsliderMotorCurrent_valueChanged(void);
     void slot_qpbResetEncAll(void);
+    void slot_qpbBiasEncAll(void);
     void slot_qpbResetEnc(void);
     void slot_qcbCurFBToggle(bool);
     void slot_qdsbCurFBGain(double);
@@ -93,7 +94,8 @@ private:
     void updateJointPositionDisplay(void);
     void updateActuatorPositionDisplay(void);
     void updateVelocityDisplay(void);
-    void updatePotDisplay(void);
+    void updatePotVoltDisplay(void);
+    void updatePotPosSIDisplay(void);
     void updateCurrentDisplay(void);
     void updateRobotInfo(void);
 
@@ -120,16 +122,19 @@ protected:
         mtsFunctionRead GetPosition;
         mtsFunctionRead GetVelocity;
         mtsFunctionRead GetAnalogInputVolts;
+        mtsFunctionRead GetAnalogInputPosSI;
         mtsFunctionRead GetMotorCurrent;
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
 
         mtsFunctionWrite SetMotorCurrent;
         mtsFunctionWrite SetEncoderPosition;
+
+        mtsFunctionVoid BiasCurrent;
+        mtsFunctionVoid BiasEncoder;
     } Robot;
 
     struct ActuatorStruct {
-        mtsFunctionVoid  BiasCurrent;
         mtsFunctionWrite SetAmpEnable;
         mtsFunctionWrite ResetSingleEncoder;
 
@@ -169,7 +174,8 @@ private:
     prmPositionJointGet actuatorPosGet;
     vctDoubleVec actuatorPos;
     vctDoubleVec vel;
-    vctDoubleVec analogIn;
+    vctDoubleVec potVolt;
+    vctDoubleVec potPosSI;
     vctDoubleVec motorFeedbackCurrent;
     vctDoubleVec motorControlCurrent;
     vctBoolVec ampEnable;
@@ -194,10 +200,12 @@ private:
 
     // GUI: Feedbacks
     QPushButton* qpbResetEncAll;
+    QPushButton* qpbBiasEncAll;
     QLineEdit** qleJointPos;
     QLineEdit** qleActuatorPos;
     QLineEdit** qleVelDeg;
     QLineEdit** qlePotVolt;
+    QLineEdit** qlePotPosSI;
     QLineEdit** qleCurmA;
     QPushButton** qpbResetEnc;
 
