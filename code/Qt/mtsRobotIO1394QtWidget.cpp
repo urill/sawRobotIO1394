@@ -31,7 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 
-#define SWITCH 0
+#define SWITCH 1
 
 // Find a better way for user to get these values
 #define MOTORCUR_MAX 6500       // max motor current in mA
@@ -146,8 +146,11 @@ void mtsRobotIO1394QtWidget::slot_qdsbMotorCurrent_valueChanged()
         cmdCurmA[i] = qdsbMotorCurrent[i]->value();
 
 #if SWITCH
-    Robot.SetMotorCurrent(cmdCurmA);
-    Robot.MotorCurrentToDAC(cmdCurmA, cmdCurCnt);
+    vctDoubleVec cmdCurA(numOfAxis);
+    cmdCurA = cmdCurmA.Divide(1000.0);
+    Robot.SetMotorCurrent(cmdCurA);
+    Actuators.DriveAmpsToBits(cmdCurA, cmdCurCnt);
+//    Robot.MotorCurrentToDAC(cmdCurmA, cmdCurCnt);
 #else
     for (int i = 0; i < numOfAxis; i++){
         cmdCurCnt[i] = CurrentstoDAC(cmdCurmA[i]);
@@ -170,6 +173,8 @@ void mtsRobotIO1394QtWidget::slot_qsliderMotorCurrent_valueChanged()
     vctLongVec cmdCurCnt;
     cmdCurCnt.SetSize(numOfAxis);
 
+    vctDoubleVec cmdCurA(numOfAxis);
+
     // get value from GUI
     for(int i = 0; i < numOfAxis; i++)
         cmdCurCnt[i] = qsliderMotorCurrent[i]->value();
@@ -178,7 +183,9 @@ void mtsRobotIO1394QtWidget::slot_qsliderMotorCurrent_valueChanged()
     for (int i = 0; i < numOfAxis; i++){
         cmdCurmA[i] = DACtoCurrents(cmdCurCnt[i]);
     }
-    Robot.SetMotorCurrent(cmdCurmA);
+
+    cmdCurA = cmdCurmA.Divide(1000.0);
+    Robot.SetMotorCurrent(cmdCurA);
 #else
     for (int i = 0; i < numOfAxis; i++){
         cmdCurmA[i] = DACtoCurrents(cmdCurCnt[i]);
@@ -791,7 +798,7 @@ void mtsRobotIO1394QtWidget::updateCurrentDisplay()
 
     for (int i = 0; i < numOfAxis; i++){
         ssmA.str("");
-        ssmA << motorFeedbackCurrent.at(i);
+        ssmA << motorFeedbackCurrent.at(i) * 1000.0;
         qleCurmA[i]->setText(ssmA.str().c_str());
     }
 
