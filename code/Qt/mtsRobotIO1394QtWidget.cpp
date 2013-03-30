@@ -29,6 +29,7 @@ http://www.cisst.org/cisst/license.txt.
 // project include
 #include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>
 
+#include <cisstOSAbstraction/osaGetTime.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 
 #define SWITCH 1
@@ -62,7 +63,7 @@ mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & taskName):
     motorFeedbackCurrent.SetAll(0.0);
     ampEnable.SetSize(numOfAxis);
 
-    startTime = QDateTime::currentMSecsSinceEpoch();
+    startTime = osaGetTime();
 
     setupMenu();
     setupCisstInterface();
@@ -292,7 +293,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
         motorFeedbackCurrent.SetAll(tmpStatic);
     }
 
-    CMN_LOG_CLASS_RUN_VERBOSE << (QDateTime::currentMSecsSinceEpoch() - startTime)/1000.0 << std::endl;
+    CMN_LOG_CLASS_RUN_VERBOSE << (osaGetTime() - startTime) << std::endl;
 
     tmpStatic += 0.1;
     updateJointPositionDisplay();
