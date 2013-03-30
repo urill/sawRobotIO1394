@@ -263,7 +263,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
         std::stringstream tmpStringStream;
         tmpRow = "";
         ssTest = false;
-        char tmpPath[10];
+        char tmpPath[32];
         sprintf(tmpPath, "/Row[%i]/@Val", i + 1);
         strcpy(path, pathToMatrix.c_str());
         strcat(path, tmpPath);
