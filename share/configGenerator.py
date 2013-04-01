@@ -10,9 +10,9 @@ import xml.etree.ElementTree as ET
 
 # PSM
 
-# constans 
+# constants 
 numOfActuator = 7
-numOfJoint = 6
+numOfJoint = 7
 
 # motor constants Unit: V
 motorVol = np.array([24, 24, 24, 24, 24, 24, 24])
@@ -34,10 +34,10 @@ encCPT = np.array([14400, 14400, 14400, 4000, 4000, 4000, 4000])
 
 # Pitch
 # 1 for revolute, mm/deg for prismatic 
-pitch = np.array([1, 1, 1, 1, 1, 1, 1])
+pitch = np.array([1, 1, 17.4533, 1, 1, 1, 1])
 
 # compute 
-boardID = [5, 6]
+boardID = [8, 9]
 
 # ==== POT =======
 # raw value form Intuitive Surgical Inc
@@ -50,7 +50,7 @@ boardID = [5, 6]
 # 
 jointUpper = np.array([1.5985, 0.9323, 0.24321, 3.0264, 3.0326, 3.0346, 3.0376])
 jointLower = np.array([-1.616, -0.97237, -0.0023366, -3.052, -3.0445, -3.0488, -3.0486])
-potGain = np.array([-0.00085, -0.00056, 0.0000655, -0.0015, -0.0014, -0.0015, -0.0015])
+potGain = np.array([-0.00085, -0.00056, 0.0000655, -0.0015, -0.001517, -0.0015, -0.0015])
 potOffset = np.array([1.7356, 1.1874, -0.014153, 3.0777, 3.0824, 3.0529, 3.1403])
 
 
@@ -59,19 +59,19 @@ potOffset = np.array([1.7356, 1.1874, -0.014153, 3.0777, 3.0824, 3.0529, 3.1403]
 # =============================================
 # === Drive =======
 # Direction 
-driveDirection = np.array([1, 1, 1, 1, 1, 1, 1])
+driveDirection = np.array([-1, -1, 1, -1, -1, 1, 1])
 AmpsToBitsScale = driveDirection * 5242.8800
 AmpsToBitsOffset = np.ones(7) * math.pow(2,15)
 
-BitsToFbAmpsScale = np.ones(7) * 0.000190738
-BitsToFbAmpsOffset = driveDirection * 6.25
+BitsToFbAmpsScale = driveDirection * 0.000190738
+BitsToFbAmpsOffset = driveDirection * 6.25 * -1.0;
 
 NmToAmps = np.ones(7) / gearRatio / motorTor
 MaxCurrent = motorDefCur
 
 
 # === Encoder ======
-BitsToPosSIScale = 360.0 / encCPT * pitch / gearRatio
+BitsToPosSIScale = 360.0 / encCPT * pitch / gearRatio * driveDirection
 BitsToPosSIOffset = np.zeros(7)
 # % NOT valid for now 
 BitsToDeltaPosSI = np.ones(7) * -1
@@ -81,15 +81,16 @@ CountsPerTurn = encCPT
 # === AnalogIn =====
 BitsToVoltsScale = np.ones(7) * 0.0000686656
 BitsToVoltsOffset = np.zeros(7)
-VoltsToPosSIScale = potGain * math.pow(2,12) / (4.5 - 0.0)
+VoltsToPosSIScale = potGain * math.pow(2,12) / (4.5 - 0.0) * 180.0 / math.pi
 VoltsToPosSIOffset = potOffset * 180.0 / math.pi
 
 
 # ==============================
 # Read and Write XML file
 # ==============================
+filename = '/home/adeguet1/devel/cisst/trunk/saw/applications/sawIntuitiveResearchKit/share/sawRobotIO1394-PSM1.xml'
 
-tree = ET.parse('sawPSM1.xml')
+tree = ET.parse(filename)
 config = tree.getroot()
 
 # robot 
@@ -136,5 +137,6 @@ for Actuator in robot.findall('Actuator'):
 # You might want to add coupling matrix here
 
 
-tree.write('sawPSM1.xml')
+tree.write(filename)
 
+print 'Done'
