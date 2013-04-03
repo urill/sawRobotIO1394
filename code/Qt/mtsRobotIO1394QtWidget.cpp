@@ -42,10 +42,10 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED(mtsRobotIO1394QtWidget, mtsComponent);
 
 
-mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & taskName):
+mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & taskName, unsigned int numberOfActuators):
     mtsComponent(taskName)
 {
-    numOfAxis = 8;
+    numOfAxis = numberOfActuators;
     curFBState = false;
     curFBPGain = 1.0;
     curFBOffset = 30.0;
@@ -69,7 +69,7 @@ mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & taskName):
     setupCisstInterface();
     setupUi();
 
-    startTimer(30); // ms
+    startTimer(50); // ms
 }
 
 
@@ -143,7 +143,7 @@ void mtsRobotIO1394QtWidget::slot_qpbResetCurrentAll(void)
 
 void mtsRobotIO1394QtWidget::slot_qpbBiasCurrentAll(void)
 {
-    mtsExecutionResult result = Robot.BiasCurrent();
+    mtsExecutionResult result = Robot.BiasCurrent(mtsInt(1000)); // use a 1000 samples to average current feedback
     if (!result.IsOK()) {
         CMN_LOG_CLASS_RUN_WARNING << "slot_qpbBiasCurrentAll: command failed \"" << result << "\"" << std::endl;
     }
@@ -271,6 +271,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     bool flag;
     Robot.IsValid(flag);
     if (flag) {
+        Robot.GetPeriodStatistics(IntervalStatistics);
         Robot.GetPosition(jointPos); // vct
         jointPos.Multiply(cmn180_PI); // to degrees
         Actuators.GetPositionActuator(actuatorPosGet); // prm
@@ -279,6 +280,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
         Robot.GetVelocity(vel);
         Robot.GetAnalogInputVolts(potVolt);
         Robot.GetAnalogInputPosSI(potPosSI);
+        potPosSI.Multiply((cmn180_PI));
         Robot.GetMotorCurrent(motorFeedbackCurrent);
         Actuators.GetAmpEnable(ampEnable);
         Actuators.GetAmpStatus(ampStatus);
@@ -296,14 +298,17 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     CMN_LOG_CLASS_RUN_VERBOSE << (osaGetTime() - startTime) << std::endl;
 
     tmpStatic += 0.1;
-    updateJointPositionDisplay();
-    updateActuatorPositionDisplay();
-    updateVelocityDisplay();
-    updatePotVoltDisplay();
-    updatePotPosSIDisplay();
-    updateCurrentDisplay();
+
+    JointPositionWidget->SetValue(jointPos);
+    ActuatorPositionWidget->SetValue(actuatorPos);
+    ActuatorVelocityWidget->SetValue(vel);
+    PotVoltsWidget->SetValue(potVolt);
+    PotPositionWidget->SetValue(potPosSI);
+    CurrentFeedbackWidget->SetValue(motorFeedbackCurrent);
+
     updateRobotInfo();
 
+    // std::cerr << IntervalStatistics << std::endl;
 
 //    if (!debugStream.str().empty()) {
 //        int cur_line = DEBUG_START_LINE;
@@ -339,6 +344,7 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
     // Required Interface
     mtsInterfaceRequired * robotInterface = AddInterfaceRequired("Robot");
     if (robotInterface) {
+        robotInterface->AddFunction("GetPeriodStatistics", Robot.GetPeriodStatistics);
         robotInterface->AddFunction("GetNumberOfActuators", Robot.GetNumberOfActuators);
         robotInterface->AddFunction("IsValid", Robot.IsValid);
         robotInterface->AddFunction("EnablePower", Robot.EnablePower);
@@ -523,8 +529,8 @@ void mtsRobotIO1394QtWidget::setupUi()
     fbTitleLayout->addWidget(fbTitleRightLine, 1, 2);
 
     // Feedbacks Label
-    QVBoxLayout* fbLabelLayout = new QVBoxLayout;
-    QFrame* fbLabelFrame = new QFrame;
+    QGridLayout* fbLayout = new QGridLayout;
+    QFrame* fbFrame = new QFrame;
     QLabel* jointPosLabel = new QLabel("Pos. joints (deg)");
     QLabel* actuatorPosLabel = new QLabel("Pos. actuators (deg)");
     QLabel* velDegLabel = new QLabel("Velocity (deg/s)");
@@ -533,76 +539,31 @@ void mtsRobotIO1394QtWidget::setupUi()
     QLabel* curmALabel = new QLabel("Current (mA)");
     qpbResetEncAll = new QPushButton("Reset Enc");
     qpbBiasEncAll = new QPushButton("Bias Enc/Pot");
-    fbLabelLayout->addWidget(jointPosLabel);
-    fbLabelLayout->addWidget(actuatorPosLabel);
-    fbLabelLayout->addWidget(velDegLabel);
-    fbLabelLayout->addWidget(potVoltLabel);
-    fbLabelLayout->addWidget(potPosSILabel);
+    fbLayout->addWidget(jointPosLabel, 0, 0);
+    fbLayout->addWidget(actuatorPosLabel, 1, 0);
+    fbLayout->addWidget(velDegLabel, 2, 0);
+    fbLayout->addWidget(potVoltLabel, 3, 0);
+    fbLayout->addWidget(potPosSILabel, 4, 0);
 
-    fbLabelLayout->addWidget(curmALabel);
-    fbLabelLayout->addWidget(qpbResetEncAll);
-    fbLabelLayout->addWidget(qpbBiasEncAll);
-    fbLabelFrame->setLayout(fbLabelLayout);
-    fbLabelFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    fbLayout->addWidget(curmALabel, 5, 0);
+    fbLayout->addWidget(qpbResetEncAll, 6, 0);
+    fbLayout->addWidget(qpbBiasEncAll, 7, 0);
 
-    // Feedbacks Info
-    QVBoxLayout** fbInfoLayout = new QVBoxLayout*[numOfAxis];
-    QFrame** fbInfoFrame = new QFrame*[numOfAxis];
+    JointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    fbLayout->addWidget(JointPositionWidget->GetWidget(), 0, 1);
+    ActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    fbLayout->addWidget(ActuatorPositionWidget->GetWidget(), 1, 1);
+    ActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    fbLayout->addWidget(ActuatorVelocityWidget->GetWidget(), 2, 1);
+    PotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    fbLayout->addWidget(PotVoltsWidget->GetWidget(), 3, 1);
+    PotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    fbLayout->addWidget(PotPositionWidget->GetWidget(), 4, 1);
+    CurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    fbLayout->addWidget(CurrentFeedbackWidget->GetWidget(), 5, 1);
 
-    qleJointPos = new QLineEdit*[numOfAxis];
-    qleActuatorPos = new QLineEdit*[numOfAxis];
-    qleVelDeg = new QLineEdit*[numOfAxis];
-    qlePotVolt = new QLineEdit*[numOfAxis];
-    qlePotPosSI = new QLineEdit*[numOfAxis];
-    qleCurmA = new QLineEdit*[numOfAxis];
-    qpbResetEnc = new QPushButton*[numOfAxis];
-
-    for(int i = 0; i < numOfAxis; i++){
-        qleJointPos[i] = new QLineEdit;
-        qleActuatorPos[i] = new QLineEdit;
-        qleVelDeg[i] = new QLineEdit;
-        qlePotVolt[i] = new QLineEdit;
-        qlePotPosSI[i] = new QLineEdit;
-        qleCurmA[i] = new QLineEdit;
-        qpbResetEnc[i] = new QPushButton("Reset Enc " + QString::number(i+1));
-
-        qleJointPos[i]->setAlignment(Qt::AlignRight);
-        qleActuatorPos[i]->setAlignment(Qt::AlignRight);
-        qleVelDeg[i]->setAlignment(Qt::AlignRight);
-        qlePotVolt[i]->setAlignment(Qt::AlignRight);
-        qlePotPosSI[i]->setAlignment(Qt::AlignRight);
-        qleCurmA[i]->setAlignment(Qt::AlignRight);
-
-        fbInfoLayout[i] = new QVBoxLayout;
-        fbInfoLayout[i]->addWidget(qleJointPos[i]);
-        fbInfoLayout[i]->addWidget(qleActuatorPos[i]);
-        fbInfoLayout[i]->addWidget(qleVelDeg[i]);
-        fbInfoLayout[i]->addWidget(qlePotVolt[i]);
-        fbInfoLayout[i]->addWidget(qlePotPosSI[i]);
-        fbInfoLayout[i]->addWidget(qleCurmA[i]);
-        fbInfoLayout[i]->addWidget(qpbResetEnc[i]);
-
-        fbInfoFrame[i] = new QFrame;
-        fbInfoFrame[i]->setLayout(fbInfoLayout[i]);
-        fbInfoFrame[i]->setFrameShape(QFrame::StyledPanel);
-        fbInfoFrame[i]->setFrameShadow(QFrame::Sunken);
-    }
-
-    // Commands lower layout
-    // fbLabel | fbInfo1 | fbInfo2 |...
-    QHBoxLayout* fbLowerLayout = new QHBoxLayout;
-    fbLowerLayout->addWidget(fbLabelFrame);
-    for(int i = 0; i < numOfAxis; i++){
-        fbLowerLayout->addWidget(fbInfoFrame[i]);
-    }
-
-
-    // Feedbacks layout
-    // fbTitleLayout
-    // fbLowerLayout
-    QVBoxLayout* fbLayout = new QVBoxLayout;
-    fbLayout->addLayout(fbTitleLayout);
-    fbLayout->addLayout(fbLowerLayout);
+    // fbFrame->setLayout(fbLayout);
+    // fbFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
 #if 0
     //----------------- Control ------------------------
@@ -747,7 +708,7 @@ void mtsRobotIO1394QtWidget::setupUi()
 //    setFixedWidth(750);
 //    setFixedHeight(sizeHint().height());
 
-    setWindowTitle("LoPoMoCo 1394 QLA Board Test GUI");
+    setWindowTitle(QString(this->GetName().c_str()));
     resize(sizeHint());
 
     // connect signals & slots
@@ -755,6 +716,7 @@ void mtsRobotIO1394QtWidget::setupUi()
     connect(qcbEnableAll, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableAll(bool)));
     connect(qpbResetCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetCurrentAll()));
     connect(qpbBiasCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasCurrentAll()));
+
     connect(qpbResetEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetEncAll()));
     connect(qpbBiasEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasEncAll()));
     for(int i = 0; i < numOfAxis; i++){
@@ -763,7 +725,7 @@ void mtsRobotIO1394QtWidget::setupUi()
                 this, SLOT(slot_qdsbMotorCurrent_valueChanged()));
         connect(qsliderMotorCurrent[i], SIGNAL(valueChanged(int)),
                 this, SLOT(slot_qsliderMotorCurrent_valueChanged()));
-        connect(qpbResetEnc[i], SIGNAL(clicked()), this, SLOT(slot_qpbResetEnc()));
+        // adeguet1 connect(qpbResetEnc[i], SIGNAL(clicked()), this, SLOT(slot_qpbResetEnc()));
     }
 
     // Control
@@ -781,93 +743,6 @@ void mtsRobotIO1394QtWidget::setupUi()
         qsliderMotorCurrent[i]->blockSignals(false);
     }
     slot_qsliderMotorCurrent_valueChanged();
-}
-
-
-void mtsRobotIO1394QtWidget::updateJointPositionDisplay(void)
-{
-    // update GUI
-    std::stringstream ssDeg;
-    ssDeg << std::fixed << std::setprecision(2);
-
-    for (int i = 0; i < numOfAxis; i++){
-        ssDeg.str("");
-        ssDeg << jointPos.at(i);
-        qleJointPos[i]->setText(ssDeg.str().c_str());
-    }
-
-    CMN_LOG_CLASS_RUN_VERBOSE << jointPos << std::endl;
-}
-
-void mtsRobotIO1394QtWidget::updateActuatorPositionDisplay(void)
-{
-    // update GUI
-    std::stringstream ssDeg;
-    ssDeg << std::fixed << std::setprecision(2);
-
-    for (int i = 0; i < numOfAxis; i++){
-        ssDeg.str("");
-        ssDeg << actuatorPos.at(i);
-        qleActuatorPos[i]->setText(ssDeg.str().c_str());
-    }
-
-    CMN_LOG_CLASS_RUN_VERBOSE << actuatorPos << std::endl;
-}
-
-void mtsRobotIO1394QtWidget::updateVelocityDisplay()
-{
-    // update GUI
-    std::stringstream ssDeg;
-    ssDeg << std::fixed << std::setprecision(4);
-
-    for (int i = 0; i < numOfAxis; i++){
-        ssDeg.str("");
-        ssDeg << vel.at(i);
-        qleVelDeg[i]->setText(ssDeg.str().c_str());
-    }
-
-    CMN_LOG_CLASS_RUN_VERBOSE << vel << std::endl;
-}
-
-void mtsRobotIO1394QtWidget::updatePotVoltDisplay()
-{
-    // update GUI
-    std::stringstream ssVolt;
-    ssVolt << std::fixed << std::setprecision(4);
-
-    for (int i = 0; i < numOfAxis; i++){
-        ssVolt.str("");
-        ssVolt << potVolt.at(i);
-        qlePotVolt[i]->setText(ssVolt.str().c_str());
-    }
-}
-
-void mtsRobotIO1394QtWidget::updatePotPosSIDisplay()
-{
-    // update GUI
-    std::stringstream ssVolt;
-    ssVolt << std::fixed << std::setprecision(4);
-
-    for (int i = 0; i < numOfAxis; i++){
-        ssVolt.str("");
-        ssVolt << (potPosSI.at(i) * cmn180_PI);
-        qlePotPosSI[i]->setText(ssVolt.str().c_str());
-    }
-}
-
-void mtsRobotIO1394QtWidget::updateCurrentDisplay()
-{
-    // update GUI
-    std::stringstream ssmA;
-    ssmA << std::fixed << std::setprecision(2);
-
-    for (int i = 0; i < numOfAxis; i++){
-        ssmA.str("");
-        ssmA << motorFeedbackCurrent.at(i) * 1000.0;
-        qleCurmA[i]->setText(ssmA.str().c_str());
-    }
-
-    CMN_LOG_CLASS_RUN_VERBOSE << motorFeedbackCurrent << std::endl;
 }
 
 

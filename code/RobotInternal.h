@@ -104,6 +104,15 @@ protected:
     int NumberOfJoints;
     bool HasActuatorToJointCoupling;
 
+    struct AmpsToBitsOffsetUsingFeedbackAmpsStruct {
+        inline AmpsToBitsOffsetUsingFeedbackAmpsStruct(void):
+            Count(0)
+        {}
+        size_t Count;
+        vctDynamicVector<vctDoubleVec> ControlCurrents;
+        vctDynamicVector<vctDoubleVec> FeedbackCurrents;
+    } AmpsToBitsOffsetUsingFeedbackAmps;
+
     // State data
     bool           Valid;
     bool           PowerStatus;
@@ -147,6 +156,7 @@ protected:
     void SetTorqueJoint(const prmForceTorqueJointSet & torques);
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
+    void RequestAmpsToBitsOffsetUsingFeedbackAmps(const mtsInt & numberOfSamples);
     void ResetAmpsToBitsOffsetUsingFeedbackAmps(void);
     void ResetEncoderOffsetUsingPotPosSI(void);
     void ResetSingleEncoder(const int & actuatorIndex);

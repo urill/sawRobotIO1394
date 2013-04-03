@@ -23,7 +23,9 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstCommonXML.h>
 #include <cisstOSAbstraction/osaTimeServer.h>
+#include <cisstVector/vctQtWidgetDynamicVector.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
 
 #include <QtCore>
@@ -40,7 +42,7 @@ class mtsRobotIO1394QtWidget: public QMainWindow, public mtsComponent
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsRobotIO1394QtWidget(const std::string & taskName);
+    mtsRobotIO1394QtWidget(const std::string & taskName, unsigned int numberOfActuators);
     inline ~mtsRobotIO1394QtWidget(void) {}
 
     void Configure(const std::string & filename = "");
@@ -91,11 +93,6 @@ private:
     void setupUi(void);
 
     // gui update
-    void updateJointPositionDisplay(void);
-    void updateActuatorPositionDisplay(void);
-    void updateVelocityDisplay(void);
-    void updatePotVoltDisplay(void);
-    void updatePotPosSIDisplay(void);
     void updateCurrentDisplay(void);
     void updateRobotInfo(void);
 
@@ -112,6 +109,7 @@ protected:
     unsigned int last_debug_line;
 
     struct RobotStruct {
+        mtsFunctionRead GetPeriodStatistics;
         mtsFunctionRead GetNumberOfActuators;
         mtsFunctionRead IsValid;
         mtsFunctionVoid EnablePower;
@@ -130,7 +128,7 @@ protected:
         mtsFunctionWrite SetMotorCurrent;
         mtsFunctionWrite SetEncoderPosition;
 
-        mtsFunctionVoid BiasCurrent;
+        mtsFunctionWrite BiasCurrent;
         mtsFunctionVoid BiasEncoder;
     } Robot;
 
@@ -161,6 +159,8 @@ protected:
 
 
 private:
+    mtsIntervalStatistics IntervalStatistics;
+
     int numOfAxis;
     bool curFBState;
     double curFBPGain;
@@ -201,12 +201,14 @@ private:
     // GUI: Feedbacks
     QPushButton* qpbResetEncAll;
     QPushButton* qpbBiasEncAll;
-    QLineEdit** qleJointPos;
-    QLineEdit** qleActuatorPos;
-    QLineEdit** qleVelDeg;
-    QLineEdit** qlePotVolt;
-    QLineEdit** qlePotPosSI;
-    QLineEdit** qleCurmA;
+
+    vctQtWidgetDynamicVectorDoubleRead * JointPositionWidget;
+    vctQtWidgetDynamicVectorDoubleRead * ActuatorPositionWidget;
+    vctQtWidgetDynamicVectorDoubleRead * ActuatorVelocityWidget;
+    vctQtWidgetDynamicVectorDoubleRead * PotVoltsWidget;
+    vctQtWidgetDynamicVectorDoubleRead * PotPositionWidget;
+    vctQtWidgetDynamicVectorDoubleRead * CurrentFeedbackWidget;
+
     QPushButton** qpbResetEnc;
 
     // GUI: Debug

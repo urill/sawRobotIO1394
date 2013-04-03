@@ -54,7 +54,8 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
                                              const cmnGenericObject & owner,
                                              size_t numActuators) :
     OwnerServices(owner.Services()),
-    robotName(name), ActuatorList(numActuators), Valid(false),
+    robotName(name), ActuatorList(numActuators),
+    Valid(false),
     ampStatus(numActuators, false), ampEnable(numActuators, false),
     encPosRaw(numActuators), PositionJoint(numActuators),
     PositionJointGet(numActuators), PositionActuatorGet(numActuators),
@@ -324,6 +325,7 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetWatchdogPeriod, this, "SetWatchdogPeriod",
                                     this->watchdogPeriod);
 
+    robotInterface->AddCommandReadState(stateTable, stateTable.PeriodStats, "GetPeriodStatistics"); // mtsIntervalStatistics
     robotInterface->AddCommandReadState(stateTable, this->PowerStatus, "GetPowerStatus"); // bool
     robotInterface->AddCommandReadState(stateTable, this->SafetyRelay, "GetSafetyRelay"); // unsigned short
 
@@ -371,7 +373,8 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts, this,
                                             "AnalogInBitsToVolts", analogInRaw, analogInVolts);
 
-    robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps, this, "BiasCurrent");
+    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::RequestAmpsToBitsOffsetUsingFeedbackAmps, this, "BiasCurrent",
+                                    mtsInt(100));
     robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI, this, "BiasEncoder");
 
     actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
@@ -440,6 +443,17 @@ void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
         this->PositionJoint.Assign(this->PositionActuatorGet.Position());
     }
     this->PositionJointGet.Position().Assign(this->PositionJoint);
+
+    if (AmpsToBitsOffsetUsingFeedbackAmps.Count != 0) {
+        const size_t index = --AmpsToBitsOffsetUsingFeedbackAmps.Count;
+        // last motor current in amps is in motorFeedbackCurrent
+        // last request current in amps is in motorControlCurrent
+        AmpsToBitsOffsetUsingFeedbackAmps.ControlCurrents[index].ForceAssign(motorControlCurrent);
+        AmpsToBitsOffsetUsingFeedbackAmps.FeedbackCurrents[index].ForceAssign(motorFeedbackCurrent);
+        if (index == 0) {
+            this->ResetAmpsToBitsOffsetUsingFeedbackAmps();
+        }
+    }
 }
 
 //************************ PROTECTED METHODS ******************************
@@ -584,22 +598,35 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec & mcur)
     SetMotorCurrentRaw(motorControlCurrentRaw);
 }
 
+
+void mtsRobotIO1394::RobotInternal::RequestAmpsToBitsOffsetUsingFeedbackAmps(const mtsInt & numberOfSamples)
+{
+    AmpsToBitsOffsetUsingFeedbackAmps.Count = numberOfSamples;
+    AmpsToBitsOffsetUsingFeedbackAmps.ControlCurrents.SetSize(numberOfSamples);
+    AmpsToBitsOffsetUsingFeedbackAmps.FeedbackCurrents.SetSize(numberOfSamples);
+}
+
 void mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps(void)
 {
-    std::cerr << "code not implemented " << CMN_LOG_DETAILS << std::endl;
-#if 0
-    // last motor current in amps is in motorFeedbackCurrent
-    // last request current in amps is in motorControlCurrent
-    vctDoubleVec errorCurrent(NumberOfActuators);
-    errorCurrent.DifferenceOf(motorControlCurrent, motorFeedbackCurrent);
-    std::cerr << errorCurrent << std::endl;
-    for (size_t index = 0; index < ActuatorList.size(); index++) {
-        std::cerr << "before: " << ActuatorList[index].drive.AmpsToBitsOffset << std::endl;
-        std::cerr << "correction: " << static_cast<double>(errorCurrent[index]) / ActuatorList[index].drive.AmpsToBitsScale << std::endl;
-        ActuatorList[index].drive.AmpsToBitsOffset -= static_cast<double>(errorCurrent[index]) * ActuatorList[index].drive.AmpsToBitsScale;
-        std::cerr << "after: " << ActuatorList[index].drive.AmpsToBitsOffset << std::endl;
+    vctDoubleVec currentAverage(NumberOfActuators);
+    vctDoubleVec feedbackAverage(NumberOfActuators);
+    const size_t numberOfSamples = AmpsToBitsOffsetUsingFeedbackAmps.ControlCurrents.size();
+    for (size_t index = 0;
+         index < numberOfSamples;
+         ++index) {
+        currentAverage.Add(AmpsToBitsOffsetUsingFeedbackAmps.ControlCurrents[index]);
+        feedbackAverage.Add(AmpsToBitsOffsetUsingFeedbackAmps.FeedbackCurrents[index]);
     }
-#endif
+    currentAverage.Divide(numberOfSamples);
+    feedbackAverage.Divide(numberOfSamples);
+    vctDoubleVec errorCurrent(NumberOfActuators);
+    errorCurrent.DifferenceOf(currentAverage, feedbackAverage);
+    for (size_t index = 0; index < ActuatorList.size(); index++) {
+        ActuatorList[index].drive.AmpsToBitsOffset += (static_cast<double>(errorCurrent[index]) * ActuatorList[index].drive.AmpsToBitsScale);
+    }
+    // apply the new offsets
+    DriveAmpsToBits(this->motorControlCurrent, this->motorControlCurrentRaw);
+    SetMotorCurrentRaw(motorControlCurrentRaw);
 }
 
 void mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI(void)

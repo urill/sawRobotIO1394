@@ -70,7 +70,7 @@ int main(int argc, char ** argv)
     mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
 
     // Qt display task
-    mtsRobotIO1394QtWidget *disp = new mtsRobotIO1394QtWidget("disp");
+    mtsRobotIO1394QtWidget *disp = new mtsRobotIO1394QtWidget("disp", 8);
     disp->Configure();
     LCM->AddComponent(disp);
 
