@@ -115,15 +115,17 @@
   <!-- It would be nice to be able to include other XML files -->
   <!-- <Include FileName="MTM-Left.xml" /> -->
 
-  <!-- Definition of da Vinci Footpedal -->
-  <!-- Feb 26: We will not touch the digital IO for now.
-       Hello~ Backburner -->
-  <InputDevice Name="Footpedal" NumOfBoard="2" >
-
-    <Input name="COAG" boardid="0" bit="0" active="high" />
-    <Input name="Cam+" boardid="0" bit="4" active="low" />
-    <Input name="Cam-" boardid="1" bit="5" active="low" />
-
-  </InputDevice>
+  <DigitalIn Name="BIT0" BoardID="0" BitID="0" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT1" BoardID="0" BitID="1" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT2" BoardID="0" BitID="2" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT3" BoardID="0" BitID="3" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT4" BoardID="0" BitID="4" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT5" BoardID="0" BitID="5" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT6" BoardID="0" BitID="6" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT7" BoardID="0" BitID="7" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT8" BoardID="0" BitID="8" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT9" BoardID="0" BitID="9" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT10" BoardID="0" BitID="10" Pressed="0" Trigger="none" />
+  <DigitalIn Name="BIT11" BoardID="0" BitID="11" Pressed="0" Trigger="none" />
 
 </Config>

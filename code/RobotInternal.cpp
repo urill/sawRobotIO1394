@@ -373,6 +373,11 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandQualifiedRead(&mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts, this,
                                             "AnalogInBitsToVolts", analogInRaw, analogInVolts);
 
+    //Debug to run Cursor Example
+    robotInterface->AddCommandReadState(stateTable, this->ampEnable, "GetAmpEnable"); // vector[bool]
+    robotInterface->AddCommandReadState(stateTable, this->ampStatus, "GetAmpStatus"); // vector[bool]
+    robotInterface->AddCommandReadState(stateTable, this->PositionActuatorGet, "GetPositionActuator"); // prmPositionJointGet
+
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::RequestAmpsToBitsOffsetUsingFeedbackAmps, this, "BiasCurrent",
                                     mtsInt(100));
     robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI, this, "BiasEncoder");

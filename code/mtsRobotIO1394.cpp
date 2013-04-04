@@ -34,6 +34,7 @@
 #include "FirewirePort.h"
 #include "AmpIO.h"
 #include "RobotInternal.h"
+#include "DigitalInInternal.h"
 
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
@@ -168,6 +169,58 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         // Store the robot to RobotList
         RobotList.push_back(robot);
     }
+
+    //////////////////////////////////////////////////////////////////
+    ///////////////// Digital Input Setup Stage///////////////////////
+    //////////////////////////////////////////////////////////////////
+
+    k = 0;
+    //Setup Digital Input Lists.
+    bool readStat0 = false;
+    bool readStat1 = false;
+    bool readStat2 = false;
+    std::string tmpDIName = "";
+    tmpBoardID = -1;
+    int tmpBitID = -1;
+
+    while (true) {
+        //Initialize read confirm stats.
+        readStat0 = false;
+        readStat1 = false;
+        readStat2 = false;
+
+        //Check there is digital input entry. Return boolean result for success/fail.
+        k = k + 1;
+        sprintf(path,"DigitalIn[%i]/@Name", k);
+        readStat0 = xmlConfig.GetXMLValue(context.c_str(),path,tmpDIName);
+        sprintf(path,"DigitalIn[%i]/@BoardID", k);
+        readStat1 = xmlConfig.GetXMLValue(context.c_str(),path,tmpBoardID);
+        sprintf(path,"DigitalIn[%i]/@BitID", k);
+        readStat2 = xmlConfig.GetXMLValue(context.c_str(),path,tmpBitID);
+
+        if(!readStat0 || !readStat1 || !readStat2){
+            CMN_LOG_INIT_ERROR<<"Configuration for "<<path<<" finished/failed. Stopping config."<<std::endl;
+            CMN_LOG_INIT_ERROR<<"Total number of DigitalIn available: "<< DigitalInList.size() <<". "<<std::endl;
+            break;
+        }
+        //If not broken, go ahead.
+        DigitalInInternal * digitalIn = new DigitalInInternal(*this,tmpDIName,BoardList[tmpBoardID],tmpBitID);
+        // Make new DigitalIn provided interface.
+        digitalIn->Configure(xmlConfig,k);
+        // Configure pressed active direction and edge detection
+        digitalIn->SetupStateTable(this->StateTable);
+
+        // We are going to name the provided interface as DigitalInput-#, from 0 to whatever.
+        // Eventually, this will be changed so the name of the digital input corresponds to Provided Interface Name.
+        std::stringstream nameDigitalPI;
+        nameDigitalPI<<k-1;
+        std::string digitalInInterfaceName = "DigitalInput-";
+        digitalInInterfaceName.append(nameDigitalPI.str());
+        mtsInterfaceProvided * digitalInInterface = this->AddInterfaceProvided(digitalInInterfaceName);
+
+        digitalIn->SetupProvidedInterface(digitalInInterface,this->StateTable);
+        DigitalInList.push_back(digitalIn);
+    }
 }
 
 void mtsRobotIO1394::Startup(void)
@@ -188,6 +241,10 @@ void mtsRobotIO1394::Run(void)
             RobotList[i]->ConvertRawToSI();
         }
     }
+    // Loop through the digital inputs
+    for (i = 0; i < DigitalInList.size(); i++) {
+        DigitalInList[i]->GetData();
+    }
     // Invoke connected components (if any)
     RunEvent();
     // Process queued commands (e.g., to set motor current)
@@ -198,6 +255,11 @@ void mtsRobotIO1394::Run(void)
 
 void mtsRobotIO1394::Cleanup(void)
 {
+}
+
+void mtsRobotIO1394::GetNumberOfDigitalInputs(int &num) const
+{
+    num = DigitalInList.size();
 }
 
 void mtsRobotIO1394::GetNumberOfBoards(int &num) const

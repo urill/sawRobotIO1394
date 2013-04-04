@@ -39,9 +39,11 @@ public:
 protected:
 
     class RobotInternal;
+    class DigitalInInternal;
 
     FirewirePort *Port;                       // Pointer to IEEE-1394 port handler
     std::vector<RobotInternal *> RobotList;   // List of robots (provided interfaces)
+    std::vector<DigitalInInternal *> DigitalInList; // List of digital inputs (provided interfaces)
     AmpIO *BoardList[MAX_BOARDS];             // List of boards
 
 ///////////// Public Class Methods ///////////////////////////
@@ -58,11 +60,13 @@ public:
     void Startup(void);
     void Run(void);
     void Cleanup(void);
+    void GetNumberOfDigitalInputs(int &num) const;
 
 protected:
 
     void GetNumberOfBoards(int &num) const;
     void GetNumberOfRobots(int &num) const;
+
 
 ////////////// Private Class Methods /////////////////////////////
 private:

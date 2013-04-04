@@ -20,7 +20,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <ostream>
 #include <cisstMultiTask/mtsTaskContinuous.h>
-
+#include <cisstParameterTypes/prmEventButton.h>
+#include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstVector/vctDynamicVectorTypes.h>
 
 class displayTask: public mtsTaskContinuous {
@@ -32,6 +33,8 @@ protected:
     unsigned int last_debug_line;
     bool power_on, safety_relay, watchdog;
 
+    std::vector<mtsInterfaceRequired*> digitalInReq;
+
     struct RobotStruct {
         mtsFunctionRead GetNumberOfActuators;
         mtsFunctionRead IsValid;
@@ -39,7 +42,7 @@ protected:
         mtsFunctionVoid DisablePower;
         mtsFunctionVoid EnableSafetyRelay;
         mtsFunctionVoid DisableSafetyRelay;
-        mtsFunctionRead GetPositionRaw;
+        mtsFunctionRead GetPositionEncoderRaw;
         mtsFunctionRead GetVelocityRaw;
         mtsFunctionRead GetAnalogInputRaw;
         mtsFunctionRead GetMotorCurrentRaw;
@@ -51,7 +54,13 @@ protected:
         mtsFunctionWrite SetWatchdogPeriod;
     } Robot;
 
-    vctLongVec posRaw;
+    struct DigitalInStruct {
+        mtsFunctionRead GetButton;
+    };
+
+    std::vector<DigitalInStruct> DigitalInInterfaceList;
+
+    vctIntVec posRaw;
     vctLongVec velRaw;
     vctLongVec analogInRaw;
     vctLongVec motorFeedbackCurrentRaw;
@@ -61,10 +70,21 @@ protected:
     bool powerStatus;
     unsigned short safetyRelay;
 
+    size_t numberInputs;
+    bool bDigital;
+
+    int payloadCount;
+    int pressCount;
+    int releaseCount;
+
+    void emptyButtonHandler(void);
+    void payloadButtonHandler(const prmEventButton &payload);
+
 public:
     displayTask(const std::string & taskName);
     ~displayTask();
     void Configure(const std::string & CMN_UNUSED(filename) = "");
+    void Configure(const int numberOfDigitalInputs);
     void Startup(void);
     void Run(void);
     void Cleanup(void);

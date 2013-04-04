@@ -45,7 +45,9 @@ if (cisst_FOUND_AS_REQUIRED)
   add_library (sawRobotIO1394 mtsRobotIO1394.cpp
                               ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394.h
                               RobotInternal.cpp
-                              RobotInternal.h)
+                              RobotInternal.h
+			      DigitalInInternal.cpp
+			      DigitalInInternal.h)
 
   set_property (TARGET sawRobotIO1394 PROPERTY FOLDER "sawRobotIO1394")
   target_link_libraries (sawRobotIO1394 Amp1394)

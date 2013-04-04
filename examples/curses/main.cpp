@@ -30,8 +30,9 @@ int main(int argc, char ** argv)
     // get all messages to log file
     cmnLogger::SetMask(CMN_LOG_ALLOW_ALL);
     cmnLogger::SetMaskDefaultLog(CMN_LOG_ALLOW_ALL);
+    cmnLogger::SetMaskFunction(CMN_LOG_ALLOW_ALL);
     // get only errors and warnings to cerr
-    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
+    cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS);
 
     cmnCommandLineOptions options;
     int port;
@@ -71,11 +72,28 @@ int main(int argc, char ** argv)
     // add the tasks to the component manager
     LCM->AddComponent(disp);
     LCM->AddComponent(robot);
-    
+
     robot->Configure(fullFileName);
-    disp->Configure();
+
+    int numberOfDigitalInputs;
+    robot->GetNumberOfDigitalInputs(numberOfDigitalInputs);
+
+    disp->Configure(numberOfDigitalInputs);
 
     LCM->Connect("disp", "Robot", "robot", "Robot");
+
+    int j=0;
+
+    for (j = 0; j < numberOfDigitalInputs; j++) {
+        //Iteratvely connect between displayTask and robot!
+        std::string tmpDigRName = "DigitalIn-";
+        std::string tmpDigPName = "DigitalInput-";
+        std::stringstream numberNames;
+        numberNames<<j;
+        tmpDigRName.append(numberNames.str());
+        tmpDigPName.append(numberNames.str());
+        LCM->Connect("disp",tmpDigRName,"robot",tmpDigPName);
+    }
 
     // create the components
     LCM->CreateAll();
