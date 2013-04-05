@@ -415,6 +415,7 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
     PowerStatus = true;
     SafetyRelay = true;
     unsigned int singleEncoderPos;
+    unsigned int singleEncoderVel;
 
     for (size_t index = 0; index < ActuatorList.size(); index++) {
         AmpIO *board = ActuatorList[index].board;
@@ -422,7 +423,8 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
         if (!board || (axis < 0)) continue;
         singleEncoderPos = board->GetEncoderPosition(axis);
         encPosRaw[index] = ((int)(singleEncoderPos << 8)) >> 8; // convert from 24 bits signed stored in 32 unsigned to 32 signed
-        encVelRaw[index] = board->GetEncoderVelocity(axis);
+        singleEncoderVel = board->GetEncoderVelocity(axis);
+        encVelRaw[index] = ((int)(singleEncoderVel << 16)) >> 16; // convert from 16 bits signed stored in 32 unsigedn to 32 signed
         analogInRaw[index] = board->GetAnalogInput(axis);
         // digitalIn[index] = board->GetDigitalInput(axis);
         motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);
@@ -707,11 +709,16 @@ void mtsRobotIO1394::RobotInternal::EncoderSIToRaw(const vctDoubleVec & fromData
 
 void mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosSI(const vctLongVec & fromData, vctDoubleVec & toData) const
 {
+    /**
+     * See configGenerator.py for how to compute bitsToDeltaPosSIScale
+     * Velocoity = bitsToDeltaPosSIScale / timeCounter
+     */
+
     toData.SetAll(0.0);
     for (size_t index = 0; index < ActuatorList.size();index++) {
         double bitsToDeltaPosSIScale = ActuatorList[index].encoder.BitsToDeltaPosSIScale;
         double bitsToDeltaPosSIOffset = ActuatorList[index].encoder.BitsToDeltaPosSIOffset;
-        toData[index] = (fromData[index] * bitsToDeltaPosSIScale) + bitsToDeltaPosSIOffset;
+        toData[index] = bitsToDeltaPosSIScale / (fromData[index]);
     }
 }
 

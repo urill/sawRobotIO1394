@@ -73,8 +73,17 @@ MaxCurrent = motorDefCur
 # === Encoder ======
 BitsToPosSIScale = 360.0 / encCPT * pitch / gearRatio * driveDirection
 BitsToPosSIOffset = np.zeros(7)
-# % NOT valid for now 
-BitsToDeltaPosSI = np.ones(7) * -1
+
+# AmpIO buff = buff + MIDRANGE_VEL
+# Velocity = deltaPos / deltaTime
+# deltaPos = 360 / (encCPT/4) / gearRatio * pitch  || not quadratic 
+# deltaTime = timeCounter * 1 / 768000 (Unit: sec)
+# Fast clock 49.152 MHz / 2^6 = 768 kHz
+# Velocity = 360 * 768000 / (encCPT / 4.0) / gearRatio * pitch / timeCounter
+#          = BitsToDeltaPosSIScale / timeCounter
+BitsToDeltaPosSIScale = 360.0 * 768000 / (encCPT / 4.0) / gearRatio * pitch * driveDirection
+BitsToDeltaPosSIOffset = np.ones(7) * 0.0
+
 BitsToDeltaT = np.ones(7) * -1
 CountsPerTurn = encCPT
 
@@ -88,7 +97,7 @@ VoltsToPosSIOffset = potOffset * 180.0 / math.pi
 # ==============================
 # Read and Write XML file
 # ==============================
-filename = '/home/adeguet1/devel/cisst/trunk/saw/applications/sawIntuitiveResearchKit/share/sawRobotIO1394-PSM1.xml'
+filename = '../../../applications/sawIntuitiveResearchKit/share/sawRobotIO1394-PSM1.xml'
 
 tree = ET.parse(filename)
 config = tree.getroot()
@@ -120,6 +129,8 @@ for Actuator in robot.findall('Actuator'):
     Encoder = Actuator.find('Encoder')
     Encoder.find('BitsToPosSI').set('Scale', str(BitsToPosSIScale[actuatorID]))
     Encoder.find('BitsToPosSI').set('Offset', str(BitsToPosSIOffset[actuatorID]))
+    Encoder.find('BitsToDeltaPosSI').set('Scale', str(BitsToDeltaPosSIScale[actuatorID]))
+    Encoder.find('BitsToDeltaPosSI').set('Offset', str(BitsToDeltaPosSIOffset[actuatorID]))
     # TODO: add BitsToDeltaPosSI here
     Encoder.find('CountsPerTurn').set('Value', str(CountsPerTurn[actuatorID]))
 
