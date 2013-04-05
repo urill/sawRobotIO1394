@@ -26,6 +26,8 @@
 #include <cisstCommon/cmnLogger.h>
 #include <cisstCommon/cmnUnits.h>
 
+#include <cisstOSAbstraction/osaCPUAffinity.h>
+
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
@@ -210,13 +212,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         // Configure pressed active direction and edge detection
         digitalIn->SetupStateTable(this->StateTable);
 
-        // We are going to name the provided interface as DigitalInput-#, from 0 to whatever.
-        // Eventually, this will be changed so the name of the digital input corresponds to Provided Interface Name.
-        std::stringstream nameDigitalPI;
-        nameDigitalPI<<k-1;
-        std::string digitalInInterfaceName = "DigitalInput-";
-        digitalInInterfaceName.append(nameDigitalPI.str());
-        mtsInterfaceProvided * digitalInInterface = this->AddInterfaceProvided(digitalInInterfaceName);
+        mtsInterfaceProvided * digitalInInterface = this->AddInterfaceProvided(tmpDIName);
 
         digitalIn->SetupProvidedInterface(digitalInInterface,this->StateTable);
         DigitalInList.push_back(digitalIn);
@@ -225,6 +221,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
 
 void mtsRobotIO1394::Startup(void)
 {
+    // osaCPUSetAffinity(OSA_CPU4);
 }
 
 void mtsRobotIO1394::Run(void)

@@ -304,7 +304,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     ActuatorVelocityWidget->SetValue(vel);
     PotVoltsWidget->SetValue(potVolt);
     PotPositionWidget->SetValue(potPosSI);
-    CurrentFeedbackWidget->SetValue(motorFeedbackCurrent);
+    CurrentFeedbackWidget->SetValue(motorFeedbackCurrent * 1000.0);
 
     updateRobotInfo();
 

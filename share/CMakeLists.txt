@@ -20,7 +20,7 @@ if (cisst_FOUND)
   # load cisst configuration
   include (${CISST_USE_FILE})
 
-  set (FILES_TO_COPY sawRobotIO1394Example.xml sawRobotIO1394TestBoard.xml sawRobotIO1394CouplingExample.xml)
+  set (FILES_TO_COPY sawRobotIO1394Example.xml sawRobotIO1394TestBoard.xml)
 
   set (DESTINATION_DIRECTORY "${CISST_BINARY_DIR}/${CISST_SHARE_INSTALL_SUFFIX}/sawRobotIO1394")
   foreach (_file ${FILES_TO_COPY})
