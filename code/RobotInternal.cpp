@@ -63,7 +63,9 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
     analogInRaw(numActuators), analogInVolts(numActuators), analogInPosSI(numActuators),
     motorFeedbackCurrentRaw(numActuators), motorFeedbackCurrent(numActuators),
     TorqueJoint(numActuators),
+    jointTorque(numActuators), jointTorqueMax(numActuators),
     motorControlCurrentRaw(numActuators), motorControlCurrent(numActuators),
+    motorControlTorque(numActuators),
     encSetPosRaw(numActuators), encSetPos(numActuators)
 {
 }
@@ -151,6 +153,7 @@ void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int 
     }
 
     ConfigureCoupling(xmlConfigFile, robotNumber);
+    UpdateJointTorqueMax();
 }
 
 void
@@ -237,6 +240,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingAT2JT (cmnXMLPath & xmlConf
     sprintf(path, "Robot[%i]/Coupling/ActuatorToJointTorque", robotNumber);
     tmpPathString = path;
     ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfJoint, numOfActuator, AT2JTMatrix);
+    UpdateJointTorqueMax();
 }
 
 void mtsRobotIO1394::RobotInternal::ConfigureCouplingJT2AT (cmnXMLPath & xmlConfigFile,
@@ -256,7 +260,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
     std::string context = "Config";
     std::string tmpRow = "";
     bool ssTest = false;
-    size_t i = 0;
+    int i = 0;
 
     for (i = 0; i < numRows; i++) {
         vctDoubleVec tmpRowVec;
@@ -276,6 +280,19 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
         }
         resultMatrix.Row(i).Assign(tmpRowVec);
     }
+}
+
+void mtsRobotIO1394::RobotInternal::UpdateJointTorqueMax(void)
+{
+    vctDoubleVec motorTorqueMax(ActuatorList.size());
+    for (size_t i = 0; i < ActuatorList.size(); i++)
+        motorTorqueMax[i] = ActuatorList[i].drive.MaxCurrentValue;
+    DriveAmpsToNm(motorTorqueMax, motorTorqueMax);
+    if (HasActuatorToJointCoupling)
+        jointTorqueMax.ProductOf(ActuatorToJointTorque, motorTorqueMax);
+    else
+        jointTorqueMax.Assign(motorTorqueMax);
+    CMN_LOG_CLASS_INIT_VERBOSE << "Maximum joint torques = " << jointTorqueMax << std::endl;
 }
 
 void mtsRobotIO1394::RobotInternal::SetActuatorInfo(int index, AmpIO * board, int axis)
@@ -347,6 +364,9 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandReadState(stateTable, this->motorFeedbackCurrent, "GetMotorFeedbackCurrent");
 
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetTorqueJoint, this, "SetTorqueJoint", TorqueJoint);
+    robotInterface->AddCommandRead(&mtsRobotIO1394::RobotInternal::GetTorqueJointMax, this, "GetTorqueJointMax",
+                                   jointTorqueMax);
+
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw, this, "SetMotorCurrentRaw",
                                     motorControlCurrentRaw);
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetMotorCurrent, this, "SetMotorCurrent",
@@ -567,12 +587,23 @@ void mtsRobotIO1394::RobotInternal::SetAmpEnable(const vctBoolVec & ampControl)
 
 void mtsRobotIO1394::RobotInternal::SetTorqueJoint(const prmForceTorqueJointSet & jointTorques)
 {
-    // todo - put temporary variables as data members in class to avoid dynamic new/delete
-    vctDoubleVec actuatorTorques(ActuatorList.size());
-    actuatorTorques.ProductOf(this->JointToActuatorTorque, jointTorques.ForceTorque());
-    vctDoubleVec actuatorAmps(ActuatorList.size());
-    this->DriveNmToAmps(actuatorTorques, actuatorAmps);
-    this->SetMotorCurrent(actuatorAmps);
+    TorqueJoint = jointTorques;
+    jointTorque.Assign(TorqueJoint.ForceTorque());
+    // Check joint torque limits
+    jointTorque.ElementwiseClipIn(jointTorqueMax);
+    motorControlTorque.ProductOf(JointToActuatorTorque, jointTorque);
+    DriveNmToAmps(motorControlTorque, motorControlCurrent);
+    SetMotorCurrent(motorControlCurrent);
+}
+
+void mtsRobotIO1394::RobotInternal::GetTorqueJointMax(vctDoubleVec &maxTorques) const
+{
+    if (maxTorques.size() != jointTorqueMax.size()) {
+        CMN_LOG_CLASS_RUN_ERROR << robotName << "::GetTorqueJointMax: size mismatch ("
+                                << maxTorques.size() << ", " << jointTorqueMax.size() << ")" << std::endl;
+        return;
+    }
+    maxTorques.Assign(jointTorqueMax);
 }
 
 void mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw(const vctLongVec & mcur)

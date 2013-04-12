@@ -133,6 +133,8 @@ protected:
     vctLongVec     motorFeedbackCurrentRaw;
     vctDoubleVec   motorFeedbackCurrent;
     prmForceTorqueJointSet TorqueJoint;
+    vctDoubleVec   jointTorque;
+    vctDoubleVec   jointTorqueMax;
     vctLongVec     motorControlCurrentRaw;
     vctDoubleVec   motorControlCurrent;
     vctDoubleVec   motorControlTorque;
@@ -154,6 +156,7 @@ protected:
     void SetWatchdogPeriod(const unsigned long &period_ms);
     void SetAmpEnable(const vctBoolVec &ampControl);
     void SetTorqueJoint(const prmForceTorqueJointSet & torques);
+    void GetTorqueJointMax(vctDoubleVec & maxTorques) const;
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
     void RequestAmpsToBitsOffsetUsingFeedbackAmps(const mtsInt & numberOfSamples);
@@ -175,12 +178,7 @@ protected:
     void AnalogInBitsToVolts(const vctLongVec &fromData, vctDoubleVec &toData) const;
     void AnalogInVoltsToPosSI(const vctDoubleVec &fromData, vctDoubleVec &toData) const;
 
-public:
-
-    RobotInternal(const std::string & name, const cmnGenericObject & owner, size_t numActuators);
-    ~RobotInternal();
-    void Configure(const std::string &filename);
-    void Configure (cmnXMLPath &xmlConfigFile, int robotNumber);
+    // Internal methods for configuring coupling
     void ConfigureCoupling (cmnXMLPath & xmlConfigFile, int robotNumber);
     void ConfigureCouplingA2J(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
                               int numOfJoint, vctDoubleMat &A2JMatrix);
@@ -192,7 +190,14 @@ public:
                                 int numOfJoint, vctDoubleMat &JT2ATMatrix);
     void ConfigureCouplingMatrix(cmnXMLPath &xmlConfigFile, const std::string pathToMatrix, int numRows,
                                  int numCols, vctDoubleMat &resultMatrix);
+    void UpdateJointTorqueMax(void);
 
+public:
+
+    RobotInternal(const std::string & name, const cmnGenericObject & owner, size_t numActuators);
+    ~RobotInternal();
+    void Configure(const std::string &filename);
+    void Configure (cmnXMLPath &xmlConfigFile, int robotNumber);
     void SetActuatorInfo(int index, AmpIO *board, int axis);
 
     void SetupStateTable(mtsStateTable & stateTable);
