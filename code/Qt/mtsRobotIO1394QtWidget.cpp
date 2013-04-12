@@ -39,13 +39,23 @@ http://www.cisst.org/cisst/license.txt.
 #define MOTORCUR_DAC 0xFFFF     // max dac value for motor current
 
 
-CMN_IMPLEMENT_SERVICES_DERIVED(mtsRobotIO1394QtWidget, mtsComponent);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtWidget, mtsComponent, std::string);
 
 
 mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & taskName, unsigned int numberOfActuators):
-    mtsComponent(taskName)
+    mtsComponent(taskName), numOfAxis(numberOfActuators)
 {
-    numOfAxis = numberOfActuators;
+    Init();
+}
+
+mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & taskName):
+    mtsComponent(taskName), numOfAxis(8)
+{
+    Init();
+}
+
+void mtsRobotIO1394QtWidget::Init(void)
+{
     curFBState = false;
     curFBPGain = 1.0;
     curFBOffset = 30.0;
@@ -82,6 +92,7 @@ void mtsRobotIO1394QtWidget::Configure(const std::string &filename)
 void mtsRobotIO1394QtWidget::Startup()
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
+    show();
 }
 
 void mtsRobotIO1394QtWidget::Cleanup()

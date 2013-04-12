@@ -39,10 +39,13 @@ http://www.cisst.org/cisst/license.txt.
 class mtsRobotIO1394QtWidget: public QMainWindow, public mtsComponent
 {
     Q_OBJECT
-    CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
+    CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
     mtsRobotIO1394QtWidget(const std::string & taskName, unsigned int numberOfActuators);
+    // For now, single arg constructor hard-codes number of actuators. Could replace this
+    // by a custom constructor arg.
+    mtsRobotIO1394QtWidget(const std::string & taskName);
     inline ~mtsRobotIO1394QtWidget(void) {}
 
     void Configure(const std::string & filename = "");
@@ -52,6 +55,7 @@ public:
     inline std::stringstream & GetOutputStream(void) { return debugStream; }
 
 protected:
+    void Init(void);
     virtual void closeEvent(QCloseEvent *event);
 
 private slots:
