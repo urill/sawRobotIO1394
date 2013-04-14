@@ -469,7 +469,9 @@ void mtsRobotIO1394::RobotInternal::EnablePower(void)
     // Make sure that watchdog period is set (for now, 5*TaskPeriod).
     // We do this in EnablePower to be sure it is set (e.g., if a board
     // is connected when this component is already running).
-    SetWatchdogPeriod(5.0*TaskPeriod);
+    // PK TEMP: disabled watchdog because it would otherwise trip due to
+    // the subsequent 100 msec sleep.
+    // SetWatchdogPeriod(5.0*TaskPeriod);
     osaSleep(100.0 * cmn_ms); // Without the sleep, we can get power jumps and joints without power enabled
     // Now, enable all amplifiers
     SetAmpEnable(allOn);
@@ -483,6 +485,9 @@ void mtsRobotIO1394::RobotInternal::DisablePower(void)
         OwnBoards[index]->WritePowerEnable(false);
         OwnBoards[index]->WriteSafetyRelay(false);
     }
+    // Set desired current to 0
+    TorqueJoint.ForceTorque().SetAll(0.0);
+    SetTorqueJoint(TorqueJoint);
     // Now, disable all amplifiers
     SetAmpEnable(allOff);
 }
@@ -546,7 +551,6 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrentRaw(const vctLongVec & mcur)
         return;
     }
     motorControlCurrentRaw = mcur;
-    // TODO: unit conversion to motorControlCurrent
     for (size_t index = 0; index < ActuatorList.size(); index++) {
         AmpIO *board = ActuatorList[index].board;
         int axis = ActuatorList[index].axisid;
