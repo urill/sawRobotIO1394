@@ -103,6 +103,7 @@ protected:
     std::vector<AmpIO *> OwnBoards;           // Pointers to boards "owned" by this robot
     int NumberOfActuators;
     int NumberOfJoints;
+    double TaskPeriod;
     bool HasActuatorToJointCoupling;
 
     struct AmpsToBitsOffsetUsingFeedbackAmpsStruct {
@@ -118,7 +119,6 @@ protected:
     bool           Valid;
     bool           PowerStatus;
     unsigned short SafetyRelay;
-    unsigned long  watchdogPeriod;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
     vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
     vctIntVec      encPosRaw;
@@ -158,7 +158,7 @@ protected:
     void DisablePower(void);
     void EnableSafetyRelay(void);
     void DisableSafetyRelay(void);
-    void SetWatchdogPeriod(const unsigned long &period_ms);
+    void SetWatchdogPeriod(const double &period_sec);
     void SetAmpEnable(const vctBoolVec &ampControl);
     void SetTorqueJoint(const prmForceTorqueJointSet & torques);
     void GetTorqueJointMax(vctDoubleVec & maxTorques) const;
@@ -191,7 +191,7 @@ protected:
 
 public:
 
-    RobotInternal(const std::string & name, const cmnGenericObject & owner, size_t numActuators, size_t numJoints);
+    RobotInternal(const std::string & name, const mtsTaskPeriodic & owner, size_t numActuators, size_t numJoints);
     ~RobotInternal();
     void Configure (cmnXMLPath &xmlConfigFile, int robotNumber, AmpIO **BoardList);
 

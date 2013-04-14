@@ -44,11 +44,12 @@ mtsRobotIO1394::RobotInternal::ActuatorInfo::~ActuatorInfo()
 {}
 
 mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
-                                             const cmnGenericObject & owner,
+                                             const mtsTaskPeriodic & owner,
                                              size_t numActuators, size_t numJoints) :
     OwnerServices(owner.Services()),
     robotName(name), ActuatorList(numActuators),
     NumberOfActuators(numActuators), NumberOfJoints(numJoints),
+    TaskPeriod(owner.GetPeriodicity()),
     HasActuatorToJointCoupling(false), Valid(false),
     ampStatus(numActuators, false), ampEnable(numActuators, false),
     encPosRaw(numActuators), PositionJoint(numJoints),
@@ -300,8 +301,7 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::EnableSafetyRelay, this, "EnableSafetyRelay");
     robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisableSafetyRelay, this, "DisableSafetyRelay");
 
-    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetWatchdogPeriod, this, "SetWatchdogPeriod",
-                                    this->watchdogPeriod);
+    robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetWatchdogPeriod, this, "SetWatchdogPeriod");
 
     robotInterface->AddCommandReadState(stateTable, stateTable.PeriodStats, "GetPeriodStatistics"); // mtsIntervalStatistics
     robotInterface->AddCommandReadState(stateTable, this->PowerStatus, "GetPowerStatus"); // bool
@@ -462,8 +462,14 @@ void mtsRobotIO1394::RobotInternal::EnablePower(void)
 {
     // Make sure all boards are enabled.
     // Notice we use Write to board to make sure this is not buffered.
-    for (size_t index = 0; index < OwnBoards.size(); index++)
+    for (size_t index = 0; index < OwnBoards.size(); index++) {
+        OwnBoards[index]->WriteSafetyRelay(true);
         OwnBoards[index]->WritePowerEnable(true);
+    }
+    // Make sure that watchdog period is set (for now, 5*TaskPeriod).
+    // We do this in EnablePower to be sure it is set (e.g., if a board
+    // is connected when this component is already running).
+    SetWatchdogPeriod(5.0*TaskPeriod);
     osaSleep(100.0 * cmn_ms); // Without the sleep, we can get power jumps and joints without power enabled
     // Now, enable all amplifiers
     SetAmpEnable(allOn);
@@ -473,8 +479,10 @@ void mtsRobotIO1394::RobotInternal::DisablePower(void)
 {
     // Make sure all boards are disabled.
     // Notice we use Write to board to make sure this is not buffered.
-    for (size_t index = 0; index < OwnBoards.size(); index++)
+    for (size_t index = 0; index < OwnBoards.size(); index++) {
         OwnBoards[index]->WritePowerEnable(false);
+        OwnBoards[index]->WriteSafetyRelay(false);
+    }
     // Now, disable all amplifiers
     SetAmpEnable(allOff);
 }
@@ -491,9 +499,10 @@ void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
         OwnBoards[index]->SetSafetyRelay(false);
 }
 
-void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const unsigned long & period_ms)
+void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const double & period_sec)
 {
     // write timeout period, converted to counts
+    unsigned long period_ms = static_cast<unsigned long>(cmnInternalTo_ms(period_sec)+0.5);
     for (size_t index = 0; index < OwnBoards.size(); index++)
         OwnBoards[index]->WriteWatchdogPeriod(period_ms*WD_MSTOCOUNT);
 }
