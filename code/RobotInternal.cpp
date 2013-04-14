@@ -30,13 +30,6 @@
 #include "RobotInternal.h"
 #include "AmpIO.h"
 
-// ZC: MOVE to configuration file
-// const unsigned int      ENC_CPT  =      4000;    // OK  1000 x 4 quadrature
-// const unsigned long ENC_VEL_MAX  =  0x00FFFF;    // TEMP need check // maximum value of encoder pulse period
-// const double        ENC_VEL_CLK  = 1000000.0;    // TMEP need check clock (Hz) used to measure encoder pulse
-// const double        ENC_ACC_CLK  =      12.0;    // TEMP need check
-// const unsigned long MIDRANGE_ADC = 0x0008000;    // 16 bits ADC mid range value
-const unsigned long ENC_OFFSET   = 0x007FFFFF;   // Encoder offset
 const unsigned long WD_MSTOCOUNT =       192;    // watchdog counts per ms (note counter width, e.g. 16 bits)
 
 // ActuatorInfo Constructor
@@ -52,49 +45,62 @@ mtsRobotIO1394::RobotInternal::ActuatorInfo::~ActuatorInfo()
 
 mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
                                              const cmnGenericObject & owner,
-                                             size_t numActuators) :
+                                             size_t numActuators, size_t numJoints) :
     OwnerServices(owner.Services()),
     robotName(name), ActuatorList(numActuators),
-    Valid(false),
+    NumberOfActuators(numActuators), NumberOfJoints(numJoints),
+    HasActuatorToJointCoupling(false), Valid(false),
     ampStatus(numActuators, false), ampEnable(numActuators, false),
-    encPosRaw(numActuators), PositionJoint(numActuators),
-    PositionJointGet(numActuators), PositionActuatorGet(numActuators),
+    encPosRaw(numActuators), PositionJoint(numJoints),
+    PositionJointGet(numJoints), PositionActuatorGet(numActuators),
     encVelRaw(numActuators), encVel(numActuators),
     analogInRaw(numActuators), analogInVolts(numActuators), analogInPosSI(numActuators),
     motorFeedbackCurrentRaw(numActuators), motorFeedbackCurrent(numActuators),
-    TorqueJoint(numActuators),
-    jointTorque(numActuators), jointTorqueMax(numActuators),
+    TorqueJoint(numJoints),
+    jointTorque(numJoints), jointTorqueMax(numJoints),
     motorControlCurrentRaw(numActuators), motorControlCurrent(numActuators),
     motorControlTorque(numActuators),
-    encSetPosRaw(numActuators), encSetPos(numActuators)
+    encSetPosRaw(numActuators), encSetPos(numActuators),
+    allOn(numActuators, true), allOff(numActuators, false)
 {
 }
 
 mtsRobotIO1394::RobotInternal::~RobotInternal()
 {
 }
-void mtsRobotIO1394::RobotInternal::Configure(const std::string & filename){
-    //This configuration will go by default method. Will assume there is only one robot, and the first one is it.
-    //If there are more than one robot per configuration file, then this method should not be used.
 
-    cmnXMLPath xmlConfig;
-    xmlConfig.SetInputSource(filename);
-
-    Configure(xmlConfig, 1);
-}
-
-void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int robotNumber){
+void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int robotNumber, AmpIO **BoardList)
+{
     char path[64];
     std::string context = "Config";
 
-    int  tmpNumOfActuator;
-    sprintf(path, "Robot[%i]/@NumOfActuator", robotNumber);
-    xmlConfigFile.GetXMLValue(context.c_str(), path, tmpNumOfActuator);
-    
-    int xmlIndex;
+    for (int i = 0; i < NumberOfActuators; i++) {
+        int xmlIndex = i + 1;
 
-    for (int i = 0; i < tmpNumOfActuator; i++) {
-        xmlIndex = i + 1;
+        int tmpBoardID = -1;
+        sprintf(path,"Robot[%d]/Actuator[%d]/@BoardID", robotNumber, xmlIndex);
+        xmlConfigFile.GetXMLValue(context.c_str(), path, tmpBoardID);
+        if ((tmpBoardID < 0) || (tmpBoardID >= mtsRobotIO1394::MAX_BOARDS)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: invalid board number " << tmpBoardID
+                                     << " for actuator " << i << std::endl;
+            continue;
+        }
+        int tmpAxisID = -1;
+        sprintf(path,"Robot[%d]/Actuator[%d]/@AxisID", robotNumber, xmlIndex);
+        xmlConfigFile.GetXMLValue(context.c_str(), path, tmpAxisID);
+        if ((tmpAxisID < 0) || (tmpAxisID >= 4)) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: invalid axis number " << tmpAxisID
+                                     << " for actuator " << i << std::endl;
+            continue;
+        }
+        if(BoardList[tmpBoardID] == 0) {
+            BoardList[tmpBoardID] = new AmpIO(tmpBoardID);
+            // Following does not properly handle the case where a board is split
+            // between two robots, but there is no good way to handle that since
+            // the power/safety control is per board.
+            OwnBoards.push_back(BoardList[tmpBoardID]);
+        }
+        ActuatorList[i] = ActuatorInfo(BoardList[tmpBoardID], tmpAxisID);
 
         sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.AmpsToBitsScale);
@@ -160,8 +166,6 @@ void
 mtsRobotIO1394::RobotInternal::ConfigureCoupling(cmnXMLPath & xmlConfigFile, int robotNumber) {
     char path[64];
     std::string context = "Config";
-    int tmpNumOfActuator = 0;
-    int tmpNumOfJoint = 0;
 
     bool tmpCouplingAvailable = false;
     int buff = 0;
@@ -177,24 +181,22 @@ mtsRobotIO1394::RobotInternal::ConfigureCoupling(cmnXMLPath & xmlConfigFile, int
     }
     tmpCouplingAvailable = true;
     if (tmpCouplingAvailable) {
-        sprintf(path, "Robot[%i]/@NumOfActuator", robotNumber);
-        xmlConfigFile.GetXMLValue(context.c_str(), path, tmpNumOfActuator);
-        sprintf(path, "Robot[%i]/@NumOfJoint", robotNumber);
-        xmlConfigFile.GetXMLValue(context.c_str(), path, tmpNumOfJoint);
-        ActuatorToJointPosition.SetSize(tmpNumOfJoint, tmpNumOfActuator, 0.0);
-        JointToActuatorPosition.SetSize(tmpNumOfActuator, tmpNumOfJoint, 0.0);
-        ActuatorToJointTorque.SetSize(tmpNumOfJoint, tmpNumOfActuator, 0.0);
-        JointToActuatorTorque.SetSize(tmpNumOfActuator, tmpNumOfJoint, 0.0);
+        ActuatorToJointPosition.SetSize(NumberOfJoints, NumberOfActuators, 0.0);
+        JointToActuatorPosition.SetSize(NumberOfActuators, NumberOfJoints, 0.0);
+        ActuatorToJointTorque.SetSize(NumberOfJoints, NumberOfActuators, 0.0);
+        JointToActuatorTorque.SetSize(NumberOfActuators, NumberOfJoints, 0.0);
 
-        ConfigureCouplingA2J(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, ActuatorToJointPosition);
-        ConfigureCouplingJ2A(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, JointToActuatorPosition);
-        ConfigureCouplingAT2JT(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, ActuatorToJointTorque);
-        ConfigureCouplingJT2AT(xmlConfigFile, robotNumber, tmpNumOfActuator, tmpNumOfJoint, JointToActuatorTorque);
+        ConfigureCouplingMatrix(xmlConfigFile, robotNumber, "ActuatorToJointPosition",
+                                NumberOfJoints, NumberOfActuators, ActuatorToJointPosition);
+        ConfigureCouplingMatrix(xmlConfigFile, robotNumber, "JointToActuatorPosition",
+                                NumberOfActuators, NumberOfJoints, JointToActuatorPosition);
+        ConfigureCouplingMatrix(xmlConfigFile, robotNumber, "ActuatorToJointTorque",
+                                NumberOfJoints, NumberOfActuators, ActuatorToJointTorque);
+        ConfigureCouplingMatrix(xmlConfigFile, robotNumber, "JointToActuatorTorque",
+                                NumberOfActuators, NumberOfJoints, JointToActuatorTorque);
         //Still need to do proper alignment and such for joint/actuator situ for each matrix.
     }
     this->HasActuatorToJointCoupling = tmpCouplingAvailable;
-    this->NumberOfJoints = tmpNumOfJoint;
-    this->NumberOfActuators = tmpNumOfActuator;
 
     // make sure the coupling matrices make sense
     vctDoubleMat product, identity;
@@ -212,51 +214,13 @@ mtsRobotIO1394::RobotInternal::ConfigureCoupling(cmnXMLPath & xmlConfigFile, int
     }
 }
 
-void mtsRobotIO1394::RobotInternal::ConfigureCouplingA2J (cmnXMLPath & xmlConfigFile,
-                                                          int robotNumber, int numOfActuator,
-                                                          int numOfJoint, vctDoubleMat & A2JMatrix) {
-    std::string tmpPathString = "";
-    char path[64];
-    sprintf(path, "Robot[%i]/Coupling/ActuatorToJointPosition", robotNumber);
-    tmpPathString = path;
-    ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfJoint, numOfActuator, A2JMatrix);
-}
+void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlConfigFile, int robotNumber, const char *couplingString,
+                                                             int numRows, int numCols, vctDoubleMat & resultMatrix)
+{
+    char pathToMatrix[64];
+    sprintf(pathToMatrix, "Robot[%i]/Coupling/%s", robotNumber, couplingString);
 
-void mtsRobotIO1394::RobotInternal::ConfigureCouplingJ2A (cmnXMLPath & xmlConfigFile,
-                                                          int robotNumber, int numOfActuator,
-                                                          int numOfJoint, vctDoubleMat & J2AMatrix) {
-    std::string tmpPathString = "";
     char path[64];
-    sprintf(path, "Robot[%i]/Coupling/JointToActuatorPosition", robotNumber);
-    tmpPathString = path;
-    ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfActuator, numOfJoint, J2AMatrix);
-}
-
-void mtsRobotIO1394::RobotInternal::ConfigureCouplingAT2JT (cmnXMLPath & xmlConfigFile,
-                                                          int robotNumber, int numOfActuator,
-                                                          int numOfJoint, vctDoubleMat & AT2JTMatrix) {
-    std::string tmpPathString = "";
-    char path[64];
-    sprintf(path, "Robot[%i]/Coupling/ActuatorToJointTorque", robotNumber);
-    tmpPathString = path;
-    ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfJoint, numOfActuator, AT2JTMatrix);
-    UpdateJointTorqueMax();
-}
-
-void mtsRobotIO1394::RobotInternal::ConfigureCouplingJT2AT (cmnXMLPath & xmlConfigFile,
-                                                          int robotNumber, int numOfActuator,
-                                                          int numOfJoint, vctDoubleMat & JT2ATMatrix) {
-    std::string tmpPathString = "";
-    char path[64];
-    sprintf(path, "Robot[%i]/Coupling/JointToActuatorTorque", robotNumber);
-    tmpPathString = path;
-    ConfigureCouplingMatrix(xmlConfigFile, tmpPathString, numOfActuator, numOfJoint, JT2ATMatrix);
-}
-
-void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlConfigFile, const std::string pathToMatrix,
-                                                             int numRows, int numCols, vctDoubleMat & resultMatrix) {
-    char path[64];
-
     std::string context = "Config";
     std::string tmpRow = "";
     bool ssTest = false;
@@ -270,7 +234,7 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
         ssTest = false;
         char tmpPath[32];
         sprintf(tmpPath, "/Row[%i]/@Val", i + 1);
-        strcpy(path, pathToMatrix.c_str());
+        strcpy(path, pathToMatrix);
         strcat(path, tmpPath);
         xmlConfigFile.GetXMLValue(context.c_str(), path, tmpRow);
         tmpStringStream.str(tmpRow);
@@ -292,12 +256,9 @@ void mtsRobotIO1394::RobotInternal::UpdateJointTorqueMax(void)
         jointTorqueMax.ProductOf(ActuatorToJointTorque, motorTorqueMax);
     else
         jointTorqueMax.Assign(motorTorqueMax);
+    // Make sure maximum joint torques are all positive
+    jointTorqueMax.AbsSelf();
     CMN_LOG_CLASS_INIT_VERBOSE << "Maximum joint torques = " << jointTorqueMax << std::endl;
-}
-
-void mtsRobotIO1394::RobotInternal::SetActuatorInfo(int index, AmpIO * board, int axis)
-{
-    ActuatorList[index] = ActuatorInfo(board, axis);
 }
 
 void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable & stateTable)
@@ -499,80 +460,42 @@ void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int & placeHolder) const
 
 void mtsRobotIO1394::RobotInternal::EnablePower(void)
 {
-    for (size_t index = 0; index < ActuatorList.size(); index++) {
-        AmpIO *board = ActuatorList[index].board;
-        int axis = ActuatorList[index].axisid;
-        if (!board || (axis < 0)) continue;
-        // Make sure all boards are enabled
-        // Notice we use Write to board to make sure this is not buffered
-        // It would be nice to do this once per board, not once per axis!
-        board->WritePowerEnable(true);
-    }
-    osaSleep(100.0 * cmn_ms); // Without the sleep this we can get power jumps and joints without power enabled
-    for (size_t index = 0; index < ActuatorList.size(); index++) {
-        AmpIO *board = ActuatorList[index].board;
-        int axis = ActuatorList[index].axisid;
-        if (!board || (axis < 0)) continue;
-        // Make sure all boards are enabled
-        board->SetAmpEnable(axis, true);
-    }
-
+    // Make sure all boards are enabled.
+    // Notice we use Write to board to make sure this is not buffered.
+    for (size_t index = 0; index < OwnBoards.size(); index++)
+        OwnBoards[index]->WritePowerEnable(true);
+    osaSleep(100.0 * cmn_ms); // Without the sleep, we can get power jumps and joints without power enabled
+    // Now, enable all amplifiers
+    SetAmpEnable(allOn);
 }
 
 void mtsRobotIO1394::RobotInternal::DisablePower(void)
 {
-    for (size_t index = 0; index < ActuatorList.size(); index++) {
-        AmpIO *board = ActuatorList[index].board;
-        int axis = ActuatorList[index].axisid;
-        if (!board || (axis < 0)) continue;
-        // Make sure all boards are disabled
-        board->SetPowerEnable(false);
-        // For now, also disable all amplifiers
-        board->SetAmpEnable(axis, false);
-    }
+    // Make sure all boards are disabled.
+    // Notice we use Write to board to make sure this is not buffered.
+    for (size_t index = 0; index < OwnBoards.size(); index++)
+        OwnBoards[index]->WritePowerEnable(false);
+    // Now, disable all amplifiers
+    SetAmpEnable(allOff);
 }
 
 void mtsRobotIO1394::RobotInternal::EnableSafetyRelay(void)
 {
-    for (size_t index = 0; index < ActuatorList.size(); index++) {
-        AmpIO *board = ActuatorList[index].board;
-        int axis = ActuatorList[index].axisid;
-        if (!board || (axis < 0)) continue;
-        board->SetSafetyRelay(true);
-    }
+    for (size_t index = 0; index < OwnBoards.size(); index++)
+        OwnBoards[index]->SetSafetyRelay(true);
 }
 
 void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
 {
-    for (size_t index = 0; index < ActuatorList.size(); index++) {
-        AmpIO *board = ActuatorList[index].board;
-        int axis = ActuatorList[index].axisid;
-        if (!board || (axis < 0)) continue;
-        board->SetSafetyRelay(false);
-    }
+    for (size_t index = 0; index < OwnBoards.size(); index++)
+        OwnBoards[index]->SetSafetyRelay(false);
 }
 
 void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const unsigned long & period_ms)
 {
-    // assume MAX_BOARDS < 255
-    vctUCharVec board_list(BoardIO::MAX_BOARDS, (unsigned char)0xff);
-    watchdogPeriod = period_ms;
-
-    // TODO: a more direct way of accessing the board list from this class?
-    for (size_t index = 0; index < ActuatorList.size(); index++)
-    {
-        // get board associated with each joint
-        AmpIO *board = ActuatorList[index].board;
-        if (!board || !board->IsValid()) continue;
-
-        // check board id to skip boards already written to
-        unsigned char board_id = board->GetBoardId();
-        if (board_list[board_id] == board_id) continue;
-        board_list[board_id] = board_id;
-
-        // write timeout period, converted to counts
-        board->WriteWatchdogPeriod(period_ms*WD_MSTOCOUNT);
-    }
+    // write timeout period, converted to counts
+    for (size_t index = 0; index < OwnBoards.size(); index++)
+        OwnBoards[index]->WriteWatchdogPeriod(period_ms*WD_MSTOCOUNT);
 }
 
 void mtsRobotIO1394::RobotInternal::SetAmpEnable(const vctBoolVec & ampControl)

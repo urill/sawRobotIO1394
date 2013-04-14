@@ -93,11 +93,8 @@ void mtsRobotIO1394::Configure(const std::string & filename)
     xmlConfig.SetInputSource(filename);
     char path[64];
 
-    //std::cout<<"The number of robots detected are " << RobotCounter << std::endl;
-
     int tmpNumActuator = 0;
-    int tmpBoardID = 0;
-    int tmpAxisID = 0;
+    int tmpNumJoint = 0;
 
     std::string context = "Config";
     std::string tmpRobotName = "ConfigStart";
@@ -123,26 +120,14 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         sprintf(path, "Robot[%d]/@NumOfActuator", k);
         xmlConfig.GetXMLValue(context.c_str(), path, tmpNumActuator);
 
-        //Create new temporary RobotInternal Initialized.
-        RobotInternal * robot = new RobotInternal(tmpRobotName, *this, tmpNumActuator);
+        sprintf(path, "Robot[%d]/@NumOfJoint", k);
+        xmlConfig.GetXMLValue(context.c_str(), path, tmpNumJoint);
 
-        //Set ActuatorInfo for all Actuators under this robot.
-        int j = 0;
-        for (j = 0; j < tmpNumActuator; j++) {
-            sprintf(path,"Robot[%d]/Actuator[%d]/@BoardID",k,j+1);
-            xmlConfig.GetXMLValue(context.c_str(), path, tmpBoardID);
-            // Check and initalize AmpIOs for new boards.
-            if(BoardList[tmpBoardID] == 0){
-                BoardList[tmpBoardID] = new AmpIO(tmpBoardID);
-                Port->AddBoard(BoardList[tmpBoardID]);
-            }
-            // Config this Actuator info.
-            sprintf(path,"Robot[%d]/Actuator[%d]/@AxisID",k,j+1);
-            xmlConfig.GetXMLValue(context.c_str(), path, tmpAxisID);
-            robot->SetActuatorInfo(j, BoardList[tmpBoardID], tmpAxisID);
-        }
+        //Create new temporary RobotInternal Initialized.
+        RobotInternal * robot = new RobotInternal(tmpRobotName, *this, tmpNumActuator, tmpNumJoint);
+
         // Configure conversion factors and other variables.
-        robot->Configure(xmlConfig, k);
+        robot->Configure(xmlConfig, k, BoardList);
         // Configure StateTable for this Robot
         robot->SetupStateTable(this->StateTable);
 
@@ -182,7 +167,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
     bool readStat1 = false;
     bool readStat2 = false;
     std::string tmpDIName = "";
-    tmpBoardID = -1;
+    int tmpBoardID = -1;
     int tmpBitID = -1;
 
     while (true) {
@@ -216,6 +201,12 @@ void mtsRobotIO1394::Configure(const std::string & filename)
 
         digitalIn->SetupProvidedInterface(digitalInInterface,this->StateTable);
         DigitalInList.push_back(digitalIn);
+    }
+
+    // Now, add all boards to Firewire Port
+    for (k = 0; k < MAX_BOARDS; k++) {
+        if (BoardList[k])
+            Port->AddBoard(BoardList[k]);
     }
 }
 

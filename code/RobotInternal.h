@@ -100,6 +100,7 @@ protected:
     };
     std::string robotName;              // Robot name (from config file)
     std::vector<ActuatorInfo> ActuatorList;   // Actuator information
+    std::vector<AmpIO *> OwnBoards;           // Pointers to boards "owned" by this robot
     int NumberOfActuators;
     int NumberOfJoints;
     bool HasActuatorToJointCoupling;
@@ -146,6 +147,10 @@ protected:
     vctDoubleMat ActuatorToJointTorque;
     vctDoubleMat JointToActuatorTorque;
 
+    // Convenient data for enabling/disabling amps
+    vctBoolVec     allOn;
+    vctBoolVec     allOff;
+
     // Methods for provided interface
     void GetNumberOfActuators(int & placeHolder) const;
     void GetNumberOfJoints(int & placeHolder) const;
@@ -180,25 +185,15 @@ protected:
 
     // Internal methods for configuring coupling
     void ConfigureCoupling (cmnXMLPath & xmlConfigFile, int robotNumber);
-    void ConfigureCouplingA2J(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
-                              int numOfJoint, vctDoubleMat &A2JMatrix);
-    void ConfigureCouplingJ2A(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
-                              int numOfJoint, vctDoubleMat &J2AMatrix);
-    void ConfigureCouplingAT2JT(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
-                                int numOfJoint, vctDoubleMat &AT2JTMatrix);
-    void ConfigureCouplingJT2AT(cmnXMLPath &xmlConfigFile, int robotNumber, int numOfActuator,
-                                int numOfJoint, vctDoubleMat &JT2ATMatrix);
-    void ConfigureCouplingMatrix(cmnXMLPath &xmlConfigFile, const std::string pathToMatrix, int numRows,
-                                 int numCols, vctDoubleMat &resultMatrix);
+    void ConfigureCouplingMatrix(cmnXMLPath &xmlConfigFile, int robotNumber, const char *couplingString,
+                                 int numRows, int numCols, vctDoubleMat &resultMatrix);
     void UpdateJointTorqueMax(void);
 
 public:
 
-    RobotInternal(const std::string & name, const cmnGenericObject & owner, size_t numActuators);
+    RobotInternal(const std::string & name, const cmnGenericObject & owner, size_t numActuators, size_t numJoints);
     ~RobotInternal();
-    void Configure(const std::string &filename);
-    void Configure (cmnXMLPath &xmlConfigFile, int robotNumber);
-    void SetActuatorInfo(int index, AmpIO *board, int axis);
+    void Configure (cmnXMLPath &xmlConfigFile, int robotNumber, AmpIO **BoardList);
 
     void SetupStateTable(mtsStateTable & stateTable);
     void SetupInterfaces(mtsInterfaceProvided * robotInterface,
