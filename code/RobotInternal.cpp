@@ -259,7 +259,7 @@ void mtsRobotIO1394::RobotInternal::UpdateJointTorqueMax(void)
         jointTorqueMax.Assign(motorTorqueMax);
     // Make sure maximum joint torques are all positive
     jointTorqueMax.AbsSelf();
-    CMN_LOG_CLASS_INIT_VERBOSE << "Maximum joint torques = " << jointTorqueMax << std::endl;
+    CMN_LOG_CLASS_INIT_WARNING << "Maximum joint torques = " << jointTorqueMax << std::endl;
 }
 
 void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable & stateTable)
@@ -730,18 +730,18 @@ void mtsRobotIO1394::RobotInternal::DriveBitsToFeedbackAmps(const vctLongVec & f
     }
 }
 
+// fromData and toData can be same vector
 void mtsRobotIO1394::RobotInternal::DriveNmToAmps(const vctDoubleVec & fromData, vctDoubleVec & toData) const
 {
-    toData.SetAll(0L);
     for (size_t index = 0; index < ActuatorList.size(); index++) {
         double nmToAmps = ActuatorList[index].drive.NmToAmpsScale;
         toData[index] = fromData[index]*nmToAmps;
     }
 }
 
+// fromData and toData can be same vector
 void mtsRobotIO1394::RobotInternal::DriveAmpsToNm(const vctDoubleVec & fromData, vctDoubleVec & toData) const
 {
-    toData.SetAll(0.0);
     for (size_t index = 0; index < ActuatorList.size(); index++) {
         double nmToAmps = ActuatorList[index].drive.NmToAmpsScale;
         toData[index] = fromData[index] / nmToAmps;
@@ -758,9 +758,9 @@ void mtsRobotIO1394::RobotInternal::AnalogInBitsToVolts(const vctLongVec & fromD
     }
 }
 
+// fromData and toData can be same vector
 void mtsRobotIO1394::RobotInternal::AnalogInVoltsToPosSI(const vctDoubleVec & fromData, vctDoubleVec & toData) const
 {
-    toData.SetAll(0.0);
     for (size_t index = 0; index < ActuatorList.size(); index++) {
         double voltsToPosSIScale = ActuatorList[index].analogIn.VoltsToPosSIScale;
         double voltsToPosSIOffset = ActuatorList[index].analogIn.VoltsToPosSIOffset;
