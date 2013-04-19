@@ -9,7 +9,7 @@
     <Actuator ActuatorID="0" BoardID="0" AxisID="0" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="0.65535" Offset="0"/>
-            <BitsToFbAmps Scale="1.52590219" Offset="0"/>
+            <BitsToFeedbackAmps Scale="1.52590219" Offset="0"/>
             <NmToAmps Scale="0.125"/>
             <MaxCurrent Value="0.8125"/>
         </Drive>
@@ -28,7 +28,7 @@
     <Actuator ActuatorID="1" BoardID="0" AxisID="1" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="1.3107" Offset="0"/>
-            <BitsToFbAmps Scale="0.7629510948" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.7629510948" Offset="0"/>
             <NmToAmps Scale="0.25"/>
             <MaxCurrent Value="1.625"/>
         </Drive>
@@ -47,7 +47,7 @@
     <Actuator ActuatorID="2" BoardID="0" AxisID="2" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="2.6214" Offset="0"/>
-            <BitsToFbAmps Scale="0.3814755474" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.3814755474" Offset="0"/>
             <NmToAmps Scale="0.5"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -65,7 +65,7 @@
     <Actuator ActuatorID="3" BoardID="0" AxisID="3" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.190737774" Offset="0"/>
             <NmToAmps Scale="1"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -83,7 +83,7 @@
     <Actuator ActuatorID="4" BoardID="3" AxisID="0" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="10.4856" Offset="0"/>
-            <BitsToFbAmps Scale="0.0953688869" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.0953688869" Offset="0"/>
             <NmToAmps Scale="2"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -101,7 +101,7 @@
     <Actuator ActuatorID="5" BoardID="3" AxisID="1" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="20.9712" Offset="0"/>
-            <BitsToFbAmps Scale="0.0476844434" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.0476844434" Offset="0"/>
             <NmToAmps Scale="4"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -119,7 +119,7 @@
     <Actuator ActuatorID="6" BoardID="3" AxisID="2" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="41.9424" Offset="0"/>
-            <BitsToFbAmps Scale="0.238422217" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.238422217" Offset="0"/>
             <NmToAmps Scale="8"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -137,7 +137,7 @@
     <Actuator ActuatorID="7" BoardID="3" AxisID="3" Pos1="ENC" Pos2="POT">
         <Drive>
             <AmpsToBits Scale="83.8848" Offset="0"/>
-            <BitsToFbAmps Scale="0.0119211109" Offset="0"/>
+            <BitsToFeedbackAmps Scale="0.0119211109" Offset="0"/>
             <NmToAmps Scale="16"/>
             <MaxCurrent Value="6.5"/>
         </Drive>

@@ -9,8 +9,8 @@
   <Robot Name="Robot" NumOfActuator="4" NumOfJoint="4">
     <Actuator ActuatorID="0" BoardID="0" AxisID="0" Pos1="ENC" Pos2="POT">
         <Drive>
-            <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
+            <AmpsToBits Scale="5242.80" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="1"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -28,8 +28,8 @@
 
     <Actuator ActuatorID="1" BoardID="0" AxisID="1" Pos1="ENC" Pos2="POT">
         <Drive>
-            <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
+            <AmpsToBits Scale="5242.80" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="1"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -47,8 +47,8 @@
 
     <Actuator ActuatorID="2" BoardID="0" AxisID="2" Pos1="ENC" Pos2="POT">
         <Drive>
-            <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
+            <AmpsToBits Scale="5242.80" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="1"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -65,8 +65,8 @@
     </Actuator>
     <Actuator ActuatorID="3" BoardID="0" AxisID="3" Pos1="ENC" Pos2="POT">
         <Drive>
-            <AmpsToBits Scale="5.2428" Offset="0"/>
-            <BitsToFbAmps Scale="0.190737774" Offset="0"/>
+            <AmpsToBits Scale="5242.80" Offset="32768"/>
+            <BitsToFeedbackAmps Scale="0.000190738" Offset="-6.25"/>
             <NmToAmps Scale="1"/>
             <MaxCurrent Value="6.5"/>
         </Drive>
@@ -82,32 +82,32 @@
         </AnalogIn>
     </Actuator>
     <Coupling Value="1">
-        <ActuatorToJoint>
+        <ActuatorToJointPosition>
             <Row Val="0 1 0 0"/>
             <Row Val="1 0 0 0"/>
             <Row Val="0 0 1 1"/>
             <Row Val="0 0 0 1"/>
-        </ActuatorToJoint>
-        <JointToActuator>
+        </ActuatorToJointPosition>
+        <JointToActuatorPosition> 
             <Row Val="0 1 0 0"/>
             <Row Val="1 0 0 0"/>
             <Row Val="0 0 1 -1"/>
             <Row Val="0 0 0 1"/>
-        </JointToActuator>
+        </JointToActuatorPosition>
 
-        <ActuatorTorqueToJointTorque>
+        <ActuatorToJointTorque>
             <Row Val="0 1 0 0"/>
             <Row Val="1 0 0 0"/>
             <Row Val="0 0 1 1"/>
             <Row Val="0 0 0 1"/>
-        </ActuatorTorqueToJointTorque>
+        </ActuatorToJointTorque>
 
-        <JointTorqueToActuatorTorque>
+        <JointToActuatorTorque>
             <Row Val="0 1 0 0"/>
             <Row Val="1 0 0 0"/>
             <Row Val="0 0 1 -1"/>
             <Row Val="0 0 0 1"/>
-        </JointTorqueToActuatorTorque>
+        </JointToActuatorTorque>
     </Coupling>
 
   </Robot>

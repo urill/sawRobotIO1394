@@ -38,14 +38,15 @@ int main(int argc, char ** argv)
 
     // parse options
     cmnCommandLineOptions options;
-    int port;
+    int port = 0;
     std::string configFile;
     options.AddOptionOneValue("c", "config",
                               "configuration file, can be an absolute path or relative to CISST_ROOT share",
                               cmnCommandLineOptions::REQUIRED, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firefire port number(s)",
-                              cmnCommandLineOptions::REQUIRED, &port);
+                              cmnCommandLineOptions::OPTIONAL, &port);
+
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -70,7 +71,7 @@ int main(int argc, char ** argv)
     mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
 
     // Qt display task
-    mtsRobotIO1394QtWidget *disp = new mtsRobotIO1394QtWidget("disp", 8);
+    mtsRobotIO1394QtWidget *disp = new mtsRobotIO1394QtWidget("disp", 4);
     disp->Configure();
     LCM->AddComponent(disp);
 
@@ -80,8 +81,8 @@ int main(int argc, char ** argv)
     LCM->AddComponent(robot);
 
     // connect disp to Robot & Controller interface
-    LCM->Connect("disp", "Robot", "robot", "MTML");
-    LCM->Connect("disp", "RobotActuators", "robot", "MTMLActuators");
+    LCM->Connect("disp", "Robot", "robot", "Robot");
+    LCM->Connect("disp", "RobotActuators", "robot", "RobotActuators");
 
     //-------------- create the components ------------------
     LCM->CreateAll();
