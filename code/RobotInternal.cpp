@@ -507,9 +507,10 @@ void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
 void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const double & period_sec)
 {
     // write timeout period, converted to counts
-    unsigned long period_ms = static_cast<unsigned long>(cmnInternalTo_ms(period_sec)+0.5);
+    unsigned int period_count = static_cast<unsigned int>
+            (cmnInternalTo_ms(period_sec) * WD_MSTOCOUNT);
     for (size_t index = 0; index < OwnBoards.size(); index++)
-        OwnBoards[index]->WriteWatchdogPeriod(period_ms*WD_MSTOCOUNT);
+        OwnBoards[index]->WriteWatchdogPeriod(period_count);
 }
 
 void mtsRobotIO1394::RobotInternal::SetAmpEnable(const vctBoolVec & ampControl)

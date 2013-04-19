@@ -165,8 +165,8 @@ void displayTask::Run(void)
             motorControlCurrentRaw[i] -= 0x100;   // 0x100 is about 50 mA
     }
     else if (c == 'w') {
-        const unsigned long period_ms = (watchdog ? 0 : 250);
-        Robot.SetWatchdogPeriod(period_ms);
+        const double period_sec = (watchdog ? 0 : 1 * cmn_ms);
+        Robot.SetWatchdogPeriod(period_sec);
         watchdog = !watchdog;
     }
 
