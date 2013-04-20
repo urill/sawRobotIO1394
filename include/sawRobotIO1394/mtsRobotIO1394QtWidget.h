@@ -62,7 +62,7 @@ private slots:
     void slot_qcbEnable(bool toggle);
     void slot_qpbResetCurrentAll(void);
     void slot_qpbBiasCurrentAll(void);
-    void slot_qdsbMotorCurrent_valueChanged(void);
+    void slot_qdsbMotorCurrent_valueChanged();
     void slot_qsliderMotorCurrent_valueChanged(void);
     void slot_qpbResetEncAll(void);
     void slot_qpbBiasEncAll(void);
@@ -187,6 +187,7 @@ private:
     double startTime;
 
     // GUI: Commands
+    QFrame* cmdLowerInfoFrame;
     QCheckBox* qcbEnableAll;
     QCheckBox** qcbEnable;
     QPushButton* qpbResetCurrentAll;
@@ -198,6 +199,7 @@ private:
     QPushButton* qpbResetEncAll;
     QPushButton* qpbBiasEncAll;
     QDoubleSpinBox* qdsbWatchdogPeriod;
+    QCheckBox* qcbEnableDirectControl;
 
     vctQtWidgetDynamicVectorDoubleRead * JointPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * ActuatorPositionWidget;

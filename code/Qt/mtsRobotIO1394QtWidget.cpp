@@ -71,6 +71,8 @@ void mtsRobotIO1394QtWidget::Init(void)
     potPosSI.SetSize(numOfAxis);
     motorFeedbackCurrent.SetSize(numOfAxis);
     motorFeedbackCurrent.SetAll(0.0);
+    motorControlCurrent.SetSize(numOfAxis);
+    motorControlCurrent.SetAll(0.0);
     ampEnable.SetSize(numOfAxis);
 
     startTime = osaGetTime();
@@ -171,21 +173,18 @@ void mtsRobotIO1394QtWidget::slot_qcbEnable(bool CMN_UNUSED(toggle))
 
 void mtsRobotIO1394QtWidget::slot_qdsbMotorCurrent_valueChanged()
 {
-    vctDoubleVec cmdCurmA;
-    cmdCurmA.SetSize(numOfAxis);
     vctLongVec cmdCurCnt;
     cmdCurCnt.SetSize(numOfAxis);
 
     // get value from GUI
     for(int i = 0; i < numOfAxis; i++)
-        cmdCurmA[i] = qdsbMotorCurrent[i]->value();
+        motorControlCurrent[i] = qdsbMotorCurrent[i]->value();
 
 #if SWITCH
     vctDoubleVec cmdCurA(numOfAxis);
-    cmdCurA = cmdCurmA.Divide(1000.0);
+    cmdCurA = motorControlCurrent.Divide(1000.0);
     Robot.SetMotorCurrent(cmdCurA);
     Actuators.DriveAmpsToBits(cmdCurA, cmdCurCnt);
-//    Robot.MotorCurrentToDAC(cmdCurmA, cmdCurCnt);
 #else
     for (int i = 0; i < numOfAxis; i++){
         cmdCurCnt[i] = CurrentstoDAC(cmdCurmA[i]);
@@ -330,6 +329,15 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
 
     updateRobotInfo();
 
+    // if checked in DIRECT_CONTROL mode
+    // send cmd current
+    if (qcbEnableDirectControl->isChecked()){
+        slot_qdsbMotorCurrent_valueChanged();
+        cmdLowerInfoFrame->setEnabled(true);
+    }else{
+        cmdLowerInfoFrame->setEnabled(false);
+    }
+
     // std::cerr << IntervalStatistics << std::endl;
 }
 
@@ -390,8 +398,8 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
         actuatorInterface->AddFunction("DriveAmpsToBits", Actuators.DriveAmpsToBits);
     }
 
-    mtsInterfaceRequired * req;
 #if HAS_GC
+    mtsInterfaceRequired * req;
     req = AddInterfaceRequired("GC");
     if (req) {
         req->AddFunction("Enable", GC.Enable);
@@ -493,10 +501,15 @@ void mtsRobotIO1394QtWidget::setupUi()
     // Commands lower layout
     // cmdLabel | cmdInfo1 | cmdInfo2 |...
     QHBoxLayout* cmdLowerLayout = new QHBoxLayout;
-    cmdLowerLayout->addWidget(cmdLabelFrame);
+    QHBoxLayout* cmdLowerInfoLayout = new QHBoxLayout;
+    cmdLowerInfoFrame = new QFrame;
     for(int i = 0; i < numOfAxis; i++){
-        cmdLowerLayout->addWidget(cmdInfoFrame[i]);
+        cmdLowerInfoLayout->addWidget(cmdInfoFrame[i]);
     }
+    cmdLowerInfoFrame->setLayout(cmdLowerInfoLayout);
+    cmdLowerLayout->addWidget(cmdLabelFrame);
+    cmdLowerLayout->addWidget(cmdLowerInfoFrame);
+//    cmdLowerLayout->addLayout(cmdLowerInfoLayout);
 
     // Commands layout
     // cmdTitleLayout
@@ -544,16 +557,20 @@ void mtsRobotIO1394QtWidget::setupUi()
     qpbBiasEncAll = new QPushButton("Bias Enc/Pot");
     QLabel* wdogLabel = new QLabel("Wdog Period (ms)");
     qdsbWatchdogPeriod = new QDoubleSpinBox;
-    qdsbWatchdogPeriod->setMaximum(340.0);
+    qdsbWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
     qdsbWatchdogPeriod->setMinimum(0.0);
     qdsbWatchdogPeriod->setSingleStep(0.05);
-    qdsbWatchdogPeriod->setValue(0);
+    qdsbWatchdogPeriod->setValue(340.0); // default = 340 ms
+    qcbEnableDirectControl = new QCheckBox("Enable Direct Control");
+    qcbEnableDirectControl->setChecked(true);
+
     QHBoxLayout* fbLowerLayout = new QHBoxLayout;
     fbLowerLayout->addWidget(qpbResetEncAll);
     fbLowerLayout->addWidget(qpbBiasEncAll);
     fbLowerLayout->addStretch();
     fbLowerLayout->addWidget(wdogLabel);
     fbLowerLayout->addWidget(qdsbWatchdogPeriod);
+    fbLowerLayout->addWidget(qcbEnableDirectControl);
     fbLowerLayout->addStretch();
 
 
@@ -583,34 +600,6 @@ void mtsRobotIO1394QtWidget::setupUi()
     // fbFrame->setLayout(fbLayout);
     // fbFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
-#if 0
-    //----------------- Control ------------------------
-    QCheckBox* qcbCurFBToggle = new QCheckBox("CurPID");
-    QDoubleSpinBox* qdsbCurFBGain = new QDoubleSpinBox;
-    qdsbCurFBGain->setMinimum(-3.0);
-    qdsbCurFBGain->setMaximum(3.0);
-    qdsbCurFBGain->setSingleStep(0.05);
-    qdsbCurFBGain->setValue(curFBPGain);
-    QDoubleSpinBox* qdsbCurFBOffset = new QDoubleSpinBox;
-    qdsbCurFBOffset->setMinimum(-100.0);
-    qdsbCurFBOffset->setMaximum(100.0);
-    qdsbCurFBOffset->setSingleStep(0.5);
-    qdsbCurFBOffset->setSuffix("mA");
-    qdsbCurFBOffset->setValue(curFBOffset);
-
-    quitButton = new QPushButton("Close");
-
-    QHBoxLayout* ctrlLayout = new QHBoxLayout;
-    ctrlLayout->addWidget(qcbCurFBToggle);
-    ctrlLayout->addWidget(new QLabel("PGain"));
-    ctrlLayout->addWidget(qdsbCurFBGain);
-    ctrlLayout->addWidget(new QLabel("Offset"));
-    ctrlLayout->addWidget(qdsbCurFBOffset);
-    ctrlLayout->addStretch();
-    ctrlLayout->addWidget(quitButton);
-    QGroupBox* ctrlGroupBox = new QGroupBox("Control");
-    ctrlGroupBox->setLayout(ctrlLayout);
-#endif
 
 #if HAS_GC
     //----------------- GC Controller -----------
@@ -731,10 +720,6 @@ void mtsRobotIO1394QtWidget::setupUi()
                 this, SLOT(slot_qsliderMotorCurrent_valueChanged()));
         // adeguet1 connect(qpbResetEnc[i], SIGNAL(clicked()), this, SLOT(slot_qpbResetEnc()));
     }
-
-    // Control
-//    connect(qcbCurFBToggle, SIGNAL(clicked(bool)), this, SLOT(slot_qcbCurFBToggle(bool)));
-//    connect(qdsbCurFBGain, SIGNAL(valueChanged(double)), this, SLOT(slot_qdsbCurFBGain(double)));
 
     connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
 
