@@ -253,6 +253,16 @@ void mtsRobotIO1394QtWidget::slot_qpbBiasEncAll()
     }
 }
 
+void mtsRobotIO1394QtWidget::slot_qdsbWatchdogPeriod(double period_ms)
+{
+    mtsExecutionResult result = Robot.SetWatchdogPeriod(period_ms * cmn_ms);
+    if(!result.IsOK()){
+        CMN_LOG_CLASS_RUN_WARNING << "slot_qdsbWatchdogPeriod: command failed \""
+                                  << result << "\"" << std::endl;
+    }
+}
+
+
 void mtsRobotIO1394QtWidget::slot_qpbResetEnc()
 {
     for (int i = 0; i < numOfAxis; i++) {
@@ -373,6 +383,7 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
 
         robotInterface->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
         robotInterface->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
+        robotInterface->AddFunction("SetWatchdogPeriod", Robot.SetWatchdogPeriod);
 
         robotInterface->AddFunction("BiasCurrent", Robot.BiasCurrent);
         robotInterface->AddFunction("BiasEncoder", Robot.BiasEncoder);
@@ -544,15 +555,27 @@ void mtsRobotIO1394QtWidget::setupUi()
     QLabel* curmALabel = new QLabel("Current (mA)");
     qpbResetEncAll = new QPushButton("Reset Enc");
     qpbBiasEncAll = new QPushButton("Bias Enc/Pot");
+    QLabel* wdogLabel = new QLabel("Watchdog Period (mA)");
+    qdsbWatchDogPeriod = new QDoubleSpinBox;
+    qdsbWatchDogPeriod->setMaximum(340.0);
+    qdsbWatchDogPeriod->setMinimum(0.0);
+    qdsbWatchDogPeriod->setSingleStep(0.05);
+    qdsbWatchDogPeriod->setValue(0);
+    QHBoxLayout* wdogLayout = new QHBoxLayout;
+    wdogLayout->addWidget(wdogLabel);
+    wdogLayout->addWidget(qdsbWatchDogPeriod);
+    wdogLayout->addStretch();
+
+
     fbLayout->addWidget(jointPosLabel, 0, 0);
     fbLayout->addWidget(actuatorPosLabel, 1, 0);
     fbLayout->addWidget(velDegLabel, 2, 0);
     fbLayout->addWidget(potVoltLabel, 3, 0);
     fbLayout->addWidget(potPosSILabel, 4, 0);
-
     fbLayout->addWidget(curmALabel, 5, 0);
     fbLayout->addWidget(qpbResetEncAll, 6, 0);
     fbLayout->addWidget(qpbBiasEncAll, 7, 0);
+    fbLayout->addLayout(wdogLayout, 8, 0, 1, 2);
 
     JointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
     fbLayout->addWidget(JointPositionWidget->GetWidget(), 0, 1);
@@ -712,6 +735,8 @@ void mtsRobotIO1394QtWidget::setupUi()
 
     connect(qpbResetEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetEncAll()));
     connect(qpbBiasEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasEncAll()));
+    connect(qdsbWatchDogPeriod, SIGNAL(valueChanged(double)),
+            this, SLOT(slot_qdsbWatchdogPeriod(double)));
     for(int i = 0; i < numOfAxis; i++){
         connect(qcbEnable[i], SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnable(bool)));
         connect(qdsbMotorCurrent[i], SIGNAL(valueChanged(double)),

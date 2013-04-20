@@ -66,6 +66,7 @@ private slots:
     void slot_qsliderMotorCurrent_valueChanged(void);
     void slot_qpbResetEncAll(void);
     void slot_qpbBiasEncAll(void);
+    void slot_qdsbWatchdogPeriod(double period_ms);
     void slot_qpbResetEnc(void);
     void slot_qcbCurFBToggle(bool);
     void slot_qdsbCurFBGain(double);
@@ -125,6 +126,7 @@ protected:
 
         mtsFunctionWrite SetMotorCurrent;
         mtsFunctionWrite SetEncoderPosition;
+        mtsFunctionWrite SetWatchdogPeriod;
 
         mtsFunctionWrite BiasCurrent;
         mtsFunctionVoid BiasEncoder;
@@ -193,6 +195,7 @@ private:
     // GUI: Feedbacks
     QPushButton* qpbResetEncAll;
     QPushButton* qpbBiasEncAll;
+    QDoubleSpinBox* qdsbWatchDogPeriod;
 
     vctQtWidgetDynamicVectorDoubleRead * JointPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * ActuatorPositionWidget;
