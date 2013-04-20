@@ -131,7 +131,6 @@ protected:
     vctLongVec     analogInRaw;
     vctDoubleVec   analogInVolts;
     vctDoubleVec   analogInPosSI;
-    vctULongVec    digitalIn;
     vctLongVec     motorFeedbackCurrentRaw;
     vctDoubleVec   motorFeedbackCurrent;
     prmForceTorqueJointSet TorqueJoint;

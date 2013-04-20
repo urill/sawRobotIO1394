@@ -279,7 +279,6 @@ void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable & stateTable)
     stateTable.AddData(analogInRaw, robotName + "AnalogInRaw");
     stateTable.AddData(analogInVolts, robotName + "AnalogInVolts");
     stateTable.AddData(analogInPosSI, robotName + "AnalogInPosSI");
-    stateTable.AddData(digitalIn, robotName + "DigitalIn");
     stateTable.AddData(motorFeedbackCurrentRaw, robotName + "MotorFeedbackCurrentRaw");
     stateTable.AddData(motorFeedbackCurrent, robotName + "MotorFeedbackCurrent");
     stateTable.AddData(motorControlCurrentRaw, robotName + "MotorControlCurrentRaw");
@@ -320,8 +319,6 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandReadState(stateTable, this->analogInRaw, "GetAnalogInputRaw");
     robotInterface->AddCommandReadState(stateTable, this->analogInVolts, "GetAnalogInputVolts");
     robotInterface->AddCommandReadState(stateTable, this->analogInPosSI, "GetAnalogInputPosSI");
-
-    robotInterface->AddCommandReadState(stateTable, this->digitalIn, "GetDigitalInput");
 
     robotInterface->AddCommandReadState(stateTable, this->motorFeedbackCurrentRaw, "GetMotorFeedbackCurrentRaw");
     robotInterface->AddCommandReadState(stateTable, this->motorFeedbackCurrent, "GetMotorFeedbackCurrent");
@@ -410,8 +407,7 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
         singleEncoderVel = board->GetEncoderVelocity(axis);
         encVelRaw[index] = ((int)(singleEncoderVel << 16)) >> 16; // convert from 16 bits signed stored in 32 unsigedn to 32 signed
         analogInRaw[index] = board->GetAnalogInput(axis);
-        // digitalIn[index] = board->GetDigitalInput(axis);
-        motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);
+        motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);     
         ampEnable[index] = board->GetAmpEnable(axis);
         ampStatus[index] = board->GetAmpStatus(axis);
         PowerStatus &= board->GetPowerStatus();

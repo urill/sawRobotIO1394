@@ -35,7 +35,7 @@ http://www.cisst.org/cisst/license.txt.
 #define SWITCH 1
 
 // Find a better way for user to get these values
-#define MOTORCUR_MAX 6500       // max motor current in mA
+#define MOTORCUR_MAX 6250       // max motor current in mA
 #define MOTORCUR_DAC 0xFFFF     // max dac value for motor current
 
 
@@ -469,8 +469,8 @@ void mtsRobotIO1394QtWidget::setupUi()
         qdsbMotorCurrent[i]->setSuffix(" mA");
         qdsbMotorCurrent[i]->setDecimals(2);
         qdsbMotorCurrent[i]->setSingleStep(3.0);
-        qdsbMotorCurrent[i]->setMinimum(-6500);
-        qdsbMotorCurrent[i]->setMaximum(6500);
+        qdsbMotorCurrent[i]->setMinimum(-6250);
+        qdsbMotorCurrent[i]->setMaximum(6250);
         qdsbMotorCurrent[i]->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         qsliderMotorCurrent[i] = new QSlider;
         qsliderMotorCurrent[i]->setOrientation(Qt::Horizontal);
