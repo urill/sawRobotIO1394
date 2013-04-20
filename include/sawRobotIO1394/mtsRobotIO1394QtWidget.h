@@ -31,7 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtCore>
 #include <QtGui>
 
-#define HAS_GC  1
+#define HAS_GC  0
 #define HAS_DEBUG_INFO 1
 
 

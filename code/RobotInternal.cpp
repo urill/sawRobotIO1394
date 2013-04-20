@@ -511,8 +511,22 @@ void mtsRobotIO1394::RobotInternal::DisableSafetyRelay(void)
 void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const double & period_sec)
 {
     // write timeout period, converted to counts
-    unsigned int period_count = static_cast<unsigned int>
-            (cmnInternalTo_ms(period_sec) * WD_MSTOCOUNT);
+    unsigned int period_count;
+
+    // first case disable watchdog
+    if (period_sec == 0){
+        period_count = 0;
+    } else {
+        // enable watchdog
+        period_count = static_cast<unsigned int> (cmnInternalTo_ms(period_sec) * WD_MSTOCOUNT);
+        // if less that resolution, use at least one tick just to make sure we don't accidentaly disable
+        // the truth is that the count will be so low that watchdog will continuously trigger
+        if (period_count == 0) {
+            period_count = 1;
+        }
+    }
+
+    // write to board
     for (size_t index = 0; index < OwnBoards.size(); index++)
         OwnBoards[index]->WriteWatchdogPeriod(period_count);
 }

@@ -331,21 +331,6 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     updateRobotInfo();
 
     // std::cerr << IntervalStatistics << std::endl;
-
-//    if (!debugStream.str().empty()) {
-//        int cur_line = DEBUG_START_LINE;
-//        char line[80];
-//        memset(line, ' ', sizeof(line));
-//        for (i = cur_line; i < last_debug_line; i++)
-//            mvprintw(i, 9, line);
-//        while (!debugStream.eof()) {
-//            debugStream.getline(line, sizeof(line));
-//            mvprintw(cur_line++, 9, line);
-//        }
-//        debugStream.clear();
-//        debugStream.str("");
-//        last_debug_line = cur_line;
-//    }
 }
 
 
@@ -557,16 +542,19 @@ void mtsRobotIO1394QtWidget::setupUi()
     QLabel* curmALabel = new QLabel("Current (mA)");
     qpbResetEncAll = new QPushButton("Reset Enc");
     qpbBiasEncAll = new QPushButton("Bias Enc/Pot");
-    QLabel* wdogLabel = new QLabel("Watchdog Period (mA)");
+    QLabel* wdogLabel = new QLabel("Wdog Period (ms)");
     qdsbWatchdogPeriod = new QDoubleSpinBox;
     qdsbWatchdogPeriod->setMaximum(340.0);
     qdsbWatchdogPeriod->setMinimum(0.0);
     qdsbWatchdogPeriod->setSingleStep(0.05);
     qdsbWatchdogPeriod->setValue(0);
-    QHBoxLayout* wdogLayout = new QHBoxLayout;
-    wdogLayout->addWidget(wdogLabel);
-    wdogLayout->addWidget(qdsbWatchdogPeriod);
-    wdogLayout->addStretch();
+    QHBoxLayout* fbLowerLayout = new QHBoxLayout;
+    fbLowerLayout->addWidget(qpbResetEncAll);
+    fbLowerLayout->addWidget(qpbBiasEncAll);
+    fbLowerLayout->addStretch();
+    fbLowerLayout->addWidget(wdogLabel);
+    fbLowerLayout->addWidget(qdsbWatchdogPeriod);
+    fbLowerLayout->addStretch();
 
 
     fbLayout->addWidget(jointPosLabel, 0, 0);
@@ -575,9 +563,9 @@ void mtsRobotIO1394QtWidget::setupUi()
     fbLayout->addWidget(potVoltLabel, 3, 0);
     fbLayout->addWidget(potPosSILabel, 4, 0);
     fbLayout->addWidget(curmALabel, 5, 0);
-    fbLayout->addWidget(qpbResetEncAll, 6, 0);
-    fbLayout->addWidget(qpbBiasEncAll, 7, 0);
-    fbLayout->addLayout(wdogLayout, 8, 0, 1, 2);
+//    fbLayout->addWidget(qpbResetEncAll, 6, 0);
+//    fbLayout->addWidget(qpbBiasEncAll, 7, 0);
+    fbLayout->addLayout(fbLowerLayout, 6, 0, 1, 2);
 
     JointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
     fbLayout->addWidget(JointPositionWidget->GetWidget(), 0, 1);
@@ -681,7 +669,7 @@ void mtsRobotIO1394QtWidget::setupUi()
     ampStatusButton = new QPushButton("Amp Status: ON");
     powerStatusButton = new QPushButton("PowerStatus ON");
     safetyRelayButton = new QPushButton("SafetyRelay: ON");
-    safetyRelayButton = new QPushButton("Watchdog: OFF");
+    watchdogButton = new QPushButton("Watchdog: OFF");
 
     QVBoxLayout* debugLowerRightLeyout = new QVBoxLayout;
     debugLowerRightLeyout->addWidget(ampEnableButton);
