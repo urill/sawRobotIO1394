@@ -267,6 +267,7 @@ void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable & stateTable)
     stateTable.AddData(Valid, robotName + "Valid");
     stateTable.AddData(PowerStatus, robotName + "PowerStatus");
     stateTable.AddData(SafetyRelay, robotName + "SafetyRelay");
+    stateTable.AddData(WatchdogTimeout, robotName + "WatchdogTimeout");
     stateTable.AddData(ampStatus, robotName + "AmpStatus");
     stateTable.AddData(ampEnable, robotName + "AmpEnable");
     stateTable.AddData(encPosRaw, robotName + "PosRaw");
@@ -306,6 +307,7 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandReadState(stateTable, stateTable.PeriodStats, "GetPeriodStatistics"); // mtsIntervalStatistics
     robotInterface->AddCommandReadState(stateTable, this->PowerStatus, "GetPowerStatus"); // bool
     robotInterface->AddCommandReadState(stateTable, this->SafetyRelay, "GetSafetyRelay"); // unsigned short
+    robotInterface->AddCommandReadState(stateTable, this->WatchdogTimeout, "GetWatchdogTimeout"); // bool
 
     robotInterface->AddCommandReadState(stateTable, this->encPosRaw, "GetPositionEncoderRaw"); // vector[int]
     robotInterface->AddCommandReadState(stateTable, this->PositionJoint, "GetPosition"); // vector[double]
@@ -395,6 +397,7 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
 {
     PowerStatus = true;
     SafetyRelay = true;
+    WatchdogTimeout = true;
     unsigned int singleEncoderPos;
     unsigned int singleEncoderVel;
 
@@ -413,6 +416,7 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
         ampStatus[index] = board->GetAmpStatus(axis);
         PowerStatus &= board->GetPowerStatus();
         SafetyRelay &= board->GetSafetyRelayStatus();
+        WatchdogTimeout &= board->GetWatchdogTimeoutStatus();
     }
 }
 

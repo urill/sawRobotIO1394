@@ -123,6 +123,7 @@ protected:
         mtsFunctionRead GetMotorCurrent;
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
+        mtsFunctionRead GetWatchdogTimeout;
 
         mtsFunctionWrite SetMotorCurrent;
         mtsFunctionWrite SetEncoderPosition;
@@ -176,6 +177,7 @@ private:
     vctBoolVec ampStatus;
     bool powerStatus;
     unsigned short safetyRelay;
+    bool watchdogTimeout;
 
     // Interface
     double tmpStatic;
@@ -195,7 +197,7 @@ private:
     // GUI: Feedbacks
     QPushButton* qpbResetEncAll;
     QPushButton* qpbBiasEncAll;
-    QDoubleSpinBox* qdsbWatchDogPeriod;
+    QDoubleSpinBox* qdsbWatchdogPeriod;
 
     vctQtWidgetDynamicVectorDoubleRead * JointPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * ActuatorPositionWidget;
@@ -212,6 +214,7 @@ private:
     QPushButton* ampStatusButton;
     QPushButton* powerStatusButton;
     QPushButton* safetyRelayButton;
+    QPushButton* watchdogButton;
 
     // Control
     QPushButton* quitButton;

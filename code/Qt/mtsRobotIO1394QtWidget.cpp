@@ -307,6 +307,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
         Actuators.GetAmpStatus(ampStatus);
         Robot.GetPowerStatus(powerStatus);
         Robot.GetSafetyRelay(safetyRelay);
+        Robot.GetWatchdogTimeout(watchdogTimeout);
     } else {
         jointPos.SetAll(tmpStatic);
         actuatorPos.SetAll(tmpStatic);
@@ -380,6 +381,7 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
         robotInterface->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorCurrent);
         robotInterface->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
         robotInterface->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
+        robotInterface->AddFunction("GetWatchdogTimeout", Robot.GetWatchdogTimeout);
 
         robotInterface->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
         robotInterface->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
@@ -546,7 +548,7 @@ void mtsRobotIO1394QtWidget::setupUi()
 
     // Feedbacks Label
     QGridLayout* fbLayout = new QGridLayout;
-    QFrame* fbFrame = new QFrame;
+    // QFrame* fbFrame = new QFrame;
     QLabel* jointPosLabel = new QLabel("Pos. joints (deg)");
     QLabel* actuatorPosLabel = new QLabel("Pos. actuators (deg)");
     QLabel* velDegLabel = new QLabel("Velocity (deg/s)");
@@ -556,14 +558,14 @@ void mtsRobotIO1394QtWidget::setupUi()
     qpbResetEncAll = new QPushButton("Reset Enc");
     qpbBiasEncAll = new QPushButton("Bias Enc/Pot");
     QLabel* wdogLabel = new QLabel("Watchdog Period (mA)");
-    qdsbWatchDogPeriod = new QDoubleSpinBox;
-    qdsbWatchDogPeriod->setMaximum(340.0);
-    qdsbWatchDogPeriod->setMinimum(0.0);
-    qdsbWatchDogPeriod->setSingleStep(0.05);
-    qdsbWatchDogPeriod->setValue(0);
+    qdsbWatchdogPeriod = new QDoubleSpinBox;
+    qdsbWatchdogPeriod->setMaximum(340.0);
+    qdsbWatchdogPeriod->setMinimum(0.0);
+    qdsbWatchdogPeriod->setSingleStep(0.05);
+    qdsbWatchdogPeriod->setValue(0);
     QHBoxLayout* wdogLayout = new QHBoxLayout;
     wdogLayout->addWidget(wdogLabel);
-    wdogLayout->addWidget(qdsbWatchDogPeriod);
+    wdogLayout->addWidget(qdsbWatchdogPeriod);
     wdogLayout->addStretch();
 
 
@@ -679,23 +681,19 @@ void mtsRobotIO1394QtWidget::setupUi()
     ampStatusButton = new QPushButton("Amp Status: ON");
     powerStatusButton = new QPushButton("PowerStatus ON");
     safetyRelayButton = new QPushButton("SafetyRelay: ON");
+    safetyRelayButton = new QPushButton("Watchdog: OFF");
 
     QVBoxLayout* debugLowerRightLeyout = new QVBoxLayout;
     debugLowerRightLeyout->addWidget(ampEnableButton);
     debugLowerRightLeyout->addWidget(ampStatusButton);
     debugLowerRightLeyout->addWidget(powerStatusButton);
     debugLowerRightLeyout->addWidget(safetyRelayButton);
+    debugLowerRightLeyout->addWidget(watchdogButton);
 
     QHBoxLayout* debugLowerLayout = new QHBoxLayout;
     debugLowerLayout->addWidget(debugTextEdit);
     debugLowerLayout->addLayout(debugLowerRightLeyout);
     debugLowerLayout->addStretch();
-
-//    QGridLayout* debugLayout = new QGridLayout;
-//    debugLayout->addLayout(debugTitleLayout, 0, 0, 3, 1);
-//    debugLayout->addWidget(debugTextEdit, 1, 0, 1, 1);
-//    debugLayout->addLayout(debugLowerRightLeyout, 1, 2, 1, 1);
-//    debugLayout->addWidget();
 
     QVBoxLayout* debugLayout = new QVBoxLayout;
     debugLayout->addLayout(debugTitleLayout);
@@ -735,7 +733,7 @@ void mtsRobotIO1394QtWidget::setupUi()
 
     connect(qpbResetEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetEncAll()));
     connect(qpbBiasEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasEncAll()));
-    connect(qdsbWatchDogPeriod, SIGNAL(valueChanged(double)),
+    connect(qdsbWatchdogPeriod, SIGNAL(valueChanged(double)),
             this, SLOT(slot_qdsbWatchdogPeriod(double)));
     for(int i = 0; i < numOfAxis; i++){
         connect(qcbEnable[i], SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnable(bool)));
@@ -780,11 +778,6 @@ void mtsRobotIO1394QtWidget::updateRobotInfo()
 
     // status
 
-//    Robot.GetAmpEnable(ampEnable);
-//    Robot.GetAmpStatus(ampStatus);
-//    Robot.GetPowerStatus(powerStatus);
-//    Robot.GetSafetyRelay(safetyRelay);
-
 //    if(ampEnable.at(0)){
 //        ampEnableButton->setText("Amp Enable: ON");
 //        ampEnableButton->setStyleSheet("QPushButton { background-color: green }");
@@ -809,6 +802,15 @@ void mtsRobotIO1394QtWidget::updateRobotInfo()
     }else{
         safetyRelayButton->setText("Safety Relay: OFF");
         safetyRelayButton->setStyleSheet("QPushButton { background-color: red }");
+    }
+
+    // safety Relay
+    if(watchdogTimeout){
+        watchdogButton->setText("Watchdog Timeout: TRUE");
+        watchdogButton->setStyleSheet("QPushButton { background-color: red }");
+    }else{
+        watchdogButton->setText("Watchdog Timeout: FALSE");
+        watchdogButton->setStyleSheet("QPushButton { background-color: green }");
     }
 }
 

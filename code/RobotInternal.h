@@ -119,6 +119,7 @@ protected:
     bool           Valid;
     bool           PowerStatus;
     unsigned short SafetyRelay;
+    bool           WatchdogTimeout;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
     vctBoolVec     ampEnable;           // Current amplifier enable state (read from boards)
     vctIntVec      encPosRaw;
