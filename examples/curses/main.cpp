@@ -35,14 +35,14 @@ int main(int argc, char ** argv)
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS);
 
     cmnCommandLineOptions options;
-    int port;
+    int port = 0;
     std::string configFile;
     options.AddOptionOneValue("c", "config",
                               "configuration file, can be an absolute path or relative to CISST_ROOT share",
                               cmnCommandLineOptions::REQUIRED, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firefire port number(s)",
-                              cmnCommandLineOptions::REQUIRED, &port);
+                              cmnCommandLineOptions::OPTIONAL, &port);
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;

@@ -401,12 +401,6 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
     }
 #endif
 
-#if HAS_PID
-    req = AddInterfaceRequired("PID");
-    if (req) {
-        req->AddFunction("Enable", PID.Enable);
-    }
-#endif
 
 }
 
@@ -623,15 +617,6 @@ void mtsRobotIO1394QtWidget::setupUi()
     connect(qpbAdjustEncoder, SIGNAL(clicked()), this, SLOT(slot_qpbAdjustEncoder()));
 #endif
 
-#if HAS_PID
-    QCheckBox* qcbPIDEnable = new QCheckBox("Enable PID");
-    QHBoxLayout* pidLayout = new QHBoxLayout;
-    pidLayout->addWidget(qcbPIDEnable);
-    QGroupBox* pidGroupBox = new QGroupBox("PID Controller");
-    pidGroupBox->setLayout(pidLayout);
-
-    connect(qcbPIDEnable, SIGNAL(clicked(bool)), this, SLOT(slot_qcbPIDEnable(bool)));
-#endif
 
 #if HAS_DEBUG_INFO
     // Debug Title
@@ -708,9 +693,6 @@ void mtsRobotIO1394QtWidget::setupUi()
     mainLayout->addWidget(gcGroupBox);
 #endif
 
-#if HAS_PID
-    mainLayout->addWidget(pidGroupBox);
-#endif
 
 
     QFrame* mainFrame = new QFrame;

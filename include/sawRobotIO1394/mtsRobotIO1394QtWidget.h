@@ -32,7 +32,6 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtGui>
 
 #define HAS_GC  1
-#define HAS_PID 0
 #define HAS_DEBUG_INFO 1
 
 
@@ -83,11 +82,6 @@ private slots:
     }
 #endif
 
-#if HAS_PID
-    void slot_qcbPIDEnable(bool toggle){
-        PID.Enable(mtsBool(toggle));
-    }
-#endif
 
     void timerEvent(QTimerEvent * event);
 
@@ -153,12 +147,6 @@ protected:
         mtsFunctionWrite Enable;
         mtsFunctionVoid AdjustEncoders;
     } GC;
-#endif
-
-#if HAS_PID
-    struct PIDStruct {
-        mtsFunctionWrite Enable;
-    } PID;
 #endif
 
 
