@@ -654,14 +654,12 @@ void mtsRobotIO1394QtWidget::setupUi()
 
     // debug lower right
     // ZC: TODO REDO this
-    ampEnableButton = new QPushButton("Amp Enable: ON");
     ampStatusButton = new QPushButton("Amp Status: ON");
     powerStatusButton = new QPushButton("PowerStatus ON");
     safetyRelayButton = new QPushButton("SafetyRelay: ON");
     watchdogButton = new QPushButton("Watchdog: OFF");
 
     QVBoxLayout* debugLowerRightLeyout = new QVBoxLayout;
-    debugLowerRightLeyout->addWidget(ampEnableButton);
     debugLowerRightLeyout->addWidget(ampStatusButton);
     debugLowerRightLeyout->addWidget(powerStatusButton);
     debugLowerRightLeyout->addWidget(safetyRelayButton);
@@ -751,13 +749,18 @@ void mtsRobotIO1394QtWidget::updateRobotInfo()
 
     // status
 
-//    if(ampEnable.at(0)){
-//        ampEnableButton->setText("Amp Enable: ON");
-//        ampEnableButton->setStyleSheet("QPushButton { background-color: green }");
-//    }else{
-//        ampEnableButton->setText("Amp Enable: OFF");
-//        ampEnableButton->setStyleSheet("QPushButton { background-color: red }");
-//    }
+    // amplifier status
+    bool ampStatusGood = true;
+    for (int i = 0; i < ampStatus.size(); i++){
+        ampStatusGood &= ampStatus[i];
+    }
+    if(ampStatusGood){
+        ampStatusButton->setText("Amp Status: ON");
+        ampStatusButton->setStyleSheet("QPushButton { background-color: green }");
+    }else{
+        ampStatusButton->setText("Amp Status: OFF");
+        ampStatusButton->setStyleSheet("QPushButton { background-color: red }");
+    }
 
     // power status
     if(powerStatus){
@@ -777,7 +780,7 @@ void mtsRobotIO1394QtWidget::updateRobotInfo()
         safetyRelayButton->setStyleSheet("QPushButton { background-color: red }");
     }
 
-    // safety Relay
+    // watchdog timeout
     if(watchdogTimeout){
         watchdogButton->setText("Watchdog Timeout: TRUE");
         watchdogButton->setStyleSheet("QPushButton { background-color: red }");

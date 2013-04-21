@@ -212,7 +212,6 @@ private:
 
     // GUI: Debug
     QTextEdit* debugTextEdit;
-    QPushButton* ampEnableButton;
     QPushButton* ampStatusButton;
     QPushButton* powerStatusButton;
     QPushButton* safetyRelayButton;
