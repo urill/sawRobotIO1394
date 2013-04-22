@@ -90,6 +90,7 @@ int main(int argc, char ** argv)
 
     // start the periodic Run
     LCM->StartAll();
+    LCM->WaitForStateAll(mtsComponentState::ACTIVE , 2.0 * cmn_s);
 
     // create a main window to hold QWidget
     disp->show();

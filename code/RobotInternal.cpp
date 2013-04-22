@@ -473,8 +473,6 @@ void mtsRobotIO1394::RobotInternal::EnablePower(void)
     // the subsequent 100 msec sleep.
     // SetWatchdogPeriod(5.0*TaskPeriod);
     osaSleep(100.0 * cmn_ms); // Without the sleep, we can get power jumps and joints without power enabled
-    // Now, enable all amplifiers
-    SetAmpEnable(allOn);
 }
 
 void mtsRobotIO1394::RobotInternal::DisablePower(void)
@@ -530,7 +528,7 @@ void mtsRobotIO1394::RobotInternal::SetWatchdogPeriod(const double & period_sec)
 void mtsRobotIO1394::RobotInternal::SetAmpEnable(const vctBoolVec & ampControl)
 {
     for (size_t index = 0; index < ActuatorList.size(); index++) {
-        AmpIO *board = ActuatorList[index].board;
+        AmpIO * board = ActuatorList[index].board;
         int axis = ActuatorList[index].axisid;
         if (!board || (axis < 0)) continue;
         board->SetAmpEnable(axis, ampControl[index]);

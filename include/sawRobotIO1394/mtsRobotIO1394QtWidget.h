@@ -58,8 +58,9 @@ protected:
     virtual void closeEvent(QCloseEvent *event);
 
 private slots:
+    void slot_qcbEnableBoards(bool toggle);
     void slot_qcbEnableAll(bool toggle);
-    void slot_qcbEnable(bool toggle);
+    void slot_qcbEnable(void);
     void slot_qpbResetCurrentAll(void);
     void slot_qpbBiasCurrentAll(void);
     void slot_qdsbMotorCurrent_valueChanged();
@@ -187,13 +188,15 @@ private:
     double startTime;
 
     // GUI: Commands
-    QFrame* cmdLowerInfoFrame;
-    QCheckBox* qcbEnableAll;
-    QCheckBox** qcbEnable;
-    QPushButton* qpbResetCurrentAll;
-    QPushButton* qpbBiasCurrentAll;
-    QDoubleSpinBox** qdsbMotorCurrent;
-    QSlider** qsliderMotorCurrent;
+    QCheckBox * qcbEnableBoards;
+    QFrame * cmdLowerInfoFrame;
+    QCheckBox * qcbEnableAll;
+    QCheckBox ** qcbEnable;
+    QPushButton * qpbResetCurrentAll;
+    QPushButton * qpbBiasCurrentAll;
+    vctQtWidgetDynamicVectorBoolWrite * CurrentEnableEachWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * CurrentSpinBoxWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * CurrentSliderWidget;
 
     // GUI: Feedbacks
     QPushButton* qpbResetEncAll;

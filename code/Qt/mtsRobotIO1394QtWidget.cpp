@@ -84,8 +84,6 @@ void mtsRobotIO1394QtWidget::Init(void)
     startTimer(50); // ms
 }
 
-
-
 void mtsRobotIO1394QtWidget::Configure(const std::string &filename)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: " << filename << std::endl;
@@ -111,7 +109,7 @@ void mtsRobotIO1394QtWidget::closeEvent(QCloseEvent * event)
                                  tr("Please power off the robot before quit. \n"
                                     "Continue?"),
                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-    if(ret == QMessageBox::Yes){
+    if(ret == QMessageBox::Yes) {
         Robot.DisablePower();
         event->accept();
     }else {
@@ -121,37 +119,36 @@ void mtsRobotIO1394QtWidget::closeEvent(QCloseEvent * event)
 
 
 //----------- Private Slot ------------------------------
+void mtsRobotIO1394QtWidget::slot_qcbEnableBoards(bool toggle)
+{
+    if (toggle) {
+        Robot.EnablePower();
+    } else {
+        Robot.DisablePower();
+    }
+    if (!toggle) {
+        qcbEnableAll->blockSignals(true);
+        qcbEnableAll->setChecked(false);
+        qcbEnableAll->blockSignals(false);
+    }
+}
 
 void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
 {
-#if 1
-    if(toggle){
-        Robot.EnablePower();
-    }else{
-        Robot.DisablePower();
-    }
-#endif
-
-//    update GUI
-    for (int i = 0; i < numOfAxis; i++){
-        qcbEnable[i]->blockSignals(true);
-        qcbEnable[i]->setChecked(toggle);
-        qcbEnable[i]->blockSignals(false);
-    }
+    qcbEnableBoards->setChecked(toggle); // this will also trigger the event
+    vctBoolVec allEnable(numOfAxis, toggle);
+    CurrentEnableEachWidget->SetValue(allEnable);
 }
 
 void mtsRobotIO1394QtWidget::slot_qpbResetCurrentAll(void)
 {
-    // set GUI value
+    // send to controller first
     vctDoubleVec cmdCurA(numOfAxis);
     cmdCurA.SetAll(0.0);
     Robot.SetMotorCurrent(cmdCurA);
-    for (int i = 0; i < numOfAxis; i++){
-        qsliderMotorCurrent[i]->blockSignals(true);
-        qsliderMotorCurrent[i]->setValue(32768);
-        qdsbMotorCurrent[i]->setValue(0.0);
-        qsliderMotorCurrent[i]->blockSignals(false);
-    }
+    // update GUI
+    CurrentSpinBoxWidget->SetValue(cmdCurA);
+    CurrentSliderWidget->SetValue(cmdCurA);
 }
 
 void mtsRobotIO1394QtWidget::slot_qpbBiasCurrentAll(void)
@@ -162,76 +159,36 @@ void mtsRobotIO1394QtWidget::slot_qpbBiasCurrentAll(void)
     }
 }
 
-void mtsRobotIO1394QtWidget::slot_qcbEnable(bool CMN_UNUSED(toggle))
+void mtsRobotIO1394QtWidget::slot_qcbEnable(void)
 {
-    for(int i = 0; i < numOfAxis; i++){
-        ampEnable[i] = qcbEnable[i]->isChecked();
-    }
+    std::cerr << "yope" << std::endl;
+    ampEnable.SetSize(numOfAxis);
+    CurrentEnableEachWidget->GetValue(ampEnable);
     Actuators.SetAmpEnable(ampEnable);
 }
 
-
 void mtsRobotIO1394QtWidget::slot_qdsbMotorCurrent_valueChanged()
 {
-    vctLongVec cmdCurCnt;
-    cmdCurCnt.SetSize(numOfAxis);
-
-    // get value from GUI
-    for(int i = 0; i < numOfAxis; i++)
-        motorControlCurrent[i] = qdsbMotorCurrent[i]->value();
-
-#if SWITCH
+    vctDoubleVec cmdCurmA(numOfAxis);
     vctDoubleVec cmdCurA(numOfAxis);
-    cmdCurA = motorControlCurrent.Divide(1000.0);
+    // get value from GUI
+    CurrentSpinBoxWidget->GetValue(cmdCurmA);
+    CurrentSliderWidget->SetValue(cmdCurmA);
+    // convert to amps and apply
+    cmdCurA = cmdCurmA.Divide(1000.0);
     Robot.SetMotorCurrent(cmdCurA);
-    Actuators.DriveAmpsToBits(cmdCurA, cmdCurCnt);
-#else
-    for (int i = 0; i < numOfAxis; i++){
-        cmdCurCnt[i] = CurrentstoDAC(cmdCurmA[i]);
-    }
-#endif
-
-    // set GUI value
-    for (int i = 0; i < numOfAxis; i++){
-        qsliderMotorCurrent[i]->blockSignals(true);
-        qsliderMotorCurrent[i]->setValue(cmdCurCnt[i]);
-        qsliderMotorCurrent[i]->blockSignals(false);
-    }
 }
-
 
 void mtsRobotIO1394QtWidget::slot_qsliderMotorCurrent_valueChanged()
 {
-    vctDoubleVec cmdCurmA;
-    cmdCurmA.SetSize(numOfAxis);
-    vctLongVec cmdCurCnt;
-    cmdCurCnt.SetSize(numOfAxis);
-
+    vctDoubleVec cmdCurmA(numOfAxis);
     vctDoubleVec cmdCurA(numOfAxis);
-
     // get value from GUI
-    for(int i = 0; i < numOfAxis; i++)
-        cmdCurCnt[i] = qsliderMotorCurrent[i]->value();
-
-#if SWITCH
-    for (int i = 0; i < numOfAxis; i++){
-        cmdCurmA[i] = DACtoCurrents(cmdCurCnt[i]);
-    }
-
+    CurrentSliderWidget->GetValue(cmdCurmA);
+    CurrentSpinBoxWidget->SetValue(cmdCurmA);
+    // convert to amps and apply
     cmdCurA = cmdCurmA.Divide(1000.0);
     Robot.SetMotorCurrent(cmdCurA);
-#else
-    for (int i = 0; i < numOfAxis; i++){
-        cmdCurmA[i] = DACtoCurrents(cmdCurCnt[i]);
-    }
-#endif
-
-    // set GUI value
-    for (int i = 0; i < numOfAxis; i++){
-        qdsbMotorCurrent[i]->blockSignals(true);
-        qdsbMotorCurrent[i]->setValue(cmdCurmA[i]);
-        qdsbMotorCurrent[i]->blockSignals(false);
-    }
 }
 
 void mtsRobotIO1394QtWidget::slot_qpbResetEncAll()
@@ -448,9 +405,10 @@ void mtsRobotIO1394QtWidget::setupUi()
     //    QLabel
     QVBoxLayout* cmdLabelLayout = new QVBoxLayout;
     QFrame* cmdLabelFrame = new QFrame;
-    qcbEnableAll = new QCheckBox("Enable All");
     QLabel* motorCurLabel = new QLabel("Motor Current");
-//    motorCurLabel->setAlignment(Qt::AlignRight);
+    qcbEnableBoards = new QCheckBox("Enable Boards");
+    cmdLabelLayout->addWidget(qcbEnableBoards);
+    qcbEnableAll = new QCheckBox("Enable All");
     cmdLabelLayout->addWidget(qcbEnableAll);
     qpbResetCurrentAll = new QPushButton("Reset All");
     cmdLabelLayout->addWidget(qpbResetCurrentAll);
@@ -461,51 +419,25 @@ void mtsRobotIO1394QtWidget::setupUi()
     cmdLabelFrame->setLayout(cmdLabelLayout);
     cmdLabelFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
-    // Commands Info
-    // [] Enable Axis i
-    //   xx.xx mA  double spin box
-    //   --|--     slider
-    QVBoxLayout** cmdInfoLayout = new QVBoxLayout*[numOfAxis];
-    QFrame** cmdInfoFrame = new QFrame*[numOfAxis];
-    qcbEnable = new QCheckBox*[numOfAxis];
-    qdsbMotorCurrent = new QDoubleSpinBox*[numOfAxis];
-    qsliderMotorCurrent = new QSlider*[numOfAxis];
-
-    for(int i = 0; i < numOfAxis; i++){
-        qcbEnable[i] = new QCheckBox("Enable " + QString::number(i+1));
-        qdsbMotorCurrent[i] = new QDoubleSpinBox;
-        qdsbMotorCurrent[i]->setSuffix(" mA");
-        qdsbMotorCurrent[i]->setDecimals(2);
-        qdsbMotorCurrent[i]->setSingleStep(3.0);
-        qdsbMotorCurrent[i]->setMinimum(-6250);
-        qdsbMotorCurrent[i]->setMaximum(6250);
-        qdsbMotorCurrent[i]->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        qsliderMotorCurrent[i] = new QSlider;
-        qsliderMotorCurrent[i]->setOrientation(Qt::Horizontal);
-        qsliderMotorCurrent[i]->setMinimum(0);
-        qsliderMotorCurrent[i]->setMaximum(65535);
-        qsliderMotorCurrent[i]->setSingleStep(100);
-        qsliderMotorCurrent[i]->setPageStep(500);
-
-        cmdInfoLayout[i] = new QVBoxLayout;
-        cmdInfoLayout[i]->addWidget(qcbEnable[i]);
-        cmdInfoLayout[i]->addWidget(qdsbMotorCurrent[i]);
-        cmdInfoLayout[i]->addWidget(qsliderMotorCurrent[i]);
-
-        cmdInfoFrame[i] = new QFrame;
-        cmdInfoFrame[i]->setLayout(cmdInfoLayout[i]);
-        cmdInfoFrame[i]->setFrameShape(QFrame::StyledPanel);
-        cmdInfoFrame[i]->setFrameShadow(QFrame::Sunken);
-    }
+    QVBoxLayout* cmdControlLayout = new QVBoxLayout;
+    vctBoolVec defaultEnable(numOfAxis, false);
+    CurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
+    CurrentEnableEachWidget->SetValue(defaultEnable);
+    cmdControlLayout->addWidget(CurrentEnableEachWidget);
+    vctDoubleVec defaultCurrent(numOfAxis, 0.0);
+    CurrentSpinBoxWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SPINBOX_WIDGET);
+    CurrentSpinBoxWidget->SetValue(defaultCurrent);
+    cmdControlLayout->addWidget(CurrentSpinBoxWidget);
+    CurrentSliderWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SLIDER_WIDGET);
+    CurrentSliderWidget->SetValue(defaultCurrent);
+    cmdControlLayout->addWidget(CurrentSliderWidget);
 
     // Commands lower layout
     // cmdLabel | cmdInfo1 | cmdInfo2 |...
     QHBoxLayout* cmdLowerLayout = new QHBoxLayout;
     QHBoxLayout* cmdLowerInfoLayout = new QHBoxLayout;
     cmdLowerInfoFrame = new QFrame;
-    for(int i = 0; i < numOfAxis; i++){
-        cmdLowerInfoLayout->addWidget(cmdInfoFrame[i]);
-    }
+    cmdLowerLayout->addLayout(cmdControlLayout);
     cmdLowerInfoFrame->setLayout(cmdLowerInfoLayout);
     cmdLowerLayout->addWidget(cmdLabelFrame);
     cmdLowerLayout->addWidget(cmdLowerInfoFrame);
@@ -518,25 +450,24 @@ void mtsRobotIO1394QtWidget::setupUi()
     cmdLayout->addLayout(cmdTitleLayout);
     cmdLayout->addLayout(cmdLowerLayout);
 
-
     //---------------------- Feedback ----------------------------
 
     // Commands Title
     // spacer          spacer
     // -----  Feedback ------
-    QGridLayout* fbTitleLayout = new QGridLayout;
-    QSpacerItem* fbTitleLeftSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
-    QSpacerItem* fbTitleRightSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
+    QGridLayout * fbTitleLayout = new QGridLayout;
+    QSpacerItem * fbTitleLeftSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
+    QSpacerItem * fbTitleRightSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
     fbTitleLayout->addItem(fbTitleLeftSpacer, 0, 0);
     fbTitleLayout->addItem(fbTitleRightSpacer, 0, 2);
 
-    QFrame* fbTitleLeftLine = new QFrame;
+    QFrame * fbTitleLeftLine = new QFrame;
     fbTitleLeftLine->setFrameShape(QFrame::HLine);
     fbTitleLeftLine->setFrameShadow(QFrame::Sunken);
-    QFrame* fbTitleRightLine = new QFrame;
+    QFrame * fbTitleRightLine = new QFrame;
     fbTitleRightLine->setFrameShape(QFrame::HLine);
     fbTitleRightLine->setFrameShadow(QFrame::Sunken);
-    QLabel* fbTitleLabel = new QLabel("Feedbacks");
+    QLabel * fbTitleLabel = new QLabel("Feedbacks");
     fbTitleLabel->setFont(font);
     fbTitleLabel->setAlignment(Qt::AlignCenter);
 
@@ -545,16 +476,24 @@ void mtsRobotIO1394QtWidget::setupUi()
     fbTitleLayout->addWidget(fbTitleRightLine, 1, 2);
 
     // Feedbacks Label
-    QGridLayout* fbLayout = new QGridLayout;
-    // QFrame* fbFrame = new QFrame;
-    QLabel* jointPosLabel = new QLabel("Pos. joints (deg)");
-    QLabel* actuatorPosLabel = new QLabel("Pos. actuators (deg)");
-    QLabel* velDegLabel = new QLabel("Velocity (deg/s)");
-    QLabel* potVoltLabel = new QLabel("PotMeter (V)");
-    QLabel* potPosSILabel = new QLabel("PotMeter (deg)");
-    QLabel* curmALabel = new QLabel("Current (mA)");
+    QGridLayout * fbLayout = new QGridLayout;
+    QLabel * jointPosLabel = new QLabel("Pos. joints (deg)");
+    QLabel * actuatorPosLabel = new QLabel("Pos. actuators (deg)");
+    QLabel * velDegLabel = new QLabel("Velocity (deg/s)");
+    QLabel * potVoltLabel = new QLabel("PotMeter (V)");
+    QLabel * potPosSILabel = new QLabel("PotMeter (deg)");
+    QLabel * curmALabel = new QLabel("Current (mA)");
+
     qpbResetEncAll = new QPushButton("Reset Enc");
     qpbBiasEncAll = new QPushButton("Bias Enc/Pot");
+
+    fbLayout->addWidget(jointPosLabel, 0, 1);
+    fbLayout->addWidget(actuatorPosLabel, 1, 1);
+    fbLayout->addWidget(velDegLabel, 2, 1);
+    fbLayout->addWidget(potVoltLabel, 3, 1);
+    fbLayout->addWidget(potPosSILabel, 4, 1);
+    fbLayout->addWidget(curmALabel, 5, 1);
+
     QLabel* wdogLabel = new QLabel("Wdog Period (ms)");
     qdsbWatchdogPeriod = new QDoubleSpinBox;
     qdsbWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
@@ -573,29 +512,26 @@ void mtsRobotIO1394QtWidget::setupUi()
     fbLowerLayout->addWidget(qcbEnableDirectControl);
     fbLowerLayout->addStretch();
 
+    fbLayout->addWidget(qpbResetEncAll, 0, 0);
+    fbLayout->addWidget(qpbBiasEncAll, 1, 0);
 
-    fbLayout->addWidget(jointPosLabel, 0, 0);
-    fbLayout->addWidget(actuatorPosLabel, 1, 0);
-    fbLayout->addWidget(velDegLabel, 2, 0);
-    fbLayout->addWidget(potVoltLabel, 3, 0);
-    fbLayout->addWidget(potPosSILabel, 4, 0);
     fbLayout->addWidget(curmALabel, 5, 0);
 //    fbLayout->addWidget(qpbResetEncAll, 6, 0);
 //    fbLayout->addWidget(qpbBiasEncAll, 7, 0);
     fbLayout->addLayout(fbLowerLayout, 6, 0, 1, 2);
 
     JointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(JointPositionWidget->GetWidget(), 0, 1);
+    fbLayout->addWidget(JointPositionWidget, 0, 2);
     ActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(ActuatorPositionWidget->GetWidget(), 1, 1);
+    fbLayout->addWidget(ActuatorPositionWidget, 1, 2);
     ActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(ActuatorVelocityWidget->GetWidget(), 2, 1);
+    fbLayout->addWidget(ActuatorVelocityWidget, 2, 2);
     PotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(PotVoltsWidget->GetWidget(), 3, 1);
+    fbLayout->addWidget(PotVoltsWidget, 3, 2);
     PotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(PotPositionWidget->GetWidget(), 4, 1);
+    fbLayout->addWidget(PotPositionWidget, 4, 2);
     CurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(CurrentFeedbackWidget->GetWidget(), 5, 1);
+    fbLayout->addWidget(CurrentFeedbackWidget, 5, 2);
 
     // fbFrame->setLayout(fbLayout);
     // fbFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -702,6 +638,7 @@ void mtsRobotIO1394QtWidget::setupUi()
 
     // connect signals & slots
     // Commands
+    connect(qcbEnableBoards, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableBoards(bool)));
     connect(qcbEnableAll, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableAll(bool)));
     connect(qpbResetCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetCurrentAll()));
     connect(qpbBiasCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasCurrentAll()));
@@ -710,26 +647,13 @@ void mtsRobotIO1394QtWidget::setupUi()
     connect(qpbBiasEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasEncAll()));
     connect(qdsbWatchdogPeriod, SIGNAL(valueChanged(double)),
             this, SLOT(slot_qdsbWatchdogPeriod(double)));
-    for(int i = 0; i < numOfAxis; i++){
-        connect(qcbEnable[i], SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnable(bool)));
-        connect(qdsbMotorCurrent[i], SIGNAL(valueChanged(double)),
-                this, SLOT(slot_qdsbMotorCurrent_valueChanged()));
-        connect(qsliderMotorCurrent[i], SIGNAL(valueChanged(int)),
-                this, SLOT(slot_qsliderMotorCurrent_valueChanged()));
-        // adeguet1 connect(qpbResetEnc[i], SIGNAL(clicked()), this, SLOT(slot_qpbResetEnc()));
-    }
-
-    connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
-
+    connect(CurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(slot_qcbEnable()));
+    connect(CurrentSpinBoxWidget, SIGNAL(valueChanged()), this, SLOT(slot_qdsbMotorCurrent_valueChanged()));
+    connect(CurrentSliderWidget, SIGNAL(valueChanged()), this, SLOT(slot_qsliderMotorCurrent_valueChanged()));
 
     // set initial value
+    qcbEnableBoards->setChecked(false);
     qcbEnableAll->setChecked(false);
-    for(int i = 0; i < numOfAxis; i++){
-        qsliderMotorCurrent[i]->blockSignals(true);
-        qsliderMotorCurrent[i]->setValue(MOTORCUR_DAC/2);
-        qsliderMotorCurrent[i]->blockSignals(false);
-    }
-    slot_qsliderMotorCurrent_valueChanged();
 }
 
 
@@ -802,4 +726,3 @@ long mtsRobotIO1394QtWidget::CurrentstoDAC(double amp){
     std::cout << val << std::endl;
     return val;
 }
-
