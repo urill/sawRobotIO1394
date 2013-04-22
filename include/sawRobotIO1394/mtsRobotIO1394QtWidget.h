@@ -60,6 +60,7 @@ protected:
 private slots:
     void slot_qcbEnableBoards(bool toggle);
     void slot_qcbEnableAll(bool toggle);
+    void slot_qcbEnableDirectControl(bool toggle);
     void slot_qcbEnable(void);
     void slot_qpbResetCurrentAll(void);
     void slot_qpbBiasCurrentAll(void);
@@ -135,6 +136,9 @@ protected:
     } Robot;
 
     struct ActuatorStruct {
+        mtsFunctionVoid EnableBoardsPower;
+        mtsFunctionVoid DisableBoardsPower;
+
         mtsFunctionWrite SetAmpEnable;
         mtsFunctionWrite ResetSingleEncoder;
 
@@ -194,9 +198,6 @@ private:
     QCheckBox ** qcbEnable;
     QPushButton * qpbResetCurrentAll;
     QPushButton * qpbBiasCurrentAll;
-    vctQtWidgetDynamicVectorBoolWrite * CurrentEnableEachWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * CurrentSpinBoxWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * CurrentSliderWidget;
 
     // GUI: Feedbacks
     QPushButton* qpbResetEncAll;
@@ -204,6 +205,9 @@ private:
     QDoubleSpinBox* qdsbWatchdogPeriod;
     QCheckBox* qcbEnableDirectControl;
 
+    vctQtWidgetDynamicVectorBoolWrite * CurrentEnableEachWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * CurrentSpinBoxWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * CurrentSliderWidget;
     vctQtWidgetDynamicVectorDoubleRead * JointPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * ActuatorPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * ActuatorVelocityWidget;

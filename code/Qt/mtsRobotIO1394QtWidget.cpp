@@ -121,23 +121,45 @@ void mtsRobotIO1394QtWidget::closeEvent(QCloseEvent * event)
 //----------- Private Slot ------------------------------
 void mtsRobotIO1394QtWidget::slot_qcbEnableBoards(bool toggle)
 {
+    // send to controller first
     if (toggle) {
-        Robot.EnablePower();
+        Actuators.EnableBoardsPower();
     } else {
-        Robot.DisablePower();
+        Actuators.DisableBoardsPower();
     }
+    // update GUI, make sure no signal is generated
     if (!toggle) {
-        qcbEnableAll->blockSignals(true);
-        qcbEnableAll->setChecked(false);
-        qcbEnableAll->blockSignals(false);
+        qcbEnableAll->blockSignals(true); {
+            qcbEnableAll->setChecked(false);
+        } qcbEnableAll->blockSignals(false);
     }
 }
 
 void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
 {
-    qcbEnableBoards->setChecked(toggle); // this will also trigger the event
+    // send to controller first
+    if (toggle) {
+        Robot.EnablePower();
+    } else {
+        Robot.DisablePower();
+    }
+    // update GUI, make sure no signal is generated
+    qcbEnableBoards->blockSignals(true); {
+        qcbEnableBoards->setChecked(toggle);
+    } qcbEnableBoards->blockSignals(false);
     vctBoolVec allEnable(numOfAxis, toggle);
     CurrentEnableEachWidget->SetValue(allEnable);
+}
+
+void mtsRobotIO1394QtWidget::slot_qcbEnableDirectControl(bool toggle)
+{
+    // if checked in DIRECT_CONTROL mode
+    CurrentSpinBoxWidget->setEnabled(toggle);
+    CurrentSliderWidget->setEnabled(toggle);
+    qpbResetCurrentAll->setEnabled(toggle);
+    qpbBiasCurrentAll->setEnabled(toggle);
+    // set all current to 0
+    slot_qpbResetCurrentAll();
 }
 
 void mtsRobotIO1394QtWidget::slot_qpbResetCurrentAll(void)
@@ -161,7 +183,6 @@ void mtsRobotIO1394QtWidget::slot_qpbBiasCurrentAll(void)
 
 void mtsRobotIO1394QtWidget::slot_qcbEnable(void)
 {
-    std::cerr << "yope" << std::endl;
     ampEnable.SetSize(numOfAxis);
     CurrentEnableEachWidget->GetValue(ampEnable);
     Actuators.SetAmpEnable(ampEnable);
@@ -285,19 +306,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     CurrentFeedbackWidget->SetValue(motorFeedbackCurrent * 1000.0);
 
     updateRobotInfo();
-
-    // if checked in DIRECT_CONTROL mode
-    // send cmd current
-    if (qcbEnableDirectControl->isChecked()){
-        slot_qdsbMotorCurrent_valueChanged();
-        cmdLowerInfoFrame->setEnabled(true);
-    }else{
-        cmdLowerInfoFrame->setEnabled(false);
-    }
-
-    // std::cerr << IntervalStatistics << std::endl;
 }
-
 
 
 ////------------ Private Methods ----------------
@@ -345,6 +354,8 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
     if (actuatorInterface) {
         actuatorInterface->AddFunction("GetPositionActuator", Actuators.GetPositionActuator);
 
+        actuatorInterface->AddFunction("EnableBoardsPower", Actuators.EnableBoardsPower);
+        actuatorInterface->AddFunction("DisableBoardsPower", Actuators.DisableBoardsPower);
         actuatorInterface->AddFunction("SetAmpEnable", Actuators.SetAmpEnable);
         actuatorInterface->AddFunction("ResetSingleEncoder", Actuators.ResetSingleEncoder);
 
@@ -369,172 +380,161 @@ void mtsRobotIO1394QtWidget::setupCisstInterface()
 
 
 
-void mtsRobotIO1394QtWidget::setupUi()
+void mtsRobotIO1394QtWidget::setupUi(void)
 {
     QFont font;
     font.setBold(true);
-    font.setPointSize(12);
 
-    //----------------- Command -------------------------------
-    // Commands Title
-    // spacer          spacer
-    // -----  Commands ------
-    QGridLayout* cmdTitleLayout = new QGridLayout;
-    QSpacerItem* cmdTitleLeftSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
-    QSpacerItem* cmdTitleRightSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
-    cmdTitleLayout->addItem(cmdTitleLeftSpacer, 0, 0);
-    cmdTitleLayout->addItem(cmdTitleRightSpacer, 0, 2);
-
-    QFrame* cmdTitleLeftLine = new QFrame;
-    cmdTitleLeftLine->setFrameShape(QFrame::HLine);
-    cmdTitleLeftLine->setFrameShadow(QFrame::Sunken);
-    QFrame* cmdTitleRightLine = new QFrame;
-    cmdTitleRightLine->setFrameShape(QFrame::HLine);
-    cmdTitleRightLine->setFrameShadow(QFrame::Sunken);
-    QLabel* cmdTitleLabel = new QLabel("Commands");
-    cmdTitleLabel->setFont(font);
-    cmdTitleLabel->setAlignment(Qt::AlignCenter);
-
-    cmdTitleLayout->addWidget(cmdTitleLeftLine, 1, 0);
-    cmdTitleLayout->addWidget(cmdTitleLabel, 1, 1);
-    cmdTitleLayout->addWidget(cmdTitleRightLine, 1, 2);
-
-    // Commands Label
-    // [] Enable All
-    // Motor Currents
-    //    QLabel
-    QVBoxLayout* cmdLabelLayout = new QVBoxLayout;
-    QFrame* cmdLabelFrame = new QFrame;
-    QLabel* motorCurLabel = new QLabel("Motor Current");
+    // Power commands
+    QVBoxLayout * powerLayout = new QVBoxLayout;
+    QFrame * powerFrame = new QFrame;
+    QLabel * powerTitle = new QLabel("Power");
+    powerTitle->setFont(font);
+    powerTitle->setAlignment(Qt::AlignCenter);
+    powerLayout->addWidget(powerTitle);
     qcbEnableBoards = new QCheckBox("Enable Boards");
-    cmdLabelLayout->addWidget(qcbEnableBoards);
+    powerLayout->addWidget(qcbEnableBoards);
     qcbEnableAll = new QCheckBox("Enable All");
-    cmdLabelLayout->addWidget(qcbEnableAll);
-    qpbResetCurrentAll = new QPushButton("Reset All");
-    cmdLabelLayout->addWidget(qpbResetCurrentAll);
-    qpbBiasCurrentAll = new QPushButton("Bias All");
-    cmdLabelLayout->addWidget(qpbBiasCurrentAll);
-    cmdLabelLayout->addWidget(motorCurLabel);
-    cmdLabelLayout->addWidget(new QLabel(""));
-    cmdLabelFrame->setLayout(cmdLabelLayout);
-    cmdLabelFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    powerLayout->addWidget(qcbEnableAll);
+    powerLayout->addStretch(1);
+    ampStatusButton = new QPushButton("Amp Status: ON");
+    powerLayout->addWidget(ampStatusButton);
+    powerStatusButton = new QPushButton("PowerStatus ON");
+    powerLayout->addWidget(powerStatusButton);
+    powerFrame->setLayout(powerLayout);
+    powerFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
-    QVBoxLayout* cmdControlLayout = new QVBoxLayout;
-    vctBoolVec defaultEnable(numOfAxis, false);
-    CurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
-    CurrentEnableEachWidget->SetValue(defaultEnable);
-    cmdControlLayout->addWidget(CurrentEnableEachWidget);
-    vctDoubleVec defaultCurrent(numOfAxis, 0.0);
-    CurrentSpinBoxWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SPINBOX_WIDGET);
-    CurrentSpinBoxWidget->SetValue(defaultCurrent);
-    cmdControlLayout->addWidget(CurrentSpinBoxWidget);
-    CurrentSliderWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SLIDER_WIDGET);
-    CurrentSliderWidget->SetValue(defaultCurrent);
-    cmdControlLayout->addWidget(CurrentSliderWidget);
+    // watchdog commands
+    QVBoxLayout * watchdogLayout = new QVBoxLayout;
+    QFrame * watchdogFrame = new QFrame;
+    QLabel * watchdogTitle = new QLabel("watchdog");
+    watchdogTitle->setFont(font);
+    watchdogTitle->setAlignment(Qt::AlignCenter);
+    watchdogLayout->addWidget(watchdogTitle);
+    QHBoxLayout * watchdogSetLayout = new QHBoxLayout;
+    {
+        QLabel * wdogLabel = new QLabel("Wdog Period (ms)");
+        qdsbWatchdogPeriod = new QDoubleSpinBox;
+        qdsbWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
+        qdsbWatchdogPeriod->setMinimum(0.0);
+        qdsbWatchdogPeriod->setSingleStep(0.05);
+        qdsbWatchdogPeriod->setValue(340.0); // default = 340 ms
+        watchdogSetLayout->addWidget(wdogLabel);
+        watchdogSetLayout->addWidget(qdsbWatchdogPeriod);
+    }
+    watchdogLayout->addLayout(watchdogSetLayout);
+    watchdogLayout->addStretch(1);
+    safetyRelayButton = new QPushButton("SafetyRelay: ON");
+    watchdogLayout->addWidget(safetyRelayButton);
+    watchdogButton = new QPushButton("Watchdog: OFF");
+    watchdogLayout->addWidget(watchdogButton);
+    watchdogFrame->setLayout(watchdogLayout);
+    watchdogFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
-    // Commands lower layout
-    // cmdLabel | cmdInfo1 | cmdInfo2 |...
-    QHBoxLayout* cmdLowerLayout = new QHBoxLayout;
-    QHBoxLayout* cmdLowerInfoLayout = new QHBoxLayout;
-    cmdLowerInfoFrame = new QFrame;
-    cmdLowerLayout->addLayout(cmdControlLayout);
-    cmdLowerInfoFrame->setLayout(cmdLowerInfoLayout);
-    cmdLowerLayout->addWidget(cmdLabelFrame);
-    cmdLowerLayout->addWidget(cmdLowerInfoFrame);
-//    cmdLowerLayout->addLayout(cmdLowerInfoLayout);
+    // Encoder commands
+    QVBoxLayout * encoderLayout = new QVBoxLayout;
+    QFrame * encoderFrame = new QFrame;
+    QLabel * encoderTitle = new QLabel("Encoders");
+    encoderTitle->setFont(font);
+    encoderTitle->setAlignment(Qt::AlignCenter);
+    encoderLayout->addWidget(encoderTitle);
+    qpbResetEncAll = new QPushButton("Reset all");
+    encoderLayout->addWidget(qpbResetEncAll);
+    qpbBiasEncAll = new QPushButton("Bias from pot");
+    encoderLayout->addWidget(qpbBiasEncAll);
+    encoderLayout->addStretch(1);
+    encoderFrame->setLayout(encoderLayout);
+    encoderFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
-    // Commands layout
-    // cmdTitleLayout
-    // cmdLowerLayout
-    QVBoxLayout* cmdLayout = new QVBoxLayout;
-    cmdLayout->addLayout(cmdTitleLayout);
-    cmdLayout->addLayout(cmdLowerLayout);
-
-    //---------------------- Feedback ----------------------------
-
-    // Commands Title
-    // spacer          spacer
-    // -----  Feedback ------
-    QGridLayout * fbTitleLayout = new QGridLayout;
-    QSpacerItem * fbTitleLeftSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
-    QSpacerItem * fbTitleRightSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
-    fbTitleLayout->addItem(fbTitleLeftSpacer, 0, 0);
-    fbTitleLayout->addItem(fbTitleRightSpacer, 0, 2);
-
-    QFrame * fbTitleLeftLine = new QFrame;
-    fbTitleLeftLine->setFrameShape(QFrame::HLine);
-    fbTitleLeftLine->setFrameShadow(QFrame::Sunken);
-    QFrame * fbTitleRightLine = new QFrame;
-    fbTitleRightLine->setFrameShape(QFrame::HLine);
-    fbTitleRightLine->setFrameShadow(QFrame::Sunken);
-    QLabel * fbTitleLabel = new QLabel("Feedbacks");
-    fbTitleLabel->setFont(font);
-    fbTitleLabel->setAlignment(Qt::AlignCenter);
-
-    fbTitleLayout->addWidget(fbTitleLeftLine, 1, 0);
-    fbTitleLayout->addWidget(fbTitleLabel, 1, 1);
-    fbTitleLayout->addWidget(fbTitleRightLine, 1, 2);
-
-    // Feedbacks Label
-    QGridLayout * fbLayout = new QGridLayout;
-    QLabel * jointPosLabel = new QLabel("Pos. joints (deg)");
-    QLabel * actuatorPosLabel = new QLabel("Pos. actuators (deg)");
-    QLabel * velDegLabel = new QLabel("Velocity (deg/s)");
-    QLabel * potVoltLabel = new QLabel("PotMeter (V)");
-    QLabel * potPosSILabel = new QLabel("PotMeter (deg)");
-    QLabel * curmALabel = new QLabel("Current (mA)");
-
-    qpbResetEncAll = new QPushButton("Reset Enc");
-    qpbBiasEncAll = new QPushButton("Bias Enc/Pot");
-
-    fbLayout->addWidget(jointPosLabel, 0, 1);
-    fbLayout->addWidget(actuatorPosLabel, 1, 1);
-    fbLayout->addWidget(velDegLabel, 2, 1);
-    fbLayout->addWidget(potVoltLabel, 3, 1);
-    fbLayout->addWidget(potPosSILabel, 4, 1);
-    fbLayout->addWidget(curmALabel, 5, 1);
-
-    QLabel* wdogLabel = new QLabel("Wdog Period (ms)");
-    qdsbWatchdogPeriod = new QDoubleSpinBox;
-    qdsbWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
-    qdsbWatchdogPeriod->setMinimum(0.0);
-    qdsbWatchdogPeriod->setSingleStep(0.05);
-    qdsbWatchdogPeriod->setValue(340.0); // default = 340 ms
+    // Current comands
+    QVBoxLayout * currentLayout = new QVBoxLayout;
+    QFrame * currentFrame = new QFrame;
+    QLabel * currentTitle = new QLabel("Current");
+    currentTitle->setFont(font);
+    currentTitle->setAlignment(Qt::AlignCenter);
+    currentLayout->addWidget(currentTitle);
     qcbEnableDirectControl = new QCheckBox("Enable Direct Control");
     qcbEnableDirectControl->setChecked(true);
+    currentLayout->addWidget(qcbEnableDirectControl);
+    qpbResetCurrentAll = new QPushButton("Reset All");
+    currentLayout->addWidget(qpbResetCurrentAll);
+    qpbBiasCurrentAll = new QPushButton("Bias All");
+    currentLayout->addWidget(qpbBiasCurrentAll);
+    currentLayout->addStretch(1);
+    currentFrame->setLayout(currentLayout);
+    currentFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
-    QHBoxLayout* fbLowerLayout = new QHBoxLayout;
-    fbLowerLayout->addWidget(qpbResetEncAll);
-    fbLowerLayout->addWidget(qpbBiasEncAll);
-    fbLowerLayout->addStretch();
-    fbLowerLayout->addWidget(wdogLabel);
-    fbLowerLayout->addWidget(qdsbWatchdogPeriod);
-    fbLowerLayout->addWidget(qcbEnableDirectControl);
-    fbLowerLayout->addStretch();
+    // Commands layout
+    QHBoxLayout * commandLayout = new QHBoxLayout;
+    commandLayout->addWidget(powerFrame);
+    commandLayout->addWidget(watchdogFrame);
+    commandLayout->addWidget(encoderFrame);
+    commandLayout->addWidget(currentFrame);
 
-    fbLayout->addWidget(qpbResetEncAll, 0, 0);
-    fbLayout->addWidget(qpbBiasEncAll, 1, 0);
 
-    fbLayout->addWidget(curmALabel, 5, 0);
-//    fbLayout->addWidget(qpbResetEncAll, 6, 0);
-//    fbLayout->addWidget(qpbBiasEncAll, 7, 0);
-    fbLayout->addLayout(fbLowerLayout, 6, 0, 1, 2);
+    // Feedbacks Label
+    QGridLayout * gridLayout = new QGridLayout;
+    int row = 0;
 
+    vctBoolVec defaultEnable(numOfAxis, false);
+    vctDoubleVec defaultCurrent(numOfAxis, 0.0);
+
+    QLabel * axisEnableLabel = new QLabel("Axis power enable");
+    gridLayout->addWidget(axisEnableLabel, row, 0);
+    CurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
+    CurrentEnableEachWidget->SetValue(defaultEnable);
+    gridLayout->addWidget(CurrentEnableEachWidget, row, 1);
+    row++;
+
+    QLabel * currentDesiredLabel = new QLabel("Desired current (mA)");
+    gridLayout->addWidget(currentDesiredLabel, row, 0);
+    CurrentSpinBoxWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SPINBOX_WIDGET);
+    CurrentSpinBoxWidget->SetValue(defaultCurrent);
+    gridLayout->addWidget(CurrentSpinBoxWidget, row, 1);
+    row++;
+
+    CurrentSliderWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SLIDER_WIDGET);
+    CurrentSliderWidget->SetValue(defaultCurrent);
+    gridLayout->addWidget(CurrentSliderWidget, row, 1);
+    row++;
+
+    QLabel * jointPosLabel = new QLabel("Pos. joints (deg)");
+    gridLayout->addWidget(jointPosLabel, row, 0);
     JointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(JointPositionWidget, 0, 2);
-    ActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(ActuatorPositionWidget, 1, 2);
-    ActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(ActuatorVelocityWidget, 2, 2);
-    PotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(PotVoltsWidget, 3, 2);
-    PotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(PotPositionWidget, 4, 2);
-    CurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    fbLayout->addWidget(CurrentFeedbackWidget, 5, 2);
+    gridLayout->addWidget(JointPositionWidget, row, 1);
+    row++;
 
-    // fbFrame->setLayout(fbLayout);
-    // fbFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    QLabel * actuatorPosLabel = new QLabel("Pos. actuators (deg)");
+    gridLayout->addWidget(actuatorPosLabel, row, 0);
+    ActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(ActuatorPositionWidget, row, 1);
+    row++;
+
+    QLabel * velDegLabel = new QLabel("Velocity (deg/s)");
+    gridLayout->addWidget(velDegLabel, row, 0);
+    ActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(ActuatorVelocityWidget, row, 1);
+    row++;
+
+    QLabel * potVoltLabel = new QLabel("PotMeter (V)");
+    gridLayout->addWidget(potVoltLabel, row, 0);
+    PotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(PotVoltsWidget, row, 1);
+    row++;
+
+    QLabel * potPosSILabel = new QLabel("PotMeter (deg)");
+    gridLayout->addWidget(potPosSILabel, row, 0);
+    PotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(PotPositionWidget, row, 1);
+    row++;
+
+    QLabel * curmALabel = new QLabel("Current (mA)");
+    gridLayout->addWidget(curmALabel, row, 0);
+    CurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(CurrentFeedbackWidget, row, 1);
+    row++;
+
+
 
 
 #if HAS_GC
@@ -573,7 +573,7 @@ void mtsRobotIO1394QtWidget::setupUi()
     debugTitleRightLine->setFrameShape(QFrame::HLine);
     debugTitleRightLine->setFrameShadow(QFrame::Sunken);
     QLabel* debugTitleLabel = new QLabel("Robot Info");
-    debugTitleLabel->setFont(font);
+    // debugTitleLabel->setFont(font);
     debugTitleLabel->setAlignment(Qt::AlignCenter);
 
     debugTitleLayout->addWidget(debugTitleLeftLine, 1, 0);
@@ -588,22 +588,8 @@ void mtsRobotIO1394QtWidget::setupUi()
                             "selection-background-color: blue;");
     debugTextEdit->setText("Hello world!");
 
-    // debug lower right
-    // ZC: TODO REDO this
-    ampStatusButton = new QPushButton("Amp Status: ON");
-    powerStatusButton = new QPushButton("PowerStatus ON");
-    safetyRelayButton = new QPushButton("SafetyRelay: ON");
-    watchdogButton = new QPushButton("Watchdog: OFF");
-
-    QVBoxLayout* debugLowerRightLeyout = new QVBoxLayout;
-    debugLowerRightLeyout->addWidget(ampStatusButton);
-    debugLowerRightLeyout->addWidget(powerStatusButton);
-    debugLowerRightLeyout->addWidget(safetyRelayButton);
-    debugLowerRightLeyout->addWidget(watchdogButton);
-
     QHBoxLayout* debugLowerLayout = new QHBoxLayout;
     debugLowerLayout->addWidget(debugTextEdit);
-    debugLowerLayout->addLayout(debugLowerRightLeyout);
     debugLowerLayout->addStretch();
 
     QVBoxLayout* debugLayout = new QVBoxLayout;
@@ -611,12 +597,10 @@ void mtsRobotIO1394QtWidget::setupUi()
     debugLayout->addLayout(debugLowerLayout);
 #endif
 
-
     // main layout
-    QVBoxLayout* mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(cmdLayout);
-    mainLayout->addLayout(fbLayout);
-
+    QVBoxLayout * mainLayout = new QVBoxLayout;
+    mainLayout->addLayout(commandLayout);
+    mainLayout->addLayout(gridLayout);
 #if HAS_DEBUG_INFO
     mainLayout->addLayout(debugLayout);
 #endif
@@ -625,21 +609,17 @@ void mtsRobotIO1394QtWidget::setupUi()
     mainLayout->addWidget(gcGroupBox);
 #endif
 
-
-
-    QFrame* mainFrame = new QFrame;
+    QFrame * mainFrame = new QFrame;
     mainFrame->setLayout(mainLayout);
     setCentralWidget(mainFrame);
-//    setFixedWidth(750);
-//    setFixedHeight(sizeHint().height());
 
     setWindowTitle(QString(this->GetName().c_str()));
     resize(sizeHint());
 
     // connect signals & slots
-    // Commands
     connect(qcbEnableBoards, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableBoards(bool)));
     connect(qcbEnableAll, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableAll(bool)));
+    connect(qcbEnableDirectControl, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableDirectControl(bool)));
     connect(qpbResetCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetCurrentAll()));
     connect(qpbBiasCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasCurrentAll()));
 

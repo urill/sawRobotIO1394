@@ -362,6 +362,9 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
                                     mtsInt(100));
     robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI, this, "BiasEncoder");
 
+    // fine tune power, board vs. axis
+    actuatorInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::EnableBoardsPower, this, "EnableBoardsPower");
+    actuatorInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisableBoardsPower, this, "DisableBoardsPower");
     actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetAmpEnable, this, "SetAmpEnable",
                                        this->ampEnable); // vector[bool]
     actuatorInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::ResetSingleEncoder, this, "ResetSingleEncoder"); // int
@@ -460,6 +463,22 @@ void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int & placeHolder) const
 
 void mtsRobotIO1394::RobotInternal::EnablePower(void)
 {
+    // Enable boards first
+    EnableBoardsPower();
+    // Now, enable all amplifiers
+    SetAmpEnable(allOn);
+}
+
+void mtsRobotIO1394::RobotInternal::DisablePower(void)
+{
+    // Disable boards first
+    DisableBoardsPower();
+    // Now, disable all amplifiers
+    SetAmpEnable(allOff);
+}
+
+void mtsRobotIO1394::RobotInternal::EnableBoardsPower(void)
+{
     // Make sure all boards are enabled.
     // Notice we use Write to board to make sure this is not buffered.
     for (size_t index = 0; index < OwnBoards.size(); index++) {
@@ -475,7 +494,7 @@ void mtsRobotIO1394::RobotInternal::EnablePower(void)
     osaSleep(100.0 * cmn_ms); // Without the sleep, we can get power jumps and joints without power enabled
 }
 
-void mtsRobotIO1394::RobotInternal::DisablePower(void)
+void mtsRobotIO1394::RobotInternal::DisableBoardsPower(void)
 {
     // Make sure all boards are disabled.
     // Notice we use Write to board to make sure this is not buffered.
@@ -483,11 +502,6 @@ void mtsRobotIO1394::RobotInternal::DisablePower(void)
         OwnBoards[index]->WritePowerEnable(false);
         OwnBoards[index]->WriteSafetyRelay(false);
     }
-    // Set desired current to 0
-    TorqueJoint.ForceTorque().SetAll(0.0);
-    SetTorqueJoint(TorqueJoint);
-    // Now, disable all amplifiers
-    SetAmpEnable(allOff);
 }
 
 void mtsRobotIO1394::RobotInternal::EnableSafetyRelay(void)

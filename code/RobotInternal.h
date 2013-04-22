@@ -156,6 +156,8 @@ protected:
     void GetNumberOfJoints(int & placeHolder) const;
     void EnablePower(void);
     void DisablePower(void);
+    void EnableBoardsPower(void);
+    void DisableBoardsPower(void);
     void EnableSafetyRelay(void);
     void DisableSafetyRelay(void);
     void SetWatchdogPeriod(const double &period_sec);
