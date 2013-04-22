@@ -751,7 +751,7 @@ void mtsRobotIO1394QtWidget::updateRobotInfo()
 
     // amplifier status
     bool ampStatusGood = true;
-    for (int i = 0; i < ampStatus.size(); i++){
+    for (unsigned int i = 0; i < ampStatus.size(); i++){
         ampStatusGood &= ampStatus[i];
     }
     if(ampStatusGood){
