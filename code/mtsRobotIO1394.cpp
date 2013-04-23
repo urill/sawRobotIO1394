@@ -83,6 +83,45 @@ void mtsRobotIO1394::Init(void)
         CMN_LOG_CLASS_INIT_ERROR << "Init: failed to create provided interface \"MainInterface\", method Init should be called only once."
                                  << std::endl;
     }
+
+    //////////////////////////////////////////////////////////////////
+    ////////// RobotIO1394QtManager Configure Connection//////////////
+    //////////////////////////////////////////////////////////////////
+
+    // At this stage, the robot interfaces and the digital input interfaces should be ready.
+    // Add on Configuration provided interface with functionWrite with vector of strings.
+    // Provide names of robot, names of digital inputs, and name of this member.
+
+    // All previous interfaces are ready. Good start. Let's make a new provided interface.
+    mtsInterfaceProvided * configurationInterface   = this->AddInterfaceProvided("Configuration");
+    if(configurationInterface) {
+
+        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetRobotNames, this, "GetRobotNames"))){
+            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetRobotNames Failed. "<<std::endl;
+        }
+
+        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfActuatorPerRobot, this, "GetNumActuators"))){
+            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetNumActuators Failed. "<<std::endl;
+        }
+
+        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfRobots, this, "GetNumRobots"))) {
+            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetNumRobots Failed. "<<std::endl;
+        }
+        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfDigitalInputs, this, "GetNumDigitalInputs"))) {
+            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetNumDigitalInputs Failed. "<<std::endl;
+        }
+
+        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetDigitalInputNames, this, "GetDigitalInputNames"))) {
+            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetDigitalInputNames Failed. "<<std::endl;
+        }
+
+        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetName, this, "GetName"))) {
+            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetNames Failed. "<<std::endl;
+        }
+    }
+    else {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to create configurationInterface." << std::endl;
+    }
 }
 
 void mtsRobotIO1394::Configure(const std::string & filename)
@@ -260,4 +299,55 @@ void mtsRobotIO1394::GetNumberOfBoards(int &num) const
 void mtsRobotIO1394::GetNumberOfRobots(int &num) const
 {
     num = RobotList.size();
+}
+
+void mtsRobotIO1394::GetRobotNames(std::vector<std::string> &result) const
+{
+    int vecSize = 0;
+    GetNumberOfRobots(vecSize);
+    result.resize(vecSize);
+
+    int i = 0;
+    std::string tmpRobotName;
+
+    for(i = 0; i < vecSize; i++) {
+        RobotList[i]->GetName(tmpRobotName);
+        result[i] = tmpRobotName;
+    }
+}
+
+void mtsRobotIO1394::GetNumberOfActuatorPerRobot(vctIntVec &result) const
+{
+    int vecSize = 0;
+    GetNumberOfRobots(vecSize);
+    result.resize(vecSize);
+
+    int i = 0;
+    int tmpNumActuator = 0;
+
+    for(i = 0; i < vecSize; i++) {
+        RobotList[i]->GetNumberOfActuators(tmpNumActuator);
+        result[i] = tmpNumActuator;
+    }
+}
+
+void mtsRobotIO1394::GetDigitalInputNames(std::vector<std::string> &result) const
+{
+    int vecSize = 0;
+    GetNumberOfDigitalInputs(vecSize);
+    result.resize(vecSize);
+    // If there is a size mismatch, this section should throw an error or warning.
+
+    int i = 0;
+    std::string tmpDigitalName;
+
+    for(i = 0; i < vecSize; i++) {
+        DigitalInList[i]->GetName(tmpDigitalName);
+        result[i] = tmpDigitalName;
+    }
+}
+
+void mtsRobotIO1394::GetName(std::string &result) const
+{
+    result = mtsComponent::GetName();
 }

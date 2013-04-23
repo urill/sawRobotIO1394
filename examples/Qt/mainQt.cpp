@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>
+#include <sawRobotIO1394/mtsRobotIO1394QtManager.h>
 
 int main(int argc, char ** argv)
 {
@@ -70,19 +71,17 @@ int main(int argc, char ** argv)
 
     mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
 
-    // Qt display task
-    mtsRobotIO1394QtWidget *disp = new mtsRobotIO1394QtWidget("disp", 4);
-    disp->Configure();
-    LCM->AddComponent(disp);
-
     // Robot
-    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 1 * cmn_ms, port, disp->GetOutputStream());
-    robot->Configure(fullFileName);
-    LCM->AddComponent(robot);
+    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 1 * cmn_ms, port);
+    mtsRobotIO1394QtManager *qtManager = new mtsRobotIO1394QtManager("qtManager");
 
-    // connect disp to Robot & Controller interface
-    LCM->Connect("disp", "Robot", "robot", "Robot");
-    LCM->Connect("disp", "RobotActuators", "robot", "RobotActuators");
+    LCM->AddComponent(robot);
+    LCM->AddComponent(qtManager);
+
+    robot->Configure(fullFileName);
+
+    LCM->Connect("qtManager", "Configuration_Qt", "robot", "Configuration");
+    qtManager->BuildWidgets();
 
     //-------------- create the components ------------------
     LCM->CreateAll();
@@ -91,9 +90,6 @@ int main(int argc, char ** argv)
     // start the periodic Run
     LCM->StartAll();
     LCM->WaitForStateAll(mtsComponentState::ACTIVE , 2.0 * cmn_s);
-
-    // create a main window to hold QWidget
-    disp->show();
 
     // run Qt app
     application.exec();
@@ -104,7 +100,7 @@ int main(int argc, char ** argv)
     LCM->Cleanup();
 
     // delete dvgc robot
-    delete disp;
+    delete qtManager;
     delete robot;
 
     // stop all logs

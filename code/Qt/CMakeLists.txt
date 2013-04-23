@@ -38,6 +38,8 @@ if (cisst_FOUND_AS_REQUIRED)
   add_library (sawRobotIO1394Qt
                ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394QtWidget.h
                mtsRobotIO1394QtWidget.cpp
+		${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394QtManager.h
+               mtsRobotIO1394QtManager.cpp
                ${SAW_ROBOTIO1394_QT_WRAP_CPP})
   set_property (TARGET sawRobotIO1394Qt PROPERTY FOLDER "sawRobotIO1394")
   cisst_target_link_libraries (sawRobotIO1394Qt ${REQUIRED_CISST_LIBRARIES})

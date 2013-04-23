@@ -165,7 +165,6 @@ protected:
     vctBoolVec     allOff;
 
     // Methods for provided interface
-    void GetNumberOfActuators(int & placeHolder) const;
     void GetNumberOfJoints(int & placeHolder) const;
     void EnablePower(void);
     void DisablePower(void);
@@ -220,6 +219,10 @@ public:
 
     void GetData(void);
     void ConvertRawToSI(void);
+
+    // List of functions for mtsRobotIO1394 connection manager.
+    void GetName(std::string & placeHolder);
+    void GetNumberOfActuators(int & placeHolder) const;
 };
 
 #endif  // _RobotInternal_h_

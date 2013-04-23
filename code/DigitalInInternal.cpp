@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
- $Id: RobotInternal.cpp 4012 2013-03-15 15:01:36Z klee172 $
+ $Id$
 
  Author(s):  Zihan Chen, Peter Kazanzides
  Created on: 2012-07-31
@@ -164,6 +164,11 @@ void mtsRobotIO1394::DigitalInInternal::GetData(void){
             }
         }
     }
+}
+
+void mtsRobotIO1394::DigitalInInternal::GetName(std::string &placeHolder) const
+{
+    placeHolder = inputName;
 }
 
 void mtsRobotIO1394::DigitalInInternal::SetupMasks(int bitNumber, AmpIO_UInt32 &maskResult) {

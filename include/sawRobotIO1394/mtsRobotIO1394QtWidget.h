@@ -33,6 +33,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #define HAS_GC  0
 #define HAS_DEBUG_INFO 1
+#define HAS_DIGITAL 0
 
 
 /*!

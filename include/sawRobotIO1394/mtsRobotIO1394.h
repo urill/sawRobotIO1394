@@ -67,6 +67,12 @@ protected:
     void GetNumberOfBoards(int &num) const;
     void GetNumberOfRobots(int &num) const;
 
+    void GetRobotNames(std::vector<std::string> &result) const;
+    void GetNumberOfActuatorPerRobot(vctIntVec &result) const;
+
+    void GetDigitalInputNames(std::vector<std::string> &result) const;
+    void GetName(std::string &result) const;
+
 
 ////////////// Private Class Methods /////////////////////////////
 private:

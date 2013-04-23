@@ -447,12 +447,18 @@ void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
     }
 }
 
-//************************ PROTECTED METHODS ******************************
+void mtsRobotIO1394::RobotInternal::GetName(std::string & placeHolder)
+{
+    placeHolder = robotName;
+}
 
 void mtsRobotIO1394::RobotInternal::GetNumberOfActuators(int & placeHolder) const
 {
     placeHolder = ActuatorList.size();
 }
+
+//************************ PROTECTED METHODS ******************************
+
 
 void mtsRobotIO1394::RobotInternal::GetNumberOfJoints(int & placeHolder) const
 {

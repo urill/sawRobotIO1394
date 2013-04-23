@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  $Id: RobotInternal.h 4031 2013-03-26 15:14:21Z adeguet1 $
+  $Id$
 
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
@@ -85,7 +85,7 @@ public:
     void SetupStateTable(mtsStateTable &stateTable);
     void SetupProvidedInterface(mtsInterfaceProvided *prov, mtsStateTable &stateTable);
     void GetData(void);
-
+    void GetName(std::string &placeHolder) const;
 };
 
 #endif // __DigitalInInternal_h_
