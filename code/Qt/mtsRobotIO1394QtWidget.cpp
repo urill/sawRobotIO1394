@@ -392,14 +392,14 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     powerTitle->setFont(font);
     powerTitle->setAlignment(Qt::AlignCenter);
     powerLayout->addWidget(powerTitle);
-    qcbEnableBoards = new QCheckBox("Enable Boards");
+    qcbEnableBoards = new QCheckBox("Enable boards");
     powerLayout->addWidget(qcbEnableBoards);
-    qcbEnableAll = new QCheckBox("Enable All");
+    qcbEnableAll = new QCheckBox("Enable all");
     powerLayout->addWidget(qcbEnableAll);
     powerLayout->addStretch(1);
-    ampStatusButton = new QPushButton("Amp Status: ON");
+    ampStatusButton = new QPushButton("Amp status: ON");
     powerLayout->addWidget(ampStatusButton);
-    powerStatusButton = new QPushButton("PowerStatus ON");
+    powerStatusButton = new QPushButton("Power status ON");
     powerLayout->addWidget(powerStatusButton);
     powerFrame->setLayout(powerLayout);
     powerFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -413,7 +413,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     watchdogLayout->addWidget(watchdogTitle);
     QHBoxLayout * watchdogSetLayout = new QHBoxLayout;
     {
-        QLabel * wdogLabel = new QLabel("Wdog Period (ms)");
+        QLabel * wdogLabel = new QLabel("Wdog period (ms)");
         qdsbWatchdogPeriod = new QDoubleSpinBox;
         qdsbWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
         qdsbWatchdogPeriod->setMinimum(0.0);
@@ -424,7 +424,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     }
     watchdogLayout->addLayout(watchdogSetLayout);
     watchdogLayout->addStretch(1);
-    safetyRelayButton = new QPushButton("SafetyRelay: ON");
+    safetyRelayButton = new QPushButton("Safety relay: ON");
     watchdogLayout->addWidget(safetyRelayButton);
     watchdogButton = new QPushButton("Watchdog: OFF");
     watchdogLayout->addWidget(watchdogButton);
@@ -440,7 +440,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     encoderLayout->addWidget(encoderTitle);
     qpbResetEncAll = new QPushButton("Reset all");
     encoderLayout->addWidget(qpbResetEncAll);
-    qpbBiasEncAll = new QPushButton("Bias from pot");
+    qpbBiasEncAll = new QPushButton("Bias from potentiometers");
     encoderLayout->addWidget(qpbBiasEncAll);
     encoderLayout->addStretch(1);
     encoderFrame->setLayout(encoderLayout);
@@ -453,12 +453,12 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     currentTitle->setFont(font);
     currentTitle->setAlignment(Qt::AlignCenter);
     currentLayout->addWidget(currentTitle);
-    qcbEnableDirectControl = new QCheckBox("Enable Direct Control");
+    qcbEnableDirectControl = new QCheckBox("Direct control");
     qcbEnableDirectControl->setChecked(true);
     currentLayout->addWidget(qcbEnableDirectControl);
-    qpbResetCurrentAll = new QPushButton("Reset All");
+    qpbResetCurrentAll = new QPushButton("Reset all");
     currentLayout->addWidget(qpbResetCurrentAll);
-    qpbBiasCurrentAll = new QPushButton("Bias All");
+    qpbBiasCurrentAll = new QPushButton("Bias from feedback");
     currentLayout->addWidget(qpbBiasCurrentAll);
     currentLayout->addStretch(1);
     currentFrame->setLayout(currentLayout);
@@ -479,7 +479,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     vctBoolVec defaultEnable(numOfAxis, false);
     vctDoubleVec defaultCurrent(numOfAxis, 0.0);
 
-    QLabel * axisEnableLabel = new QLabel("Axis power enable");
+    QLabel * axisEnableLabel = new QLabel("Axis power");
     gridLayout->addWidget(axisEnableLabel, row, 0);
     CurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
     CurrentEnableEachWidget->SetValue(defaultEnable);
@@ -498,43 +498,41 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     gridLayout->addWidget(CurrentSliderWidget, row, 1);
     row++;
 
-    QLabel * jointPosLabel = new QLabel("Pos. joints (deg)");
+    QLabel * jointPosLabel = new QLabel("Joint positions (deg)");
     gridLayout->addWidget(jointPosLabel, row, 0);
     JointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
     gridLayout->addWidget(JointPositionWidget, row, 1);
     row++;
 
-    QLabel * actuatorPosLabel = new QLabel("Pos. actuators (deg)");
+    QLabel * actuatorPosLabel = new QLabel("Actuator positions (deg)");
     gridLayout->addWidget(actuatorPosLabel, row, 0);
     ActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
     gridLayout->addWidget(ActuatorPositionWidget, row, 1);
     row++;
 
-    QLabel * velDegLabel = new QLabel("Velocity (deg/s)");
+    QLabel * velDegLabel = new QLabel("Velocities (deg/s)");
     gridLayout->addWidget(velDegLabel, row, 0);
     ActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
     gridLayout->addWidget(ActuatorVelocityWidget, row, 1);
     row++;
 
-    QLabel * potVoltLabel = new QLabel("PotMeter (V)");
+    QLabel * potVoltLabel = new QLabel("Analog inputs (V)");
     gridLayout->addWidget(potVoltLabel, row, 0);
     PotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
     gridLayout->addWidget(PotVoltsWidget, row, 1);
     row++;
 
-    QLabel * potPosSILabel = new QLabel("PotMeter (deg)");
+    QLabel * potPosSILabel = new QLabel("Potentiometers (deg)");
     gridLayout->addWidget(potPosSILabel, row, 0);
     PotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
     gridLayout->addWidget(PotPositionWidget, row, 1);
     row++;
 
-    QLabel * curmALabel = new QLabel("Current (mA)");
+    QLabel * curmALabel = new QLabel("Current feedback (mA)");
     gridLayout->addWidget(curmALabel, row, 0);
     CurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
     gridLayout->addWidget(CurrentFeedbackWidget, row, 1);
     row++;
-
-
 
 
 #if HAS_GC
@@ -561,8 +559,8 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     // spacer          spacer
     // -----  Debug Info ------
     QGridLayout* debugTitleLayout = new QGridLayout;
-    QSpacerItem* debugTitleLeftSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
-    QSpacerItem* debugTitleRightSpacer = new QSpacerItem(341, 20, QSizePolicy::Expanding);
+    QSpacerItem* debugTitleLeftSpacer = new QSpacerItem(200, 20, QSizePolicy::Expanding);
+    QSpacerItem* debugTitleRightSpacer = new QSpacerItem(200, 20, QSizePolicy::Expanding);
     debugTitleLayout->addItem(debugTitleLeftSpacer, 0, 0);
     debugTitleLayout->addItem(debugTitleRightSpacer, 0, 2);
 
@@ -583,9 +581,9 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     // debug lower left
     debugTextEdit = new QTextEdit;
     debugTextEdit->setStyleSheet("color: blue;"
-                            "background-color: yellow;"
-                            "selection-color: yellow;"
-                            "selection-background-color: blue;");
+                                 "background-color: yellow;"
+                                 "selection-color: yellow;"
+                                 "selection-background-color: blue;");
     debugTextEdit->setText("Hello world!");
 
     QHBoxLayout* debugLowerLayout = new QHBoxLayout;
@@ -637,72 +635,56 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 }
 
 
-void mtsRobotIO1394QtWidget::updateRobotInfo()
+void mtsRobotIO1394QtWidget::updateRobotInfo(void)
 {
     // debug info
     if(!debugStream.str().empty()){
         std::cout << debugStream.str() << std::endl;
-
         debugTextEdit->clear();
         debugTextEdit->setText(debugStream.str().c_str());
-
         // clear
         debugStream.clear();
         debugStream.str("");
     }
 
-    // status
 
     // amplifier status
     bool ampStatusGood = true;
-    for (unsigned int i = 0; i < ampStatus.size(); i++){
+    for (unsigned int i = 0; i < ampStatus.size(); i++) {
         ampStatusGood &= ampStatus[i];
     }
-    if(ampStatusGood){
+    if (ampStatusGood) {
         ampStatusButton->setText("Amp Status: ON");
         ampStatusButton->setStyleSheet("QPushButton { background-color: green }");
-    }else{
+    } else {
         ampStatusButton->setText("Amp Status: OFF");
         ampStatusButton->setStyleSheet("QPushButton { background-color: red }");
     }
 
     // power status
-    if(powerStatus){
+    if (powerStatus) {
         powerStatusButton->setText("Power Enable: ON");
         powerStatusButton->setStyleSheet("QPushButton { background-color: green }");
-    }else{
+    } else {
         powerStatusButton->setText("Power Enable: OFF");
         powerStatusButton->setStyleSheet("QPushButton { background-color: red }");
     }
 
     // safety Relay
-    if(safetyRelay){
+    if (safetyRelay) {
         safetyRelayButton->setText("Safety Relay: ON");
         safetyRelayButton->setStyleSheet("QPushButton { background-color: green }");
-    }else{
+    } else {
         safetyRelayButton->setText("Safety Relay: OFF");
         safetyRelayButton->setStyleSheet("QPushButton { background-color: red }");
     }
 
     // watchdog timeout
-    if(watchdogTimeout){
+    if (watchdogTimeout) {
         watchdogButton->setText("Watchdog Timeout: TRUE");
         watchdogButton->setStyleSheet("QPushButton { background-color: red }");
-    }else{
+    } else {
         watchdogButton->setText("Watchdog Timeout: FALSE");
         watchdogButton->setStyleSheet("QPushButton { background-color: green }");
     }
-}
-
-
-double mtsRobotIO1394QtWidget::DACtoCurrents(long count){
-    return ((double)count / MOTORCUR_DAC * MOTORCUR_MAX * 2 - MOTORCUR_MAX);
-}
-
-
-long mtsRobotIO1394QtWidget::CurrentstoDAC(double amp){
-    long val;
-    val = (long) (amp + MOTORCUR_MAX)/(MOTORCUR_MAX * 2.0) * double(MOTORCUR_DAC);
-    std::cout << val << std::endl;
-    return val;
 }

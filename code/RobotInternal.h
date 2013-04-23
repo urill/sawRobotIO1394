@@ -38,6 +38,19 @@ class mtsInterfaceProvided;
 class mtsStateTable;
 class AmpIO;
 
+/*!
+  \todo add configuration for potentiometer coupling to joints (default) or actuators
+  \todo add software check to monitor current feedback vs. requested current
+  \todo add check on configuration files to make sure all gains are non zero
+  \todo add code to load units from config files and apply properly
+  \todo create vectors for all data used in computations instead of digging into the vector of structures used to configure the robot.
+  \todo create one state table per robot
+  \todo create one state table for all digital inputs
+  \todo use cisst naming conventions
+  \todo create temporary vectors used for runtime computation in the object but add a dummy struct e.g. Robot.Temp.CurrentInA to clearly identify these as non-state
+  \todo sort commands between joint vs actuator interfaces
+  \todo test JSON config files after JSON branch merge
+*/
 class mtsRobotIO1394::RobotInternal {
 protected:
 
