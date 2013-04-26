@@ -51,15 +51,15 @@ mtsRobotIO1394QtManager::mtsRobotIO1394QtManager(const std::string &name) : mtsC
 }
 
 void mtsRobotIO1394QtManager::Configure(void) {
+    if (robotConfigureInterface->GetConnectedInterface()) {
+        this->BuildWidgets();
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to connect to configuration interface"
+                                 << std::endl;
+    }
 }
 
 void mtsRobotIO1394QtManager::Startup(void) {
-    if (robotConfigureInterface->GetConnectedInterface()) {
-        // this->buildWidgets();
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "Startup: unable to connect to configuration interface"
-                                 << std::endl;
-    }
 }
 
 
