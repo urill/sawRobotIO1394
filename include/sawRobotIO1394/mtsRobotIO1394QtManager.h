@@ -41,7 +41,7 @@ public:
     mtsRobotIO1394QtManager(const std::string &name);
     inline ~mtsRobotIO1394QtManager(void) {}
 
-    void Configure(void);
+    void Configure(const std::string &filename);
     void Startup(void);
 
     void BuildWidgets(void);
