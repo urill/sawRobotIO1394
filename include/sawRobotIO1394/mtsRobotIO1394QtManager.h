@@ -59,8 +59,6 @@ protected:
 
     vctIntVec numberOfActuatorsPerRobot;
 
-    std::vector<mtsRobotIO1394QtWidget *> listOfWidgets;
-
     struct ConfigStruct {
         mtsFunctionRead getNumRobots_Qt;
         mtsFunctionRead getNumDigital_Qt;

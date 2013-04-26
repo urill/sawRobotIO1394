@@ -45,7 +45,7 @@ int main(int argc, char ** argv)
                               "configuration file, can be an absolute path or relative to CISST_ROOT share",
                               cmnCommandLineOptions::REQUIRED, &configFile);
     options.AddOptionOneValue("p", "port",
-                              "firefire port number(s)",
+                              "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL, &port);
 
     std::string errorMessage;

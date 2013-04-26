@@ -83,7 +83,7 @@ void mtsRobotIO1394QtManager::BuildWidgets(void) {
         numberOfActuatorsPerRobot.resize(numberOfRobots);
     }
     else {
-        CMN_LOG_CLASS_INIT_ERROR << "buildWidgets: Number of robot less than 1" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "buildWidgets: Number of robots less than 1" << std::endl;
     }
 
     mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
@@ -105,7 +105,6 @@ void mtsRobotIO1394QtManager::BuildWidgets(void) {
         LCM->AddComponent(robotDisplay);
         LCM->Connect(qt_Added, "Robot", nameOfRobotIO1394, tmpRobotName);
         LCM->Connect(qt_Added, "RobotActuators", nameOfRobotIO1394, actuator_Added);
-        listOfWidgets.push_back(robotDisplay);
 
         robotDisplay->Create();
         robotDisplay->Start();

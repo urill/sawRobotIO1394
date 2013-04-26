@@ -51,9 +51,7 @@ class mtsRobotIO1394QtWidget: public QMainWindow, public mtsComponent
 
 public:
     mtsRobotIO1394QtWidget(const std::string & taskName, unsigned int numberOfActuators);
-    // For now, single arg constructor hard-codes number of actuators. Could replace this
-    // by a custom constructor arg.
-    mtsRobotIO1394QtWidget(const std::string & taskName);
+    mtsRobotIO1394QtWidget(const mtsComponentConstructorNameAndUInt &arg);
     inline ~mtsRobotIO1394QtWidget(void) {}
 
     void Configure(const std::string & filename = "");
