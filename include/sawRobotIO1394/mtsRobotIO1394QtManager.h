@@ -7,7 +7,7 @@
   Author(s):  Kwang Young Lee
   Created on: 2013-04-11
 
-  (C) Copyright 2012-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -18,8 +18,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef mtsRobotIO1394QtManager_h
-#define mtsRobotIO1394QtManager_h
+#ifndef _mtsRobotIO1394QtManager_h
+#define _mtsRobotIO1394QtManager_h
 
 #include <cisstCommonXML.h>
 #include <cisstOSAbstraction/osaTimeServer.h>
@@ -38,38 +38,38 @@ class mtsRobotIO1394QtManager: public mtsComponent
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsRobotIO1394QtManager(const std::string &name);
+    mtsRobotIO1394QtManager(const std::string & name);
     inline ~mtsRobotIO1394QtManager(void) {}
 
-    void Configure(const std::string &filename);
+    void Configure(const std::string & filename);
     void Startup(void);
 
     void BuildWidgets(void);
 
 protected:
-    mtsInterfaceRequired * robotConfigureInterface;
-    std::string nameOfRobotIO1394;
-    std::vector<std::string> nameOfRobots;
-    std::vector<std::string> nameOfDigitalInputs;
+    mtsInterfaceRequired * RobotConfigureInterface;
+    std::string NameOfRobotIO1394;
+    std::vector<std::string> RobotNames;
+    std::vector<std::string> DigitalInputNames;
 
-    int numberOfRobots;
-    int numberOfDigitalInputs;
+    int NumberOfRobots;
+    int NumberOfDigitalInputs;
 
-    vctIntVec numberOfActuatorsPerRobot;
+    vctIntVec NumberOfActuatorsPerRobot;
 
     struct ConfigStruct {
-        mtsFunctionRead getNumRobots_Qt;
-        mtsFunctionRead getNumDigital_Qt;
+        mtsFunctionRead GetNumberOfRobots;
+        mtsFunctionRead GetNumberOfDigitalInputs;
 
-        mtsFunctionRead getRobotNames_Qt;
-        mtsFunctionRead getNumActuators_Qt;
+        mtsFunctionRead GetRobotNames;
+        mtsFunctionRead GetNumbersOfActuators;
 
-        mtsFunctionRead getDigitalInputNames_Qt;
-        mtsFunctionRead getName_Qt;
+        mtsFunctionRead GetDigitalInputNames;
+        mtsFunctionRead GetName;
     } Configuration;
 
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtManager);
 
-#endif // mtsRobotIO1394QtManager_h
+#endif // _mtsRobotIO1394QtManager_h

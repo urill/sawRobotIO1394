@@ -37,16 +37,16 @@ mtsRobotIO1394QtManager::mtsRobotIO1394QtManager(const std::string &name) : mtsC
 {
     // This function will make the required interface to be connected with
     // the provided interface of mtsRobotIO1394 named Configure with predefined function names.
-    robotConfigureInterface = AddInterfaceRequired("Configuration_Qt");
-    if (robotConfigureInterface) {
-        robotConfigureInterface->AddFunction("GetRobotNames",Configuration.getRobotNames_Qt);
-        robotConfigureInterface->AddFunction("GetNumActuators",Configuration.getNumActuators_Qt);
+    RobotConfigureInterface = AddInterfaceRequired("Configuration_Qt");
+    if (RobotConfigureInterface) {
+        RobotConfigureInterface->AddFunction("GetRobotNames",Configuration.GetRobotNames);
+        RobotConfigureInterface->AddFunction("GetNumActuators",Configuration.GetNumbersOfActuators);
 
-        robotConfigureInterface->AddFunction("GetNumRobots",Configuration.getNumRobots_Qt);
-        robotConfigureInterface->AddFunction("GetNumDigitalInputs",Configuration.getNumDigital_Qt);
+        RobotConfigureInterface->AddFunction("GetNumRobots",Configuration.GetNumberOfRobots);
+        RobotConfigureInterface->AddFunction("GetNumDigitalInputs",Configuration.GetNumberOfDigitalInputs);
 
-        robotConfigureInterface->AddFunction("GetDigitalInputNames",Configuration.getDigitalInputNames_Qt);
-        robotConfigureInterface->AddFunction("GetName",Configuration.getName_Qt);
+        RobotConfigureInterface->AddFunction("GetDigitalInputNames",Configuration.GetDigitalInputNames);
+        RobotConfigureInterface->AddFunction("GetName",Configuration.GetName);
     }
 }
 
@@ -54,7 +54,7 @@ void mtsRobotIO1394QtManager::Configure(const std::string &) {
 }
 
 void mtsRobotIO1394QtManager::Startup(void) {
-    if (robotConfigureInterface->GetConnectedInterface()) {
+    if (RobotConfigureInterface->GetConnectedInterface()) {
         this->BuildWidgets();
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "Startup: unable to connect to configuration interface"
@@ -69,48 +69,46 @@ void mtsRobotIO1394QtManager::BuildWidgets(void)
     if (called) return;
     called = true;
 
-    int i = 0;
+    size_t i = 0;
 
-    std::string qt_Addon = "_Qt";
-    std::string actuator_Addon = "Actuators";
-    std::string qt_Added;
-    std::string actuator_Added;
+    std::string qtSuffix = "QtWidget";
+    std::string actuatorInterfaceSuffix = "Actuators";
+    std::string newComponentName;
+    std::string newInterfaceActuatorName;
 
     std::string tmpRobotName;
 
-    Configuration.getName_Qt(nameOfRobotIO1394);
-    Configuration.getNumRobots_Qt(numberOfRobots);
+    Configuration.GetName(NameOfRobotIO1394);
+    Configuration.GetNumberOfRobots(NumberOfRobots);
 
-    if(numberOfRobots > 0) {
-        nameOfRobots.resize(numberOfRobots);
-        numberOfActuatorsPerRobot.resize(numberOfRobots);
+    if (NumberOfRobots > 0) {
+        RobotNames.resize(NumberOfRobots);
+        NumberOfActuatorsPerRobot.resize(NumberOfRobots);
     }
     else {
-        CMN_LOG_CLASS_INIT_ERROR << "buildWidgets: Number of robots less than 1" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "BuildWidgets: no robot found" << std::endl;
     }
 
-    mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
+    mtsManagerLocal * LCM = mtsManagerLocal::GetInstance();
 
-    Configuration.getRobotNames_Qt(nameOfRobots);
-    Configuration.getNumActuators_Qt(numberOfActuatorsPerRobot);
-    Configuration.getNumDigital_Qt(numberOfDigitalInputs);
+    Configuration.GetRobotNames(RobotNames);
+    Configuration.GetNumbersOfActuators(NumberOfActuatorsPerRobot);
 
-    for(i = 0; i < numberOfRobots; i++) {
-        tmpRobotName = nameOfRobots[i];
-        qt_Added = tmpRobotName.append(qt_Addon);
-        tmpRobotName = nameOfRobots[i];
-        actuator_Added = tmpRobotName.append(actuator_Addon);
-        tmpRobotName = nameOfRobots[i];
+    for (i = 0; i < NumberOfRobots; i++) {
+        tmpRobotName = RobotNames[i];
+        newComponentName = tmpRobotName.append(qtSuffix);
+        tmpRobotName = RobotNames[i];
+        newInterfaceActuatorName = tmpRobotName.append(actuatorInterfaceSuffix);
+        tmpRobotName = RobotNames[i];
 
         mtsRobotIO1394QtWidget *robotDisplay =
-                new mtsRobotIO1394QtWidget(qt_Added,numberOfActuatorsPerRobot[i]);
+                new mtsRobotIO1394QtWidget(newComponentName, NumberOfActuatorsPerRobot[i]);
         robotDisplay->Configure();
         LCM->AddComponent(robotDisplay);
-        LCM->Connect(qt_Added, "Robot", nameOfRobotIO1394, tmpRobotName);
-        LCM->Connect(qt_Added, "RobotActuators", nameOfRobotIO1394, actuator_Added);
+        LCM->Connect(newComponentName, "Robot", NameOfRobotIO1394, tmpRobotName);
+        LCM->Connect(newComponentName, "RobotActuators", NameOfRobotIO1394, newInterfaceActuatorName);
 
         robotDisplay->Create();
         robotDisplay->Start();
-        robotDisplay->show();
     }
 }
