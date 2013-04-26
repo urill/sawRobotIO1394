@@ -52,8 +52,6 @@ protected:
     std::vector<std::string> nameOfRobots;
     std::vector<std::string> nameOfDigitalInputs;
 
-    bool firstRun;
-
     int numberOfRobots;
     int numberOfDigitalInputs;
 

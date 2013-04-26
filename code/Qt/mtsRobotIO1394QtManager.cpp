@@ -30,15 +30,13 @@ http://www.cisst.org/cisst/license.txt.
 
 #include "sawRobotIO1394/mtsRobotIO1394QtManager.h"
 
-CMN_IMPLEMENT_SERVICES_DERIVED(mtsRobotIO1394QtManager, mtsComponent);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtManager, mtsComponent, std::string);
 
 
 mtsRobotIO1394QtManager::mtsRobotIO1394QtManager(const std::string &name) : mtsComponent(name)
 {
-    firstRun = true;
-
     // This function will make the required interface to be connected with
-    // the provdied interface of mtsRobotIO1394 named Configure with predefined function names.
+    // the provided interface of mtsRobotIO1394 named Configure with predefined function names.
     robotConfigureInterface = AddInterfaceRequired("Configuration_Qt");
     if (robotConfigureInterface) {
         robotConfigureInterface->AddFunction("GetRobotNames",Configuration.getRobotNames_Qt);
