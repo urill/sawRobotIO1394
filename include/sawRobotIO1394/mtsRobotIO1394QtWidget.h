@@ -32,13 +32,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtGui>
 
 #define HAS_GC  0
-#define HAS_DEBUG_INFO 1
+// #define HAS_DEBUG_INFO 1
 #define HAS_DIGITAL 0
 
 
 /*!
   \todo use cisst naming convention
-  \todo figure out what to do with the debug window, this is not per robot, most likely per port
+  \todo figure out what to do with the debug window, this is not per robot, most likely per port - cisstLog
   \todo maybe rename this class to mtsRobotIO1394{Robot,DigitalInputs,Log}QtWidget and create using mtsRobotIO1394FactoryQtWidget
   \todo cisst Qt convention is now to start with the Qt prefix, i.e. mtsQtWidgetRobotIO1394 ...
   \todo add commands to retrieve maximum current allowed per axis and apply to current widgets
@@ -76,7 +76,6 @@ private slots:
     void slot_qpbResetEncAll(void);
     void slot_qpbBiasEncAll(void);
     void slot_qdsbWatchdogPeriod(double period_ms);
-    void slot_qpbResetEnc(void);
     void slot_qcbCurFBToggle(bool);
     void slot_qdsbCurFBGain(double);
     void slot_qdsbCurFBOffset(double);
@@ -107,6 +106,10 @@ protected:
     std::stringstream debugStream;
     enum { DEBUG_START_LINE = 15 };
     unsigned int last_debug_line;
+
+    bool DirectControl;
+    int TimerPeriodInMilliseconds;
+    double WatchdogPeriodInSeconds;
 
     struct RobotStruct {
         mtsFunctionRead GetPeriodStatistics;
@@ -194,7 +197,6 @@ private:
     QCheckBox * qcbEnableBoards;
     QFrame * cmdLowerInfoFrame;
     QCheckBox * qcbEnableAll;
-    QCheckBox ** qcbEnable;
     QPushButton * qpbResetCurrentAll;
     QPushButton * qpbBiasCurrentAll;
 
@@ -214,17 +216,11 @@ private:
     vctQtWidgetDynamicVectorDoubleRead * PotPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * CurrentFeedbackWidget;
 
-    QPushButton** qpbResetEnc;
-
-    // GUI: Debug
-    QTextEdit* debugTextEdit;
     QPushButton* ampStatusButton;
     QPushButton* powerStatusButton;
     QPushButton* safetyRelayButton;
     QPushButton* watchdogButton;
 
-    // Control
-//    QPushButton* quitButton;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtWidget);

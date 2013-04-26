@@ -32,19 +32,16 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstOSAbstraction/osaGetTime.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 
-#define SWITCH 1
-
-// Find a better way for user to get these values
-#define MOTORCUR_MAX 6250       // max motor current in mA
-#define MOTORCUR_DAC 0xFFFF     // max dac value for motor current
-
-
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtWidget, mtsComponent, mtsComponentConstructorNameAndUInt)
 
 
 mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & taskName, unsigned int numberOfActuators):
-    mtsComponent(taskName), numOfAxis(numberOfActuators)
+    mtsComponent(taskName),
+    numOfAxis(numberOfActuators),
+    DirectControl(true),
+    TimerPeriodInMilliseconds(50)
 {
+    WatchdogPeriodInSeconds = TimerPeriodInMilliseconds * cmn_ms;
     Init();
 }
 
@@ -70,9 +67,9 @@ void mtsRobotIO1394QtWidget::Init(void)
     potVolt.SetSize(numOfAxis);
     potPosSI.SetSize(numOfAxis);
     motorFeedbackCurrent.SetSize(numOfAxis);
-    motorFeedbackCurrent.SetAll(0.0);
+    motorFeedbackCurrent.Zeros();
     motorControlCurrent.SetSize(numOfAxis);
-    motorControlCurrent.SetAll(0.0);
+    motorControlCurrent.Zeros();
     ampEnable.SetSize(numOfAxis);
 
     startTime = osaGetTime();
@@ -81,7 +78,7 @@ void mtsRobotIO1394QtWidget::Init(void)
     setupCisstInterface();
     setupUi();
 
-    startTimer(50); // ms
+    startTimer(TimerPeriodInMilliseconds); // ms
 }
 
 void mtsRobotIO1394QtWidget::Configure(const std::string &filename)
@@ -106,9 +103,9 @@ void mtsRobotIO1394QtWidget::Cleanup()
 void mtsRobotIO1394QtWidget::closeEvent(QCloseEvent * event)
 {
     int ret = QMessageBox::warning(this, tr("ExitBox"),
-                                 tr("Please power off the robot before quit. \n"
-                                    "Continue?"),
-                                 QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+                                   tr("Please power off the robot before quit. \n"
+                                      "Continue?"),
+                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     if(ret == QMessageBox::Yes) {
         Robot.DisablePower();
         event->accept();
@@ -153,6 +150,7 @@ void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
 
 void mtsRobotIO1394QtWidget::slot_qcbEnableDirectControl(bool toggle)
 {
+    DirectControl = toggle;
     // if checked in DIRECT_CONTROL mode
     CurrentSpinBoxWidget->setEnabled(toggle);
     CurrentSliderWidget->setEnabled(toggle);
@@ -232,20 +230,16 @@ void mtsRobotIO1394QtWidget::slot_qpbBiasEncAll()
 
 void mtsRobotIO1394QtWidget::slot_qdsbWatchdogPeriod(double period_ms)
 {
-    mtsExecutionResult result = Robot.SetWatchdogPeriod(period_ms * cmn_ms);
+    if (period_ms == 0.0) {
+        QMessageBox message;
+        message.setText("Setting the watchdog period to 0 disables the watchdog!");
+        message.exec();
+    }
+    WatchdogPeriodInSeconds = period_ms * cmn_ms;
+    mtsExecutionResult result = Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
     if(!result.IsOK()){
         CMN_LOG_CLASS_RUN_WARNING << "slot_qdsbWatchdogPeriod: command failed \""
                                   << result << "\"" << std::endl;
-    }
-}
-
-
-void mtsRobotIO1394QtWidget::slot_qpbResetEnc()
-{
-    for (int i = 0; i < numOfAxis; i++) {
-        if (sender() == qpbResetEnc[i]) {
-            Actuators.ResetSingleEncoder(i);
-        }
     }
 }
 
@@ -264,7 +258,7 @@ void mtsRobotIO1394QtWidget::slot_qdsbCurFBOffset(double offset)
     curFBOffset = offset;
 }
 
-void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
+void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
 {
     bool flag;
     Robot.IsValid(flag);
@@ -306,6 +300,10 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent *event)
     CurrentFeedbackWidget->SetValue(motorFeedbackCurrent * 1000.0);
 
     updateRobotInfo();
+
+    if (this->DirectControl) {
+        Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
+    }
 }
 
 
@@ -418,7 +416,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
         qdsbWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
         qdsbWatchdogPeriod->setMinimum(0.0);
         qdsbWatchdogPeriod->setSingleStep(0.05);
-        qdsbWatchdogPeriod->setValue(340.0); // default = 340 ms
+        qdsbWatchdogPeriod->setValue(cmnInternalTo_ms(WatchdogPeriodInSeconds * 1.2)); // add 20% to Qt timer
         watchdogSetLayout->addWidget(wdogLabel);
         watchdogSetLayout->addWidget(qdsbWatchdogPeriod);
     }
@@ -454,7 +452,6 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     currentTitle->setAlignment(Qt::AlignCenter);
     currentLayout->addWidget(currentTitle);
     qcbEnableDirectControl = new QCheckBox("Direct control");
-    qcbEnableDirectControl->setChecked(true);
     currentLayout->addWidget(qcbEnableDirectControl);
     qpbResetCurrentAll = new QPushButton("Reset all");
     currentLayout->addWidget(qpbResetCurrentAll);
@@ -553,55 +550,10 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     connect(qpbAdjustEncoder, SIGNAL(clicked()), this, SLOT(slot_qpbAdjustEncoder()));
 #endif
 
-
-#if HAS_DEBUG_INFO
-    // Debug Title
-    // spacer          spacer
-    // -----  Debug Info ------
-    QGridLayout* debugTitleLayout = new QGridLayout;
-    QSpacerItem* debugTitleLeftSpacer = new QSpacerItem(200, 20, QSizePolicy::Expanding);
-    QSpacerItem* debugTitleRightSpacer = new QSpacerItem(200, 20, QSizePolicy::Expanding);
-    debugTitleLayout->addItem(debugTitleLeftSpacer, 0, 0);
-    debugTitleLayout->addItem(debugTitleRightSpacer, 0, 2);
-
-    QFrame* debugTitleLeftLine = new QFrame;
-    debugTitleLeftLine->setFrameShape(QFrame::HLine);
-    debugTitleLeftLine->setFrameShadow(QFrame::Sunken);
-    QFrame* debugTitleRightLine = new QFrame;
-    debugTitleRightLine->setFrameShape(QFrame::HLine);
-    debugTitleRightLine->setFrameShadow(QFrame::Sunken);
-    QLabel* debugTitleLabel = new QLabel("Robot Info");
-    // debugTitleLabel->setFont(font);
-    debugTitleLabel->setAlignment(Qt::AlignCenter);
-
-    debugTitleLayout->addWidget(debugTitleLeftLine, 1, 0);
-    debugTitleLayout->addWidget(debugTitleLabel, 1, 1);
-    debugTitleLayout->addWidget(debugTitleRightLine, 1, 2);
-
-    // debug lower left
-    debugTextEdit = new QTextEdit;
-    debugTextEdit->setStyleSheet("color: blue;"
-                                 "background-color: yellow;"
-                                 "selection-color: yellow;"
-                                 "selection-background-color: blue;");
-    debugTextEdit->setText("Hello world!");
-
-    QHBoxLayout* debugLowerLayout = new QHBoxLayout;
-    debugLowerLayout->addWidget(debugTextEdit);
-    debugLowerLayout->addStretch();
-
-    QVBoxLayout* debugLayout = new QVBoxLayout;
-    debugLayout->addLayout(debugTitleLayout);
-    debugLayout->addLayout(debugLowerLayout);
-#endif
-
     // main layout
     QVBoxLayout * mainLayout = new QVBoxLayout;
     mainLayout->addLayout(commandLayout);
     mainLayout->addLayout(gridLayout);
-#if HAS_DEBUG_INFO
-    mainLayout->addLayout(debugLayout);
-#endif
 
 #if HAS_GC
     mainLayout->addWidget(gcGroupBox);
@@ -618,6 +570,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     connect(qcbEnableBoards, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableBoards(bool)));
     connect(qcbEnableAll, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableAll(bool)));
     connect(qcbEnableDirectControl, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableDirectControl(bool)));
+    qcbEnableDirectControl->setChecked(DirectControl); // trigger right after this connected
     connect(qpbResetCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetCurrentAll()));
     connect(qpbBiasCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasCurrentAll()));
 
@@ -637,17 +590,6 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
 void mtsRobotIO1394QtWidget::updateRobotInfo(void)
 {
-    // debug info
-    if(!debugStream.str().empty()){
-        std::cout << debugStream.str() << std::endl;
-        debugTextEdit->clear();
-        debugTextEdit->setText(debugStream.str().c_str());
-        // clear
-        debugStream.clear();
-        debugStream.str("");
-    }
-
-
     // amplifier status
     bool ampStatusGood = true;
     for (unsigned int i = 0; i < ampStatus.size(); i++) {

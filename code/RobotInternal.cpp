@@ -62,15 +62,15 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
     motorControlCurrentRaw(numActuators), motorControlCurrent(numActuators),
     motorControlTorque(numActuators),
     encSetPosRaw(numActuators), encSetPos(numActuators),
-    allOn(numActuators, true), allOff(numActuators, false)
+    AllOn(numActuators, true), AllOff(numActuators, false)
 {
 }
 
-mtsRobotIO1394::RobotInternal::~RobotInternal()
+mtsRobotIO1394::RobotInternal::~RobotInternal(void)
 {
 }
 
-void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int robotNumber, AmpIO **BoardList)
+void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int robotNumber, AmpIO **BoardList)
 {
     char path[64];
     std::string context = "Config";
@@ -94,7 +94,7 @@ void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int 
                                      << " for actuator " << i << std::endl;
             continue;
         }
-        if(BoardList[tmpBoardID] == 0) {
+        if (BoardList[tmpBoardID] == 0) {
             BoardList[tmpBoardID] = new AmpIO(tmpBoardID);
             // Following does not properly handle the case where a board is split
             // between two robots, but there is no good way to handle that since
@@ -160,6 +160,7 @@ void mtsRobotIO1394::RobotInternal::Configure (cmnXMLPath  & xmlConfigFile, int 
     }
 
     ConfigureCoupling(xmlConfigFile, robotNumber);
+    UpdateTorqueCurrentDefaults();
     UpdateJointTorqueMax();
 }
 
@@ -245,6 +246,13 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
         }
         resultMatrix.Row(i).Assign(tmpRowVec);
     }
+}
+
+void mtsRobotIO1394::RobotInternal::UpdateTorqueCurrentDefaults(void)
+{
+    prmForceTorqueJointSet zeroTorques(this->NumberOfJoints);
+    zeroTorques.ForceTorque().Zeros();
+    this->SetTorqueJoint(zeroTorques);
 }
 
 void mtsRobotIO1394::RobotInternal::UpdateJointTorqueMax(void)
@@ -472,7 +480,7 @@ void mtsRobotIO1394::RobotInternal::EnablePower(void)
     // Enable boards first
     EnableBoardsPower();
     // Now, enable all amplifiers
-    SetAmpEnable(allOn);
+    SetAmpEnable(AllOn);
 }
 
 void mtsRobotIO1394::RobotInternal::DisablePower(void)
@@ -480,7 +488,7 @@ void mtsRobotIO1394::RobotInternal::DisablePower(void)
     // Disable boards first
     DisableBoardsPower();
     // Now, disable all amplifiers
-    SetAmpEnable(allOff);
+    SetAmpEnable(AllOff);
 }
 
 void mtsRobotIO1394::RobotInternal::EnableBoardsPower(void)

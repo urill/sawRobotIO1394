@@ -161,8 +161,8 @@ protected:
     vctDoubleMat JointToActuatorTorque;
 
     // Convenient data for enabling/disabling amps
-    vctBoolVec     allOn;
-    vctBoolVec     allOff;
+    vctBoolVec AllOn;
+    vctBoolVec AllOff;
 
     // Methods for provided interface
     void GetNumberOfJoints(int & placeHolder) const;
@@ -201,6 +201,16 @@ protected:
     void ConfigureCoupling (cmnXMLPath & xmlConfigFile, int robotNumber);
     void ConfigureCouplingMatrix(cmnXMLPath &xmlConfigFile, int robotNumber, const char *couplingString,
                                  int numRows, int numCols, vctDoubleMat &resultMatrix);
+
+    /*! Update the default values for the current and torques on actuators and
+      joints. This method is called at the end of configuration to make sure
+      the internal data members are set to 0 and the IO boards are reset
+      properly. */
+    void UpdateTorqueCurrentDefaults(void);
+
+    /*! Compute the Joint maximum torques allowed based on actuator maximum
+      torques and coupling matrices (if provided).  This method is called at
+      the end of configuration. */
     void UpdateJointTorqueMax(void);
 
 public:

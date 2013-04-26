@@ -67,7 +67,7 @@ int main(int argc, char ** argv)
     mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
 
     displayTask *disp = new displayTask("disp");
-    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 0.01, port, disp->GetOutputStream());
+    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 0.01, port);
 
     // add the tasks to the component manager
     LCM->AddComponent(disp);

@@ -26,10 +26,8 @@ http://www.cisst.org/cisst/license.txt.
 
 
 void mtsRobotIO1394Test::TestCreate(void) {
-    std::stringstream errorStream;
-    mtsRobotIO1394 * robot = new mtsRobotIO1394("robot", 1.0 * cmn_ms, 0, errorStream);
+    mtsRobotIO1394 * robot = new mtsRobotIO1394("robot", 1.0 * cmn_ms, 0);
     CPPUNIT_ASSERT(robot);
-    CPPUNIT_ASSERT(errorStream.str().empty());
 }
 /*
 void mtsRobotIO1394Test::TestConfigure(void) {

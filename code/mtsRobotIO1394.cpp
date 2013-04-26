@@ -44,30 +44,33 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394, mtsTaskPeriodic, mtsTaskPe
 
 //============ mtsRobotIO1394 =========================================
 
-mtsRobotIO1394::mtsRobotIO1394(const std::string &name, double period, int port_num,
-                               std::ostream &debugStream) : mtsTaskPeriodic(name, period)
+mtsRobotIO1394::mtsRobotIO1394(const std::string &name, double period, int port_num):
+    mtsTaskPeriodic(name, period)
 {
     Init();
-    Port = new FirewirePort(port_num, debugStream);
+    MessageStream = new std::ostream(this->GetLogMultiplexer());
+    Port = new FirewirePort(port_num, *MessageStream);
 }
 
-mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg &arg)
-    : mtsTaskPeriodic(arg)
+mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg):
+    mtsTaskPeriodic(arg)
 {
     Init();
-    Port = new FirewirePort(0);
+    MessageStream = new std::ostream(this->GetLogMultiplexer());
+    Port = new FirewirePort(0, *MessageStream);
 }
 
 mtsRobotIO1394::~mtsRobotIO1394()
 {
     // Delete boards
-    for(int i = 0; i < mtsRobotIO1394::MAX_BOARDS; i++) {
+    for (int i = 0; i < mtsRobotIO1394::MAX_BOARDS; i++) {
         if (BoardList[i]) {
             Port->RemoveBoard(i);
             delete BoardList[i];
         }
     }
     delete Port;
+    delete MessageStream;
 }
 
 void mtsRobotIO1394::Init(void)

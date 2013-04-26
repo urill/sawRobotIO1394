@@ -41,7 +41,8 @@ protected:
     class RobotInternal;
     class DigitalInInternal;
 
-    FirewirePort *Port;                       // Pointer to IEEE-1394 port handler
+    FirewirePort * Port;                      // Pointer to IEEE-1394 port handler
+    std::ostream * MessageStream;             // Stream provided to the low level boards for messages, redirected to cmnLogger
     std::vector<RobotInternal *> RobotList;   // List of robots (provided interfaces)
     std::vector<DigitalInInternal *> DigitalInList; // List of digital inputs (provided interfaces)
     AmpIO *BoardList[MAX_BOARDS];             // List of boards
@@ -49,9 +50,8 @@ protected:
 ///////////// Public Class Methods ///////////////////////////
 public:
     // Constructor & Destructor
-    mtsRobotIO1394(const std::string &name, double period, int port_num, 
-                   std::ostream &debugStream = std::cerr);
-    mtsRobotIO1394(const mtsTaskPeriodicConstructorArg &arg); // TODO: add port_num
+    mtsRobotIO1394(const std::string &name, double period, int port_num);
+    mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg); // TODO: add port_num
     virtual ~mtsRobotIO1394();
 
     void Init();
@@ -77,7 +77,7 @@ protected:
 ////////////// Private Class Methods /////////////////////////////
 private:
     // Make uncopyable
-    mtsRobotIO1394(const mtsRobotIO1394&);
+    mtsRobotIO1394(const mtsRobotIO1394 &);
     mtsRobotIO1394 &operator=(const mtsRobotIO1394 &);
 };
 
