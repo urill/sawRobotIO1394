@@ -83,7 +83,7 @@ protected:
             double NmToAmpsScale;
             double MaxCurrentValue;
         };
-        struct Encoder {  
+        struct Encoder {
             double BitsToPosSIScale;
             double BitsToPosSIOffset;
             double BitsToDeltaPosSIScale;
@@ -119,6 +119,8 @@ protected:
     double TaskPeriod;
     bool HasActuatorToJointCoupling;
 
+    /*! Struct used to scope data for bias amplifiers bit offset based on
+      current feedback. */
     struct AmpsToBitsOffsetUsingFeedbackAmpsStruct {
         inline AmpsToBitsOffsetUsingFeedbackAmpsStruct(void):
             Count(0)
@@ -127,6 +129,13 @@ protected:
         vctDynamicVector<vctDoubleVec> ControlCurrents;
         vctDynamicVector<vctDoubleVec> FeedbackCurrents;
     } AmpsToBitsOffsetUsingFeedbackAmps;
+
+    /*! Struct used to scope all configuration data used for computations,
+      these vectors should be updated right after the configuration file is
+      loaded. */
+    struct {
+        vctDoubleVec MotorCurrentMax;
+    } Configuration;
 
     // State data
     bool           Valid;
@@ -178,6 +187,7 @@ protected:
     void GetTorqueJointMax(vctDoubleVec & maxTorques) const;
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
+    void GetMotorCurrentMax(vctDoubleVec & placeHolder) const;
     void RequestAmpsToBitsOffsetUsingFeedbackAmps(const mtsInt & numberOfSamples);
     void ResetAmpsToBitsOffsetUsingFeedbackAmps(void);
     void ResetEncoderOffsetUsingPotPosSI(void);
@@ -201,6 +211,12 @@ protected:
     void ConfigureCoupling (cmnXMLPath & xmlConfigFile, int robotNumber);
     void ConfigureCouplingMatrix(cmnXMLPath &xmlConfigFile, int robotNumber, const char *couplingString,
                                  int numRows, int numCols, vctDoubleMat &resultMatrix);
+
+    /*! Update internal configuration.  Configuration uses vectors of structs
+      to match the configuration files structure but this is inconvenient at
+      runtime so we copy all the parameters in vectors indexed by actuator or
+      joint index. */
+    void UpdateInternalConfiguration(void);
 
     /*! Update the default values for the current and torques on actuators and
       joints. This method is called at the end of configuration to make sure

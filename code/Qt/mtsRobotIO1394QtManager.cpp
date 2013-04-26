@@ -33,7 +33,9 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtManager, mtsComponent, std::string);
 
 
-mtsRobotIO1394QtManager::mtsRobotIO1394QtManager(const std::string &name) : mtsComponent(name)
+mtsRobotIO1394QtManager::mtsRobotIO1394QtManager(const std::string &name):
+    mtsComponent(name),
+    BuildWidgetsCalled(false)
 {
     // This function will make the required interface to be connected with
     // the provided interface of mtsRobotIO1394 named Configure with predefined function names.
@@ -51,23 +53,24 @@ mtsRobotIO1394QtManager::mtsRobotIO1394QtManager(const std::string &name) : mtsC
 }
 
 void mtsRobotIO1394QtManager::Configure(const std::string &) {
+    this->BuildWidgets();
 }
 
 void mtsRobotIO1394QtManager::Startup(void) {
-    if (RobotConfigureInterface->GetConnectedInterface()) {
         this->BuildWidgets();
-    } else {
-        CMN_LOG_CLASS_INIT_ERROR << "Startup: unable to connect to configuration interface"
-                                 << std::endl;
-    }
 }
 
 
 void mtsRobotIO1394QtManager::BuildWidgets(void)
 {
-    static bool called = false;
-    if (called) return;
-    called = true;
+    if (BuildWidgetsCalled) return;
+    BuildWidgetsCalled = true;
+
+    if (!RobotConfigureInterface->GetConnectedInterface()) {
+        CMN_LOG_CLASS_INIT_ERROR << "Startup: unable to connect to configuration interface"
+                                 << std::endl;
+        return;
+    }
 
     size_t i = 0;
 

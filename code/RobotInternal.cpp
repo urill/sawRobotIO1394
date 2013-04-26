@@ -160,6 +160,7 @@ void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int r
     }
 
     ConfigureCoupling(xmlConfigFile, robotNumber);
+    UpdateInternalConfiguration();
     UpdateTorqueCurrentDefaults();
     UpdateJointTorqueMax();
 }
@@ -248,6 +249,14 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
     }
 }
 
+void mtsRobotIO1394::RobotInternal::UpdateInternalConfiguration(void)
+{
+    Configuration.MotorCurrentMax.SetSize(ActuatorList.size());
+    for (size_t i = 0; i < ActuatorList.size(); i++) {
+        Configuration.MotorCurrentMax[i] = ActuatorList[i].drive.MaxCurrentValue;
+    }
+}
+
 void mtsRobotIO1394::RobotInternal::UpdateTorqueCurrentDefaults(void)
 {
     prmForceTorqueJointSet zeroTorques(this->NumberOfJoints);
@@ -258,9 +267,7 @@ void mtsRobotIO1394::RobotInternal::UpdateTorqueCurrentDefaults(void)
 void mtsRobotIO1394::RobotInternal::UpdateJointTorqueMax(void)
 {
     vctDoubleVec motorTorqueMax(ActuatorList.size());
-    for (size_t i = 0; i < ActuatorList.size(); i++)
-        motorTorqueMax[i] = ActuatorList[i].drive.MaxCurrentValue;
-    DriveAmpsToNm(motorTorqueMax, motorTorqueMax);
+    DriveAmpsToNm(Configuration.MotorCurrentMax, motorTorqueMax);
     if (HasActuatorToJointCoupling)
         jointTorqueMax.ProductOf(ActuatorToJointTorque, motorTorqueMax);
     else
@@ -339,6 +346,8 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
                                     motorControlCurrentRaw);
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetMotorCurrent, this, "SetMotorCurrent",
                                     motorControlCurrent);
+    robotInterface->AddCommandRead(&mtsRobotIO1394::RobotInternal::GetMotorCurrentMax, this, "GetMotorCurrentMax",
+                                    Configuration.MotorCurrentMax);
 
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw, this, "SetEncoderPositionRaw",
                                     encSetPosRaw);
@@ -613,6 +622,10 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec & mcur)
     SetMotorCurrentRaw(motorControlCurrentRaw);
 }
 
+void mtsRobotIO1394::RobotInternal::GetMotorCurrentMax(vctDoubleVec & placeHolder) const
+{
+    placeHolder.ForceAssign(Configuration.MotorCurrentMax);
+}
 
 void mtsRobotIO1394::RobotInternal::RequestAmpsToBitsOffsetUsingFeedbackAmps(const mtsInt & numberOfSamples)
 {
@@ -746,7 +759,7 @@ void mtsRobotIO1394::RobotInternal::DriveAmpsToBits(const vctDoubleVec & fromDat
     for (size_t index = 0; index < ActuatorList.size(); index++) {
         double ampToBitsScale = ActuatorList[index].drive.AmpsToBitsScale;
         double ampToBitsOffset = ActuatorList[index].drive.AmpsToBitsOffset;
-        double maxAmps = ActuatorList[index].drive.MaxCurrentValue;
+        double maxAmps = Configuration.MotorCurrentMax[index];
         double tmpValue;
         if (fromData[index] > maxAmps) {
             tmpValue = maxAmps;

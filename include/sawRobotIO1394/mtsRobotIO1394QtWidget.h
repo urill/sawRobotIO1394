@@ -50,7 +50,7 @@ class mtsRobotIO1394QtWidget: public QMainWindow, public mtsComponent
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsRobotIO1394QtWidget(const std::string & taskName, unsigned int numberOfActuators);
+    mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators);
     mtsRobotIO1394QtWidget(const mtsComponentConstructorNameAndUInt &arg);
     inline ~mtsRobotIO1394QtWidget(void) {}
 
@@ -58,14 +58,12 @@ public:
     void Startup(void);
     void Cleanup(void);
 
-    inline std::stringstream & GetOutputStream(void) { return debugStream; }
-
 protected:
     void Init(void);
     virtual void closeEvent(QCloseEvent *event);
 
 private slots:
-    void slot_qcbEnableBoards(bool toggle);
+    void slot_qcbEnableAmps(bool toggle);
     void slot_qcbEnableAll(bool toggle);
     void slot_qcbEnableDirectControl(bool toggle);
     void slot_qcbEnable(void);
@@ -95,18 +93,14 @@ private slots:
 
 private:
     void setupMenu(void);
-    void setupCisstInterface(void);
+    void SetupCisstInterface(void);
     void setupUi(void);
 
     // gui update
-    void updateCurrentDisplay(void);
-    void updateRobotInfo(void);
+    void UpdateCurrentDisplay(void);
+    void UpdateRobotInfo(void);
 
 protected:
-    std::stringstream debugStream;
-    enum { DEBUG_START_LINE = 15 };
-    unsigned int last_debug_line;
-
     bool DirectControl;
     int TimerPeriodInMilliseconds;
     double WatchdogPeriodInSeconds;
@@ -125,6 +119,7 @@ protected:
         mtsFunctionRead GetAnalogInputVolts;
         mtsFunctionRead GetAnalogInputPosSI;
         mtsFunctionRead GetMotorCurrent;
+        mtsFunctionRead GetMotorCurrentMax;
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
         mtsFunctionRead GetWatchdogTimeout;
@@ -147,9 +142,6 @@ protected:
         mtsFunctionRead GetAmpEnable;
         mtsFunctionRead GetAmpStatus;
         mtsFunctionRead GetPositionActuator;
-
-        mtsFunctionQualifiedRead AnalogInVoltsToPosSI;
-        mtsFunctionQualifiedRead DriveAmpsToBits;
     } Actuators;
 
 #if HAS_GC
@@ -163,7 +155,7 @@ protected:
 private:
     mtsIntervalStatistics IntervalStatistics;
 
-    int numOfAxis;
+    int NumberOfActuators;
     bool curFBState;
     double curFBPGain;
     double curFBOffset;
@@ -194,7 +186,7 @@ private:
     double startTime;
 
     // GUI: Commands
-    QCheckBox * qcbEnableBoards;
+    QCheckBox * EnableAmps;
     QFrame * cmdLowerInfoFrame;
     QCheckBox * qcbEnableAll;
     QPushButton * qpbResetCurrentAll;
@@ -207,6 +199,7 @@ private:
     QCheckBox* qcbEnableDirectControl;
 
     vctQtWidgetDynamicVectorBoolWrite * CurrentEnableEachWidget;
+    vctQtWidgetDynamicVectorBoolRead * AmpStatusEachWidget;
     vctQtWidgetDynamicVectorDoubleWrite * CurrentSpinBoxWidget;
     vctQtWidgetDynamicVectorDoubleWrite * CurrentSliderWidget;
     vctQtWidgetDynamicVectorDoubleRead * JointPositionWidget;

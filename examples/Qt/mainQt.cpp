@@ -81,7 +81,7 @@ int main(int argc, char ** argv)
     robot->Configure(fullFileName);
 
     LCM->Connect("qtManager", "Configuration_Qt", "robot", "Configuration");
-    qtManager->BuildWidgets();
+    qtManager->Configure();
 
     //-------------- create the components ------------------
     LCM->CreateAll();
