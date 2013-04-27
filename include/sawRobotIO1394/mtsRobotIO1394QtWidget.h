@@ -187,7 +187,6 @@ private:
 
     // GUI: Commands
     QCheckBox * EnableAmps;
-    QFrame * cmdLowerInfoFrame;
     QCheckBox * qcbEnableAll;
     QPushButton * qpbResetCurrentAll;
     QPushButton * qpbBiasCurrentAll;

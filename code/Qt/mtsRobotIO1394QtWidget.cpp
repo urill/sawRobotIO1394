@@ -41,7 +41,7 @@ mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName
     DirectControl(true),
     TimerPeriodInMilliseconds(50)
 {
-    WatchdogPeriodInSeconds = TimerPeriodInMilliseconds * cmn_ms;
+    WatchdogPeriodInSeconds = 140.0 * cmn_ms;
     Init();
 }
 
@@ -312,9 +312,9 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
 
     UpdateRobotInfo();
 
-    if (this->DirectControl) {
+    // if (this->DirectControl) {
         Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
-    }
+    // }
 }
 
 ////------------ Private Methods ----------------
@@ -424,7 +424,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
         qdsbWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
         qdsbWatchdogPeriod->setMinimum(0.0);
         qdsbWatchdogPeriod->setSingleStep(0.05);
-        qdsbWatchdogPeriod->setValue(130.0); // at least 130+ ms so that the watchdog can handle power on
+        qdsbWatchdogPeriod->setValue(cmnInternalTo_ms(WatchdogPeriodInSeconds));
         watchdogSetLayout->addWidget(wdogLabel);
         watchdogSetLayout->addWidget(qdsbWatchdogPeriod);
     }
