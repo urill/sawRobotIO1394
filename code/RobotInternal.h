@@ -218,6 +218,11 @@ protected:
     void ConfigureCouplingMatrix(cmnXMLPath &xmlConfigFile, int robotNumber, const char *couplingString,
                                  int numRows, int numCols, vctDoubleMat &resultMatrix);
 
+    // Functions for events
+    struct {
+        mtsFunctionWrite PowerStatus;
+    } EventTriggers;
+
     /*! Update internal configuration.  Configuration uses vectors of structs
       to match the configuration files structure but this is inconvenient at
       runtime so we copy all the parameters in vectors indexed by actuator or

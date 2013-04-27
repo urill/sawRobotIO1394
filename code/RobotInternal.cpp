@@ -397,6 +397,9 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
                                     mtsInt(100));
     robotInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI, this, "BiasEncoder");
 
+    // Events
+    robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
+
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::EnableBoardsPower, this, "EnableBoardsPower");
     actuatorInterface->AddCommandVoid(&mtsRobotIO1394::RobotInternal::DisableBoardsPower, this, "DisableBoardsPower");
@@ -430,6 +433,7 @@ bool mtsRobotIO1394::RobotInternal::CheckIfValid(void)
 
 void mtsRobotIO1394::RobotInternal::GetData(void)
 {
+    const bool previousPowerStatus = PowerStatus;
     PowerStatus = true;
     SafetyRelay = true;
     WatchdogTimeout = true;
@@ -443,7 +447,7 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
         singleEncoderPos = board->GetEncoderPosition(axis);
         encPosRaw[index] = ((int)(singleEncoderPos << 8)) >> 8; // convert from 24 bits signed stored in 32 unsigned to 32 signed
         singleEncoderVel = board->GetEncoderVelocity(axis);
-        encVelRaw[index] = ((int)(singleEncoderVel << 16)) >> 16; // convert from 16 bits signed stored in 32 unsigedn to 32 signed
+        encVelRaw[index] = ((int)(singleEncoderVel << 16)) >> 16; // convert from 16 bits signed stored in 32 unsigned to 32 signed
         analogInRaw[index] = board->GetAnalogInput(axis);
         motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);     
         ampEnable[index] = board->GetAmpEnable(axis);
@@ -451,6 +455,11 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
         PowerStatus &= board->GetPowerStatus();
         SafetyRelay &= board->GetSafetyRelayStatus();
         WatchdogTimeout &= board->GetWatchdogTimeoutStatus();
+    }
+
+    // trigger events base on state changes
+    if (previousPowerStatus != PowerStatus) {
+        EventTriggers.PowerStatus(PowerStatus);
     }
 }
 
@@ -767,7 +776,6 @@ void mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosSI(const vctLongVec & fr
      * See configGenerator.py for how to compute bitsToDeltaPosSIScale
      * Velocoity = bitsToDeltaPosSIScale / timeCounter
      */
-
     toData.SetAll(0.0);
     for (size_t index = 0; index < ActuatorList.size();index++) {
         double bitsToDeltaPosSIScale = ActuatorList[index].encoder.BitsToDeltaPosSIScale;

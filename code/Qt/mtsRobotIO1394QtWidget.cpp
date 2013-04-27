@@ -141,6 +141,8 @@ void mtsRobotIO1394QtWidget::slot_qcbEnableAmps(bool toggle)
             qcbEnableAll->setChecked(false);
         } qcbEnableAll->blockSignals(false);
     }
+    // set all current to 0
+    slot_qpbResetCurrentAll();
 }
 
 void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
@@ -157,6 +159,8 @@ void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
     } EnableAmps->blockSignals(false);
     vctBoolVec allEnable(NumberOfActuators, toggle);
     CurrentEnableEachWidget->SetValue(allEnable);
+    // set all current to 0
+    slot_qpbResetCurrentAll();
 }
 
 void mtsRobotIO1394QtWidget::slot_qcbEnableDirectControl(bool toggle)
@@ -328,7 +332,7 @@ void mtsRobotIO1394QtWidget::setupMenu()
 
 }
 
-void mtsRobotIO1394QtWidget::SetupCisstInterface()
+void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
 {
     // Required Interface
     mtsInterfaceRequired * robotInterface = AddInterfaceRequired("Robot");
@@ -357,6 +361,8 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface()
 
         robotInterface->AddFunction("BiasCurrent", Robot.BiasCurrent);
         robotInterface->AddFunction("BiasEncoder", Robot.BiasEncoder);
+
+        robotInterface->AddEventHandlerWrite(&mtsRobotIO1394QtWidget::PowerStatusEventHandler, this, "PowerStatus");
     }
 
     mtsInterfaceRequired * actuatorInterface = AddInterfaceRequired("RobotActuators");
@@ -588,6 +594,9 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     connect(CurrentSpinBoxWidget, SIGNAL(valueChanged()), this, SLOT(slot_qdsbMotorCurrent_valueChanged()));
     connect(CurrentSliderWidget, SIGNAL(valueChanged()), this, SLOT(slot_qsliderMotorCurrent_valueChanged()));
 
+    // connect cisstMultiTask events
+    connect(this, SIGNAL(signal_PowerStatus(bool)), this, SLOT(slot_PowerStatus(bool)));
+
     // set initial value
     EnableAmps->setChecked(false);
     qcbEnableAll->setChecked(false);
@@ -632,5 +641,22 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
     } else {
         watchdogButton->setText("Watchdog Timeout: FALSE");
         watchdogButton->setStyleSheet("QPushButton { background-color: green }");
+    }
+}
+
+
+void mtsRobotIO1394QtWidget::PowerStatusEventHandler(const bool & status)
+{
+    if (status == false) {
+        // event handler is running in caller's thread since "this" is an mtsComponent
+        // we should emit a signal and Qt should handle this in a thread safe way
+        emit signal_PowerStatus(status);
+    }
+}
+
+void mtsRobotIO1394QtWidget::slot_PowerStatus(bool status)
+{
+    if (status == false) {
+        qcbEnableAll->setChecked(false);
     }
 }

@@ -38,11 +38,8 @@ http://www.cisst.org/cisst/license.txt.
 
 /*!
   \todo use cisst naming convention
-  \todo figure out what to do with the debug window, this is not per robot, most likely per port - cisstLog
   \todo maybe rename this class to mtsRobotIO1394{Robot,DigitalInputs,Log}QtWidget and create using mtsRobotIO1394FactoryQtWidget
   \todo cisst Qt convention is now to start with the Qt prefix, i.e. mtsQtWidgetRobotIO1394 ...
-  \todo add commands to retrieve maximum current allowed per axis and apply to current widgets
-  \todo use events to monitor amp status
   */
 class mtsRobotIO1394QtWidget: public QMainWindow, public mtsComponent
 {
@@ -213,6 +210,13 @@ private:
     QPushButton* safetyRelayButton;
     QPushButton* watchdogButton;
 
+    void PowerStatusEventHandler(const bool & status);
+
+    // signal and slot used by PowerStatusEventHandler
+signals:
+    void signal_PowerStatus(bool status);
+protected slots:
+    void slot_PowerStatus(bool status);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtWidget);
