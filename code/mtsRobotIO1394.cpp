@@ -50,6 +50,9 @@ mtsRobotIO1394::mtsRobotIO1394(const std::string &name, double period, int port_
     Init();
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     Port = new FirewirePort(port_num, *MessageStream);
+    if (Port->NumberOfUsers() > 1) {
+        CMN_LOG_CLASS_INIT_ERROR << "Found more than one user on firewire port" << std::endl;
+    }
 }
 
 mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg):
@@ -58,6 +61,9 @@ mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg):
     Init();
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     Port = new FirewirePort(0, *MessageStream);
+    if (Port->NumberOfUsers() > 1) {
+        CMN_LOG_CLASS_INIT_ERROR << "Found more than one user on firewire port" << std::endl;
+    }
 }
 
 mtsRobotIO1394::~mtsRobotIO1394()

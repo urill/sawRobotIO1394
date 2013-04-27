@@ -170,11 +170,11 @@ void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int r
         } else if (potentiometerPosition == "Joints") {
             this->Potentiometers = POTENTIOMETER_ON_JOINTS;
         } else {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: invalid <Potentiometers Position=\"\"\> value, must be either \"Joints\" or \"Actuators\" for robot number "
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: invalid <Potentiometers Position=\"\"> value, must be either \"Joints\" or \"Actuators\" for robot number "
                                      << robotNumber << std::endl;
         }
     } else {
-        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: no <Potentiometers Position=\"\" \> found." << std::endl;
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: no <Potentiometers Position=\"\"> found." << std::endl;
     }
 
     ConfigureCoupling(xmlConfigFile, robotNumber);
