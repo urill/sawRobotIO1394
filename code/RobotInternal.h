@@ -52,6 +52,11 @@ class AmpIO;
   \todo test JSON config files after JSON branch merge
 */
 class mtsRobotIO1394::RobotInternal {
+
+public:
+    /*! Defines where the potentiometers are positioned, if any. */
+    typedef enum {POTENTIOMETER_UNDEFINED, POTENTIOMETER_ON_ACTUATORS, POTENTIOMETER_ON_JOINTS} PotentiometerType;
+
 protected:
 
     /*! Pointer on existing services.  This allows to use the class
@@ -118,6 +123,7 @@ protected:
     int NumberOfJoints;
     double TaskPeriod;
     bool HasActuatorToJointCoupling;
+    PotentiometerType Potentiometers;
 
     /*! Struct used to scope data for bias amplifiers bit offset based on
       current feedback. */
@@ -230,10 +236,10 @@ protected:
     void UpdateJointTorqueMax(void);
 
 public:
-
     RobotInternal(const std::string & name, const mtsTaskPeriodic & owner, size_t numActuators, size_t numJoints);
     ~RobotInternal();
-    void Configure (cmnXMLPath &xmlConfigFile, int robotNumber, AmpIO **BoardList);
+
+    void Configure(cmnXMLPath &xmlConfigFile, int robotNumber, AmpIO **BoardList);
 
     void SetupStateTable(mtsStateTable & stateTable);
     void SetupInterfaces(mtsInterfaceProvided * robotInterface,

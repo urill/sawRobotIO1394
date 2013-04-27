@@ -50,7 +50,9 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
     robotName(name), ActuatorList(numActuators),
     NumberOfActuators(numActuators), NumberOfJoints(numJoints),
     TaskPeriod(owner.GetPeriodicity()),
-    HasActuatorToJointCoupling(false), Valid(false),
+    HasActuatorToJointCoupling(false),
+    Potentiometers(POTENTIOMETER_UNDEFINED),
+    Valid(false),
     ampStatus(numActuators, false), ampEnable(numActuators, false),
     encPosRaw(numActuators), PositionJoint(numJoints),
     PositionJointGet(numJoints), PositionActuatorGet(numActuators),
@@ -157,6 +159,22 @@ void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int r
         sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn. VoltsToPosSIOffset);
         ActuatorList[i].analogIn. VoltsToPosSIOffset *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
+    }
+
+    // look for potentiometers position, if any
+    std::string potentiometerPosition;
+    sprintf(path,"Robot[%d]/Potentiometers/@Position", robotNumber);
+    if (xmlConfigFile.GetXMLValue(context.c_str(), path, potentiometerPosition)) {
+        if (potentiometerPosition == "Actuators") {
+            this->Potentiometers = POTENTIOMETER_ON_ACTUATORS;
+        } else if (potentiometerPosition == "Joints") {
+            this->Potentiometers = POTENTIOMETER_ON_JOINTS;
+        } else {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: invalid <Potentiometers Position=\"\"\> value, must be either \"Joints\" or \"Actuators\" for robot number "
+                                     << robotNumber << std::endl;
+        }
+    } else {
+        CMN_LOG_CLASS_INIT_VERBOSE << "Configure: no <Potentiometers Position=\"\" \> found." << std::endl;
     }
 
     ConfigureCoupling(xmlConfigFile, robotNumber);
@@ -659,12 +677,27 @@ void mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps(void)
 
 void mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI(void)
 {
-    vctDoubleVec posErrorJoint(NumberOfJoints);
-    posErrorJoint.DifferenceOf(this->PositionJointGet.Position(), this->analogInPosSI);
-    vctDoubleVec posErrorActuator(NumberOfActuators);
-    posErrorActuator.ProductOf(this->JointToActuatorPosition, posErrorJoint);
-    for (size_t index = 0; index < ActuatorList.size(); index++) {
-        ActuatorList[index].encoder.BitsToPosSIOffset -= posErrorActuator[index];
+    if (this->Potentiometers == POTENTIOMETER_UNDEFINED) {
+        CMN_LOG_CLASS_INIT_ERROR << "ResetEncoderOffsetUsingPotPosSI: can't set encoder offset, potentiometer's position undefine";
+        return;
+    }
+    if (this->Potentiometers == POTENTIOMETER_ON_JOINTS) {
+        vctDoubleVec posErrorJoint(NumberOfJoints);
+        posErrorJoint.DifferenceOf(this->PositionJointGet.Position(), this->analogInPosSI);
+        vctDoubleVec posErrorActuator(NumberOfActuators);
+        posErrorActuator.ProductOf(this->JointToActuatorPosition, posErrorJoint);
+        for (size_t index = 0; index < ActuatorList.size(); index++) {
+            ActuatorList[index].encoder.BitsToPosSIOffset -= posErrorActuator[index];
+        }
+        return;
+    }
+    if (this->Potentiometers == POTENTIOMETER_ON_ACTUATORS) {
+        vctDoubleVec posErrorActuator(NumberOfActuators);
+        posErrorActuator.DifferenceOf(this->PositionJoint, this->analogInPosSI);
+        for (size_t index = 0; index < ActuatorList.size(); index++) {
+            ActuatorList[index].encoder.BitsToPosSIOffset -= posErrorActuator[index];
+        }
+        return;
     }
 }
 
