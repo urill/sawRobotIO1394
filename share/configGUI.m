@@ -22,7 +22,7 @@ function varargout = configGUI(varargin)
 
 % Edit the above text to modify the response to help configGUI
 
-% Last Modified by GUIDE v2.5 28-Apr-2013 19:46:03
+% Last Modified by GUIDE v2.5 29-Apr-2013 12:57:49
 
 % Date: 2013-04-28
 % Author: Zihan Chen
@@ -57,33 +57,40 @@ function configGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for configGUI
 handles.output = hObject;
-handles.m_cal_filename = '';
+handles.m_cal_filename = '';  % calibration file
+handles.m_out_filename = '';  % output xml file
 
 % set default board id
-handles.m_boardID(1) = 1;
-handles.m_boardID(2) = 2;
-set(handles.bidPopup1,'Value', handles.m_boardID(1));
-set(handles.bidPopup2,'Value', handles.m_boardID(2));
+handles.m_boardID(1) = 0;
+handles.m_boardID(2) = 1;
+set(handles.bidPopup1,'Value', handles.m_boardID(1) + 1);
+set(handles.bidPopup2,'Value', handles.m_boardID(2) + 1);
 
 % set default type
 handles.m_type = 'MTML';
 set(handles.typeBtnGroup, 'SelectedObject', handles.mtmlButton);
+handles.m_out_filename = [handles.m_type, '.xml'];
+set(handles.out_name, 'String', handles.m_out_filename);
 
 % set default digitalIn data
-handles.m_digiIn1 = cell(12, 4);
-handles.m_digiIn2 = cell(12, 4);
+handles.m_digiIn = cell(12, 4, 2);
 for i = 1:12
-    handles.m_digiIn1{i,1} = i;
-    handles.m_digiIn1{i,2} = [handles.m_type, num2str(i) ];
-    handles.m_digiIn1{i,3} = '0';
-    handles.m_digiIn1{i,4} = 'all';
+    handles.m_digiIn{i,1,1} = i-1;
+    handles.m_digiIn{i,2,1} = [handles.m_type, '-D', ...
+                              num2str(idivide(i-1, int32(4))), ...
+                              num2str(mod(i-1,4)) ];
+    handles.m_digiIn{i,3,1} = '0';
+    handles.m_digiIn{i,4,1} = 'all';
     
-    handles.m_digiIn2{i,1} = i;
-    handles.m_digiIn2{i,3} = '0';
-    handles.m_digiIn2{i,4} = 'all';
+    handles.m_digiIn{i,1,2} = i-1;
+    handles.m_digiIn{i,2,2} = [handles.m_type, '-D', ...
+                              num2str(idivide(i-1, int32(4))+3), ...
+                              num2str(mod(i-1,4)) ];
+    handles.m_digiIn{i,3,2} = '0';
+    handles.m_digiIn{i,4,2} = 'all';
 end
 set(handles.digiBidMenu, 'Value', 1);
-set(handles.tblDigital1, 'data', handles.m_digiIn1);
+set(handles.tblDigital, 'data', handles.m_digiIn(:,:,1));
 
 % Update handles structure
 guidata(hObject, handles);
@@ -132,17 +139,21 @@ disp(handles.m_cal_filename);
 disp(handles.m_boardID);
 disp(handles.m_type);
 
-if (handles.m_boardID(1) == handles.m_boardID(2))
-    disp('ERROR: board ID should be different');
+% updateDigitalData();
+
+disp('Generating config file');
+isOK = configGenerator(...
+    handles.m_cal_filename, ...
+    handles.m_out_filename, ...
+    handles.m_type, ...
+    handles.m_boardID, ...
+    handles.m_digiIn);
+if (isOK)
+    disp('Config file generated successfully');
+else
+    disp('ERROR: failed to generate config file');
 end
-
-updateDigitalData();
-
-disp('Config file generated');
-configGenerator(handles.m_cal_filename,...
-                handles.m_type, ...
-                handles.m_boardID,... 
-                handles.m_digiIn1);
+            
 
 
 % --- Executes on selection change in bidPopup1.
@@ -154,7 +165,7 @@ function bidPopup1_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns bidPopup1 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from bidPopup1
 val = get(hObject, 'Value');
-handles.m_boardID(1) = val;
+handles.m_boardID(1) = val - 1;
 guidata(hObject, handles);
 
 
@@ -181,7 +192,7 @@ function bidPopup2_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns bidPopup2 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from bidPopup2
 val = get(hObject, 'Value');
-handles.m_boardID(2) = val;
+handles.m_boardID(2) = val - 1;
 guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
@@ -208,12 +219,31 @@ function typeBtnGroup_SelectionChangeFcn(hObject, eventdata, handles)
 
 handles.m_type = get(hObject, 'String');
 disp(handles.m_type);
+% update DigitalIn
+for i = 1:12
+    handles.m_digiIn{i,2,1} = [handles.m_type, '-D', ...
+                              num2str(idivide(i-1, int32(4))), ...
+                              num2str(mod(i-1,4)) ];
+    
+    handles.m_digiIn{i,2,2} = [handles.m_type, '-D', ...
+                              num2str(idivide(i-1, int32(4))+3), ...
+                              num2str(mod(i-1,4)) ];
+end
+val = get(handles.digiBidMenu, 'Value');
+set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val)); 
+
+% update default bid
+defaultButton_Callback(handles.defaultButton, eventdata, handles);
+
+% update default output file name
+handles.m_out_filename = [handles.m_type, '.xml'];
+set(handles.out_name, 'String', handles.m_out_filename);
 guidata(hObject, handles);
 
 
-% --- Executes when entered data in editable cell(s) in tblDigital1.
-function tblDigital1_CellEditCallback(hObject, eventdata, handles)
-% hObject    handle to tblDigital1 (see GCBO)
+% --- Executes when entered data in editable cell(s) in tblDigital.
+function tblDigital_CellEditCallback(hObject, eventdata, handles)
+% hObject    handle to tblDigital (see GCBO)
 % eventdata  structure with the following fields (see UITABLE)
 %	Indices: row and column indices of the cell(s) edited
 %	PreviousData: previous data for the cell(s) edited
@@ -225,13 +255,12 @@ function tblDigital1_CellEditCallback(hObject, eventdata, handles)
 % handles.m_digiIn(:,:,handles.m_digiIn_bid) = get(hObject, 'data');
 val = get(handles.digiBidMenu, 'Value');
 if (val == 1)
-    handles.m_digiIn1 = get(handles.tblDigital1, 'data');
+    handles.m_digiIn(:,:,1) = get(handles.tblDigital, 'data');
 elseif (val == 2)
-    handles.m_digiIn2 = get(handles.tblDigital1, 'data');
+    handles.m_digiIn(:,:,2) = get(handles.tblDigital, 'data');
 end
 
-disp(handles.m_digiIn1);
-disp(handles.m_digiIn2);
+disp(handles.m_digiIn);
 guidata(hObject, handles);
 
 
@@ -247,11 +276,7 @@ function digiBidMenu_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from digiBidMenu
 
 val = get(hObject, 'Value');
-if (val == 1)
-    set(handles.tblDigital1, 'data', handles.m_digiIn1);
-elseif (val == 2)
-    set(handles.tblDigital1, 'data', handles.m_digiIn2);
-end
+set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val)); 
 % guidata(hObject, handles);
 
 
@@ -269,18 +294,18 @@ end
 
 
 
-function edit4_Callback(hObject, eventdata, handles)
-% hObject    handle to edit4 (see GCBO)
+function out_name_Callback(hObject, eventdata, handles)
+% hObject    handle to out_name (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit4 as text
-%        str2double(get(hObject,'String')) returns contents of edit4 as a double
+% Hints: get(hObject,'String') returns contents of out_name as text
+%        str2double(get(hObject,'String')) returns contents of out_name as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit4_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit4 (see GCBO)
+function out_name_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to out_name (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -293,3 +318,42 @@ end
 
 function [ newDigiData ] = updateDigitalData( oldDigiData )
 disp('updateDigiData');
+
+
+% --- Executes on button press in defaultButton.
+function defaultButton_Callback(hObject, eventdata, handles)
+% hObject    handle to defaultButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if (strcmp(handles.m_type,'MTML'))
+    handles.m_boardID = [0 1];
+elseif (strcmp(handles.m_type,'MTMR'))
+    handles.m_boardID = [2 3];
+elseif (strcmp(handles.m_type,'PSM1'))
+    handles.m_boardID = [4 5];
+elseif (strcmp(handles.m_type,'PSM2'))
+    handles.m_boardID = [6 7];
+else
+    disp('ERROR: unknown hardware type');
+end
+
+set(handles.bidPopup1, 'Value', handles.m_boardID(1) + 1);
+set(handles.bidPopup2, 'Value', handles.m_boardID(2) + 1);
+guidata(hObject, handles);
+
+
+% --- Executes on button press in footButton.
+function footButton_Callback(hObject, eventdata, handles)
+% hObject    handle to footButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+handles.m_digiIn{1,2,2} = 'CLUTCH';
+handles.m_digiIn{2,2,2} = 'CAM-';
+handles.m_digiIn{3,2,2} = 'CAM+';
+handles.m_digiIn{4,2,2} = 'COAG';
+handles.m_digiIn{5,2,2} = 'CAMERA';
+
+val = get(handles.digiBidMenu, 'Value');
+set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));
+guidata(hObject, handles);

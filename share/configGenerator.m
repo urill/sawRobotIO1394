@@ -1,54 +1,101 @@
-function [ output_args ] = configGenerator( aCalName, aRobotName, aBoardID, aDigital)
+function [ isOK ] = configGenerator( aCalName, aOutName, aRobotName, aBoardID, aDigital)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
-
-% maybe I will turn this into a function
-
 % TODOs
 %  1. verify all settings
-%  2. fix joint 8 (gripper)
+
+% Set isOK to false by default 
+% if configuration file generation is good then isOK = true
+% otherwise isOK = false
+isOK = false;
+
+% sanity check for board id 
+if (length(aBoardID) ~= 2)
+    disp('ERROR: board id size should be 2');
+    cleanUp;
+    return;
+elseif (aBoardID(1) == aBoardID(2))
+    disp('ERROR: board id should be different');
+    cleanUp;
+    return;
+end  
+boardID = aBoardID; % save to local variable
+
 
 % create temporary .m file
+% the configuration file uses matlab syntax, save them to temp.m
 copyfile(aCalName, 'temp.m');
 
-% define some constants for mXXX.cal file
+% define some constants for mXXX.cal/pXXX.cal file
 UPPER_LIMIT = 1; LOWER_LIMIT = 2;
+% constants for master configuration file
 MST_JNT_POS_GR_DOFS = 8;
 MST_MOT_DOFS = 8;
 MST_JNT_POS_DOFS = 7;
+% constants for slave configuration file
+SLV_JNT_POS_GR_DOFS = 7;
+SLV_MOT_DOFS = 7;
+
+% load temp file, this will load all constants in ***.cal file
 temp;
 
-numOfActuator = 8;
-numOfJoint = 8;
+% sanity check for RobotName/Type
+% rType = robot type
+CONST_MST = 1;
+CONST_SLV = 2;
+if (strcmp(aRobotName(1:3), FileType(1:3)) == 0)
+    disp(' ERROR: robot type and calibration file mismatch');
+    cleanUp;
+    return;
+else
+    if (strcmp(aRobotName(1:3), 'MTM'))
+        rType = CONST_MST;
+    elseif (strcmp(aRobotName(1:3), 'PSM'))
+        rType = CONST_SLV;
+    end
+end
 
-% boardID1 = 5; boardID2 = 6;
-boardID = aBoardID;
+% assign numOfActuator & numOfJoint based on robot type
+if (rType == CONST_MST)
+    numOfActuator = MST_MOT_DOFS;
+    numOfJoint = MST_JNT_POS_GR_DOFS;
+elseif (rType == CONST_SLV)
+    numOfActuator = SLV_MOT_DOFS;
+    numOfJoint = SLV_JNT_POS_GR_DOFS;
+end
 
 
 % master
 
 % motor constants Unit: V
-motorVol = [24 24 24 24 24 24 24 24];
+motorVol(CONST_MST,:) = [24 24 24 24  9  9  6 0]; % motor const for master
+motorVol(CONST_SLV,:) = [24 24 24 24 24 24 24 0]; % motor const for slave
 
 % motor default current Unit: A
-motorDefCur(1:MST_MOT_DOFS) = [0.67 0.67 0.67 0.67 0.59 0.59 0.407 0.0];
+motorDefCur(CONST_MST,:) = [0.67 0.67 0.67 0.67 0.59 0.59 0.407 0.0];
+motorDefCur(CONST_SLV,:) = [1.34 1.34 0.67 0.67 0.67 0.67 0.670 0.0];
 
 % motor max current Unit: A
-motorMaxCur(1:MST_MOT_DOFS) = [0.67 0.67 0.67 0.92 0.75 0.59 0.407 0.0];
+motorMaxCur(CONST_MST,:) = [0.67 0.67 0.67 0.92 0.75 0.59 0.407 0.0];
+motorMaxCur(CONST_SLV,:) = [2.01 2.01 1.005 1.005 1.005 1.005 1.005 0.0];
 
 % motor toruqe const  Unit: Nm/A
-motorTor = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 0.0];
+motorTor(CONST_MST,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 0.0];
+motorTor(CONST_SLV,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0];
 
 % Gear ratio
-gearRatio = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 0.0];
+gearRatio(CONST_MST,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 0.0];
+gearRatio(CONST_SLV,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 0.0];
 
 % Encoder counts per turn
-encCPT = [4000 4000 4000 4000 64 64 64 0];
+encCPT(CONST_MST,:) = [ 4000  4000  4000 4000   64   64   64 0];
+encCPT(CONST_SLV,:) = [14400 14400 14400 4000 4000 4000 4000 0];
 
 % Pitch
 % 1 for revolute, mm/deg for prismatic
-pitch = [1 1 1 1 1 1 1 1];
+pitch(CONST_MST,:) = [1 1 1 1 1 1 1 1];
+pitch(CONST_SLV,:) = [1 1 1 1 1 1 1 1];
 
 % ==== POT =======
 % raw value from Intuitive Surgical Inc mXXXX.cal file
@@ -75,18 +122,17 @@ potOffset = motor.pot_input_offset;
 % === Drive =======
 % Direction
 driveDirection = [-1 1 1 1 -1 1 -1 1];
-AmpsToBitsScale = driveDirection .* 5242.8800;
+AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
 AmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
 
-BitsToFbAmpsScale = driveDirection .* 0.000190738;
-BitsToFbAmpsOffset = driveDirection .* (-6.25);
+BitsToFbAmpsScale = driveDirection(1:numOfActuator) .* 0.000190738;
+BitsToFbAmpsOffset = driveDirection(1:numOfActuator) .* (-6.25);
 
-NmToAmps = ones(1,numOfActuator) ./ gearRatio ./ motorTor;
-MaxCurrent = motorDefCur;
-
+NmToAmps = ones(1,numOfActuator) ./ gearRatio(rType,1:numOfActuator) ./ motorTor(rType,1:numOfActuator);
+MaxCurrent = motorDefCur(rType,1:numOfActuator);
 
 % === Encoder ======
-BitsToPosSIScale = driveDirection .* 360 ./ encCPT .* pitch ./ gearRatio;
+BitsToPosSIScale = driveDirection(1:numOfActuator) .* 360 ./ encCPT(rType,1:numOfActuator) .* pitch(rType,1:numOfActuator) ./ gearRatio(rType,1:numOfActuator);
 
 % AmpIO buff = buff + MIDRANGE_VEL
 % Velocity = deltaPos / deltaTime
@@ -96,15 +142,44 @@ BitsToPosSIScale = driveDirection .* 360 ./ encCPT .* pitch ./ gearRatio;
 % Velocity = 360 * 768000 / (encCPT / 4.0) / gearRatio * pitch / timeCounter
 %          = BitsToDeltaPosSIScale / timeCounter
 
-BitsToDeltaPosSI = driveDirection .* 360.0 .* 768000 ./ (encCPT ./ 4.0) ./ gearRatio .* pitch;
+BitsToDeltaPosSI = driveDirection(1:numOfActuator) .* 360.0 .* 768000 ./ (encCPT(rType,1:numOfActuator) ./ 4.0) ./ gearRatio(rType,1:numOfActuator) .* pitch(rType,1:numOfActuator);
 BitsToDeltaT = ones(1,numOfActuator) * -1;
-CountsPerTurn = encCPT;
+CountsPerTurn = encCPT(rType,1:numOfActuator);
 
 % === AnalogIn =====
 BitsToVolts = ones(1,numOfActuator) * 0.0000686656;
 VoltsToPosSIScale = potGain * 2^12 / (4.5 - 0.0) * 180.0 / pi;
 VoltsToPosSIOffset = potOffset * 180.0 / pi;
 
+
+% === Coupling ====
+if (rType == CONST_MST)
+    ActuatorToJointPosition = [ ...
+        1.00  0.00   0.00 0.00 0.00 0.00 0.00 0.00; ...
+        0.00  1.00   0.00 0.00 0.00 0.00 0.00 0.00; ...
+        0.00 -1.00   1.00 0.00 0.00 0.00 0.00 0.00; ...
+        0.00  0.6697 -0.6697 1.00 0.00 0.00 0.00 0.00; ...
+        0.00  0.00   0.00 0.00 1.00 0.00 0.00 0.00; ...
+        0.00  0.00   0.00 0.00 0.00 1.00 0.00 0.00; ...
+        0.00  0.00   0.00 0.00 0.00 0.00 1.00 0.00; ...
+        0.00  0.00   0.00 0.00 0.00 0.00 0.00 1.00  ...
+        ];
+elseif (rType == CONST_SLV)
+    ActuatorToJointPosition = [ ...
+        1.00  0.00   0.00  0.00 0.00 0.00 0.00; ...
+        0.00  1.00   0.00  0.00 0.00 0.00 0.00; ...
+        0.00  0.00   1.00  0.00 0.00 0.00 0.00; ...
+        0.00  0.00   0.00 -1.5632 0.00 0.00 0.00; ...
+        0.00  0.00   0.00  0.00 1.0186 0.00 0.00;  ...
+        0.00  0.00   0.00  0.00 -0.8306 0.6089 0.6089; ...
+        0.00  0.00   0.00 0.00 0.00 -1.2177 1.2177; ...
+        ];
+end
+
+
+JointToActuatorPosition = inv(ActuatorToJointPosition);
+JointToActuatorTorque = ActuatorToJointPosition';
+ActuatorToJointTorque = inv(JointToActuatorTorque);
 
 
 %% Create XML file
@@ -116,7 +191,7 @@ VoltsToPosSIOffset = potOffset * 180.0 / pi;
 % http://blogs.mathworks.com/community/2010/09/13/simple-xml-node-creation/
 % ==============================
 
-fileName = 'MTML.xml';
+fileName = aOutName;
 
 docNode = com.mathworks.xml.XMLUtils.createDocument('Config');
 Config = docNode.getDocumentElement;
@@ -164,7 +239,7 @@ for i = 1:numOfActuator
     Actuator.appendChild(Enc);
     
     X_BitsToPosSI = docNode.createElement('BitsToPosSI');
-    X_BitsToPosSI.setAttribute('Scale', num2str(BitsToPosSIScale(i), '%5.6f'));
+    X_BitsToPosSI.setAttribute('Scale', num2str(BitsToPosSIScale(i), '%5.8f'));
     X_BitsToPosSI.setAttribute('Offset', '0');
     Enc.appendChild(X_BitsToPosSI);
     X_BitsToDeltaPosSI = docNode.createElement('BitsToDeltaPosSI');
@@ -194,95 +269,61 @@ for i = 1:numOfActuator
     AnaglogIn.appendChild(X_VoltsToPosSI);
 end
 
-% Potentiometers
+% ---------- Potentiometers ---------
 Potentiometers = docNode.createElement('Potentiometers');
-Potentiometers.setAttribute('Position', 'Joints');
+if (strcmp(rType, 'MTM'))
+    Potentiometers.setAttribute('Position', 'Joints');
+elseif (strcmp(rType, 'PSM'))
+    Potentiometers.setAttribute('Position', 'Actuators');
+end
+
 Robot.appendChild(Potentiometers);
 
-% Coupling
+% ----------- Coupling ---------------
 X_Coupling = docNode.createElement('Coupling');
 X_Coupling.setAttribute('Value', num2str(1));
 Robot.appendChild(X_Coupling);
 
-% Coupling/ActuatorToJointPosition
+% 1 Coupling/ActuatorToJointPosition
 X_ActuatorToJointPosition = docNode.createElement('ActuatorToJointPosition');
 X_Coupling.appendChild(X_ActuatorToJointPosition);
 
-ActuatorToJointPosition = cell(8,1);
-ActuatorToJointPosition(1) = cellstr('1.00  0.00   0.00 0.00 0.00 0.00 0.00 0.00');
-ActuatorToJointPosition(2) = cellstr('0.00  1.00   0.00 0.00 0.00 0.00 0.00 0.00');
-ActuatorToJointPosition(3) = cellstr('0.00 -1.00   1.00 0.00 0.00 0.00 0.00 0.00');
-ActuatorToJointPosition(4) = cellstr('0.00  0.00 0.6697 1.00 0.00 0.00 0.00 0.00');
-ActuatorToJointPosition(5) = cellstr('0.00  0.00   0.00 0.00 1.00 0.00 0.00 0.00');
-ActuatorToJointPosition(6) = cellstr('0.00  0.00   0.00 0.00 0.00 1.00 0.00 0.00');
-ActuatorToJointPosition(7) = cellstr('0.00  0.00   0.00 0.00 0.00 0.00 1.00 0.00');
-ActuatorToJointPosition(8) = cellstr('0.00  0.00   0.00 0.00 0.00 0.00 0.00 1.00');
-
-for i = 1:8
+for i = 1:size(ActuatorToJointPosition, 1)
     Row = docNode.createElement('Row');
-    Row.setAttribute('Val', ActuatorToJointPosition(i));
+    Row.setAttribute('Val', vector2str(ActuatorToJointPosition(i,:)));
     X_ActuatorToJointPosition.appendChild(Row);
 end
 
 
-% Coupling/JointToActuatorPosition
+% 2 Coupling/JointToActuatorPosition
 X_JointToActuatorPosition = docNode.createElement('JointToActuatorPosition');
 X_Coupling.appendChild(X_JointToActuatorPosition);
 
-JointToActuatorPosition = cell(8,1);
-JointToActuatorPosition(1) = cellstr('1.00  0.00   0.00 0.00 0.00 0.00 0.00 0.00');
-JointToActuatorPosition(2) = cellstr('0.00  1.00   0.00 0.00 0.00 0.00 0.00 0.00');
-JointToActuatorPosition(3) = cellstr('0.00  1.00   1.00 0.00 0.00 0.00 0.00 0.00');
-JointToActuatorPosition(4) = cellstr('0.00  0.00 0.6697 1.00 0.00 0.00 0.00 0.00');
-JointToActuatorPosition(5) = cellstr('0.00  0.00   0.00 0.00 1.00 0.00 0.00 0.00');
-JointToActuatorPosition(6) = cellstr('0.00  0.00   0.00 0.00 0.00 1.00 0.00 0.00');
-JointToActuatorPosition(7) = cellstr('0.00  0.00   0.00 0.00 0.00 0.00 1.00 0.00');
-JointToActuatorPosition(8) = cellstr('0.00  0.00   0.00 0.00 0.00 0.00 0.00 1.00');
-
-for i = 1:8
+for i = 1:size(JointToActuatorPosition, 1)
     Row = docNode.createElement('Row');
-    Row.setAttribute('Val', JointToActuatorPosition(i));
+    Row.setAttribute('Val', vector2str(JointToActuatorPosition(i,:)));
     X_JointToActuatorPosition.appendChild(Row);
 end
 
 
-% Coupling/ActuatorToJointTorque
+% 3 Coupling/ActuatorToJointTorque
 X_ActuatorToJointTorque = docNode.createElement('ActuatorToJointTorque');
 X_Coupling.appendChild(X_ActuatorToJointTorque);
 
-ActuatorToJointTorque = cell(8,1);
-ActuatorToJointTorque(1) = cellstr('1.00  0.00   0.00   0.00 0.00 0.00 0.00 0.00');
-ActuatorToJointTorque(2) = cellstr('0.00  1.00   1.00   0.00 0.00 0.00 0.00 0.00');
-ActuatorToJointTorque(3) = cellstr('0.00  0.00   1.00 0.6697 0.00 0.00 0.00 0.00');
-ActuatorToJointTorque(4) = cellstr('0.00  0.00   0.00   1.00 0.00 0.00 0.00 0.00');
-ActuatorToJointTorque(5) = cellstr('0.00  0.00   0.00   0.00 1.00 0.00 0.00 0.00');
-ActuatorToJointTorque(6) = cellstr('0.00  0.00   0.00   0.00 0.00 1.00 0.00 0.00');
-ActuatorToJointTorque(7) = cellstr('0.00  0.00   0.00   0.00 0.00 0.00 1.00 0.00');
-ActuatorToJointTorque(8) = cellstr('0.00  0.00   0.00   0.00 0.00 0.00 0.00 1.00');
-
-for i = 1:8
+for i = 1:size(ActuatorToJointTorque, 1)
     Row = docNode.createElement('Row');
-    Row.setAttribute('Val', ActuatorToJointTorque(i));
+    Row.setAttribute('Val', vector2str(ActuatorToJointTorque(i,:)));
     X_ActuatorToJointTorque.appendChild(Row);
 end
 
-% Coupling/JointToActuatorTorque
+
+% 4 Coupling/JointToActuatorTorque
 X_JointToActuatorTorque = docNode.createElement('JointToActuatorTorque');
 X_Coupling.appendChild(X_JointToActuatorTorque);
 
-JointToActuatorTorque = cell(8,1);
-JointToActuatorTorque(1) = cellstr('1.00  0.00   0.00    0.00 0.00 0.00 0.00 0.00');
-JointToActuatorTorque(2) = cellstr('0.00  1.00  -1.00  0.6697 0.00 0.00 0.00 0.00');
-JointToActuatorTorque(3) = cellstr('0.00  0.00   1.00 -0.6697 0.00 0.00 0.00 0.00');
-JointToActuatorTorque(4) = cellstr('0.00  0.00   0.00    1.00 0.00 0.00 0.00 0.00');
-JointToActuatorTorque(5) = cellstr('0.00  0.00   0.00    0.00 1.00 0.00 0.00 0.00');
-JointToActuatorTorque(6) = cellstr('0.00  0.00   0.00    0.00 0.00 1.00 0.00 0.00');
-JointToActuatorTorque(7) = cellstr('0.00  0.00   0.00    0.00 0.00 0.00 1.00 0.00');
-JointToActuatorTorque(8) = cellstr('0.00  0.00   0.00    0.00 0.00 0.00 0.00 1.00');
-
-for i = 1:8
+for i = 1:size(JointToActuatorTorque, 1)
     Row = docNode.createElement('Row');
-    Row.setAttribute('Val', JointToActuatorTorque(i));
+    Row.setAttribute('Val', vector2str(JointToActuatorTorque(i,:)));
     X_JointToActuatorTorque.appendChild(Row);
 end
 
@@ -290,32 +331,15 @@ end
 % ---------- DigitalIn ---------------
 Config.appendChild(docNode.createComment('Digital Input Configuration'));
 % 2 boards
-% for i = 0:1
-%     % 3 sets NEG/POS/HOME
-%     for j = 0:2
-%         % 4 axes
-%         for k = 0:3
-%             DigitalIn = docNode.createElement('DigitalIn');
-%             DigitalIn.setAttribute('BitID', num2str(k + 4*j));
-%             DigitalIn.setAttribute('Name', strcat('MTML-D', num2str(j+3*i), num2str(k)));
-%             DigitalIn.setAttribute('Name', strcat('MTML-D', num2str(j+3*i), num2str(k)));
-%             DigitalIn.setAttribute('BoardID', num2str(boardID(i+1)));
-%             DigitalIn.setAttribute('Pressed', '0');
-%             DigitalIn.setAttribute('Trigger', 'all');
-%             Config.appendChild(DigitalIn);
-%         end
-%     end
-% end
-
 % read from GUI
 for b = 1:2
     for i = 1:12
         DigitalIn = docNode.createElement('DigitalIn');
-        DigitalIn.setAttribute('BitID', num2str(i));
-        DigitalIn.setAttribute('Name', 'hello' );
+        DigitalIn.setAttribute('BitID', num2str(i-1));
+        DigitalIn.setAttribute('Name', aDigital{i,2,b});
         DigitalIn.setAttribute('BoardID', num2str(boardID(b)));
-        DigitalIn.setAttribute('Pressed', aDigital{i,3});
-        DigitalIn.setAttribute('Trigger', 'all');
+        DigitalIn.setAttribute('Pressed', aDigital{i,3,b});
+        DigitalIn.setAttribute('Trigger', aDigital{i,4,b});
         Config.appendChild(DigitalIn);
     end
 end
@@ -323,11 +347,31 @@ end
 % generate xml file
 xmlwrite(fileName,docNode);
 
+isOK = true;
 
 %%
 % delete temporary .m file
-delete('temp.m');
+cleanUp;
+
+end  % configGenerator
 
 
-
+function cleanUp
+if (exist('temp.m', 'file') == 2)
+    delete('temp.m');
 end
+end  % cleanUp
+
+function outStr = vector2str(inVector)
+    outStr = '';
+    for i = 1:length(inVector)
+        if (i == 1)
+            outStr = [outStr, num2str(inVector(i),  '%6.4f')];
+        else
+            outStr = [outStr, ' ', num2str(inVector(i),  '%6.4f')];
+        end
+    end
+%     disp(outStr);
+end  % vector2str
+
+
