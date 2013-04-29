@@ -81,16 +81,19 @@ motorMaxCur(CONST_MST,:) = [0.67 0.67 0.67 0.92 0.75 0.59 0.407 0.0];
 motorMaxCur(CONST_SLV,:) = [2.01 2.01 1.005 1.005 1.005 1.005 1.005 0.0];
 
 % motor toruqe const  Unit: Nm/A
-motorTor(CONST_MST,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 0.0];
-motorTor(CONST_SLV,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0];
+% NOTE: no motor on axis 8, set value to 1 
+motorTor(CONST_MST,:) = [0.0438 0.0438 0.0438 0.0438 0.00495 0.00495 0.00339 1.0];
+motorTor(CONST_SLV,:) = [0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 0.0438 1.0];
 
 % Gear ratio
-gearRatio(CONST_MST,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 0.0];
-gearRatio(CONST_SLV,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 0.0];
+% NOTE: gear ratio for axis 8 is set to 1 
+gearRatio(CONST_MST,:) = [63.41 49.88 59.73 10.53 33.16 33.16 16.58 1.0];
+gearRatio(CONST_SLV,:) = [56.50 56.50 336.6 11.71 11.71 11.71 11.71 1.0];
 
 % Encoder counts per turn
-encCPT(CONST_MST,:) = [ 4000  4000  4000 4000   64   64   64 0];
-encCPT(CONST_SLV,:) = [14400 14400 14400 4000 4000 4000 4000 0];
+% NOTE: no encoder for last axis
+encCPT(CONST_MST,:) = [ 4000  4000  4000 4000   64   64   64 1];
+encCPT(CONST_SLV,:) = [14400 14400 14400 4000 4000 4000 4000 1];
 
 % Pitch
 % 1 for revolute, mm/deg for prismatic
@@ -121,7 +124,6 @@ potOffset = motor.pot_input_offset;
 % =============================================
 % === Drive =======
 % Direction
-% driveDirection = [-1 1 1 1 -1 1 -1 1];
 driveDirection = aDirection;
 AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
 AmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
@@ -151,6 +153,12 @@ CountsPerTurn = encCPT(rType,1:numOfActuator);
 BitsToVolts = ones(1,numOfActuator) * 0.0000686656;
 VoltsToPosSIScale = potGain * 2^12 / (4.5 - 0.0) * 180.0 / pi;
 VoltsToPosSIOffset = potOffset * 180.0 / pi;
+
+% special case for master last joint (Hall effect sensor)
+if (rType == CONST_MST)
+    VoltsToPosSIScale(8) = -0.019311;
+    VoltsToPosSIOffset(8) = 0.082146;
+end
 
 
 % === Coupling ====
@@ -265,8 +273,8 @@ for i = 1:numOfActuator
     X_BitsToVolts.setAttribute('Offset', '0');
     AnaglogIn.appendChild(X_BitsToVolts);
     X_VoltsToPosSI = docNode.createElement('VoltsToPosSI');
-    X_VoltsToPosSI.setAttribute('Scale', num2str(VoltsToPosSIScale(i), '%5.4f'));
-    X_VoltsToPosSI.setAttribute('Offset', num2str(VoltsToPosSIOffset(i), '%5.4f'));
+    X_VoltsToPosSI.setAttribute('Scale', num2str(VoltsToPosSIScale(i), '%5.6f'));
+    X_VoltsToPosSI.setAttribute('Offset', num2str(VoltsToPosSIOffset(i), '%5.6f'));
     AnaglogIn.appendChild(X_VoltsToPosSI);
 end
 
