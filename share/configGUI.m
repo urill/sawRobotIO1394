@@ -22,7 +22,7 @@ function varargout = configGUI(varargin)
 
 % Edit the above text to modify the response to help configGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2013 12:57:49
+% Last Modified by GUIDE v2.5 29-Apr-2013 19:18:59
 
 % Date: 2013-04-28
 % Author: Zihan Chen
@@ -92,6 +92,13 @@ end
 set(handles.digiBidMenu, 'Value', 1);
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,1));
 
+% set default drive direction data
+handles.m_direction = cell(8,1);
+for i = 1:8
+    handles.m_direction{i} = 1;
+end
+set(handles.tblDirection, 'data', handles.m_direction);
+
 % Update handles structure
 guidata(hObject, handles);
 
@@ -147,7 +154,8 @@ isOK = configGenerator(...
     handles.m_out_filename, ...
     handles.m_type, ...
     handles.m_boardID, ...
-    handles.m_digiIn);
+    handles.m_digiIn, ...
+    cell2mat(handles.m_direction)'); % change to horizontal num array
 if (isOK)
     disp('Config file generated successfully');
 else
@@ -233,7 +241,7 @@ val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val)); 
 
 % update default bid
-defaultButton_Callback(handles.defaultButton, eventdata, handles);
+bidDefaultButton_Callback(handles.bidDefaultButton, eventdata, handles);
 
 % update default output file name
 handles.m_out_filename = [handles.m_type, '.xml'];
@@ -320,9 +328,9 @@ function [ newDigiData ] = updateDigitalData( oldDigiData )
 disp('updateDigiData');
 
 
-% --- Executes on button press in defaultButton.
-function defaultButton_Callback(hObject, eventdata, handles)
-% hObject    handle to defaultButton (see GCBO)
+% --- Executes on button press in bidDefaultButton.
+function bidDefaultButton_Callback(hObject, eventdata, handles)
+% hObject    handle to bidDefaultButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if (strcmp(handles.m_type,'MTML'))
@@ -357,3 +365,36 @@ handles.m_digiIn{5,2,2} = 'CAMERA';
 val = get(handles.digiBidMenu, 'Value');
 set(handles.tblDigital, 'data', handles.m_digiIn(:,:,val));
 guidata(hObject, handles);
+
+
+% --- Executes on button press in dirDefaultButton.
+function dirDefaultButton_Callback(hObject, eventdata, handles)
+% hObject    handle to dirDefaultButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% NOTE: this default is based on JHU's hardware, you might have 
+% different drive direction
+if (strcmp(handles.m_type,'MTML') || strcmp(handles.m_type,'MTMR'))
+    handles.m_direction = {-1; 1; 1; 1; -1; 1; -1; 1};
+elseif (strcmp(handles.m_type,'PSM1') || strcmp(handles.m_type,'PSM2'))
+    handles.m_direction = {-1; -1; 1; -1; -1; 1; 1; 1};
+end
+set(handles.tblDirection, 'data', handles.m_direction);
+guidata(hObject, handles);
+
+
+% --- Executes when entered data in editable cell(s) in tblDirection.
+function tblDirection_CellEditCallback(hObject, eventdata, handles)
+% hObject    handle to tblDirection (see GCBO)
+% eventdata  structure with the following fields (see UITABLE)
+%	Indices: row and column indices of the cell(s) edited
+%	PreviousData: previous data for the cell(s) edited
+%	EditData: string(s) entered by the user
+%	NewData: EditData or its converted form set on the Data property. Empty if Data was not changed
+%	Error: error string when failed to convert EditData to appropriate value for Data
+% handles    structure with handles and user data (see GUIDATA)
+handles.m_direction = get(handles.tblDirection, 'data');
+disp(handles.m_direction);
+guidata(hObject, handles);
+

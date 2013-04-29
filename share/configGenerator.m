@@ -1,4 +1,4 @@
-function [ isOK ] = configGenerator( aCalName, aOutName, aRobotName, aBoardID, aDigital)
+function [ isOK ] = configGenerator( aCalName, aOutName, aRobotName, aBoardID, aDigital, aDirection)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -121,7 +121,8 @@ potOffset = motor.pot_input_offset;
 % =============================================
 % === Drive =======
 % Direction
-driveDirection = [-1 1 1 1 -1 1 -1 1];
+% driveDirection = [-1 1 1 1 -1 1 -1 1];
+driveDirection = aDirection;
 AmpsToBitsScale = driveDirection(1:numOfActuator) .* 5242.8800;
 AmpsToBitsOffset = ones(1, numOfActuator) .* (2^15);
 
