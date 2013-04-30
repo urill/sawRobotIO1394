@@ -702,7 +702,7 @@ void mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI(void)
     }
     if (this->Potentiometers == POTENTIOMETER_ON_ACTUATORS) {
         vctDoubleVec posErrorActuator(NumberOfActuators);
-        posErrorActuator.DifferenceOf(this->PositionJoint, this->analogInPosSI);
+        posErrorActuator.DifferenceOf(this->PositionActuatorGet.Position(), this->analogInPosSI);
         for (size_t index = 0; index < ActuatorList.size(); index++) {
             ActuatorList[index].encoder.BitsToPosSIOffset -= posErrorActuator[index];
         }
