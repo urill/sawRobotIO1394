@@ -39,7 +39,6 @@ class mtsStateTable;
 class AmpIO;
 
 /*!
-  \todo add configuration for potentiometer coupling to joints (default) or actuators
   \todo add software check to monitor current feedback vs. requested current
   \todo add check on configuration files to make sure all gains are non zero
   \todo add code to load units from config files and apply properly
@@ -136,16 +135,23 @@ protected:
         vctDynamicVector<vctDoubleVec> FeedbackCurrents;
     } AmpsToBitsOffsetUsingFeedbackAmps;
 
+    /*! Struct used to store temporary vectors and prevent dynamic allocation */
+    struct {
+        vctDoubleVec CurrentFeedbackMax, CurrentFeedbackAbs;
+    } Temporary;
+
     /*! Struct used to scope all configuration data used for computations,
       these vectors should be updated right after the configuration file is
       loaded. */
     struct {
-        vctDoubleVec MotorCurrentMax;
+        vctDoubleVec MotorCurrentMax; // value used to cap requested current
+        vctDoubleVec MotorCurrentMaxFeedback; // value used to check current feedback
     } Configuration;
 
     // State data
     bool           Valid;
     bool           PowerStatus;
+    bool           PreviousPowerStatus;
     unsigned short SafetyRelay;
     bool           WatchdogTimeout;
     vctBoolVec     ampStatus;           // Amplifier actual status (ON or FAULT)
@@ -254,8 +260,12 @@ public:
     bool CheckIfValid(void);
     inline bool IsValid(void) const { return this->Valid; }
 
+    /*! Get the raw data from the IO boards. */
     void GetData(void);
+    /*! Convert raw data to SI units. */
     void ConvertRawToSI(void);
+    /*! Check current state, perform safety checks and emit events if needed. */
+    void UpdateStateAndEvents(void);
 
     // List of functions for mtsRobotIO1394 connection manager.
     void GetName(std::string & placeHolder);

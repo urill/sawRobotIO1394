@@ -275,6 +275,8 @@ void mtsRobotIO1394::Run(void)
             RobotList[i]->GetData();
             // Convert from raw to SI units (TBD)
             RobotList[i]->ConvertRawToSI();
+            //
+            RobotList[i]->UpdateStateAndEvents();
         }
     }
     // Loop through the digital inputs

@@ -53,6 +53,8 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
     HasActuatorToJointCoupling(false),
     Potentiometers(POTENTIOMETER_UNDEFINED),
     Valid(false),
+    PowerStatus(false),
+    PreviousPowerStatus(false),
     ampStatus(numActuators, false), ampEnable(numActuators, false),
     encPosRaw(numActuators), PositionJoint(numJoints),
     PositionJointGet(numJoints), PositionActuatorGet(numActuators),
@@ -269,10 +271,13 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
 
 void mtsRobotIO1394::RobotInternal::UpdateInternalConfiguration(void)
 {
-    Configuration.MotorCurrentMax.SetSize(ActuatorList.size());
-    for (size_t i = 0; i < ActuatorList.size(); i++) {
+    Configuration.MotorCurrentMax.SetSize(NumberOfActuators);
+    for (size_t i = 0; i < NumberOfActuators; i++) {
         Configuration.MotorCurrentMax[i] = ActuatorList[i].drive.MaxCurrentValue;
     }
+    Configuration.MotorCurrentMaxFeedback.SetSize(NumberOfActuators);
+    Configuration.MotorCurrentMaxFeedback.ProductOf(Configuration.MotorCurrentMax, 1.2); // 120%
+    Configuration.MotorCurrentMaxFeedback.Add(50.0 / 1000.0); // add 50 mA for non motorized actuators due to a2d noise
 }
 
 void mtsRobotIO1394::RobotInternal::UpdateTorqueCurrentDefaults(void)
@@ -438,7 +443,7 @@ bool mtsRobotIO1394::RobotInternal::CheckIfValid(void)
 
 void mtsRobotIO1394::RobotInternal::GetData(void)
 {
-    const bool previousPowerStatus = PowerStatus;
+    PreviousPowerStatus = PowerStatus;
     PowerStatus = true;
     SafetyRelay = true;
     WatchdogTimeout = true;
@@ -462,10 +467,6 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
         WatchdogTimeout &= board->GetWatchdogTimeoutStatus();
     }
 
-    // trigger events base on state changes
-    if (previousPowerStatus != PowerStatus) {
-        EventTriggers.PowerStatus(PowerStatus);
-    }
 }
 
 void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
@@ -483,7 +484,23 @@ void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
         this->PositionJoint.Assign(this->PositionActuatorGet.Position());
     }
     this->PositionJointGet.Position().Assign(this->PositionJoint);
+}
 
+void mtsRobotIO1394::RobotInternal::UpdateStateAndEvents(void)
+{
+    // check current feedback against maximum
+    if (motorFeedbackCurrent.Abs().ElementwiseGreaterOrEqual(Configuration.MotorCurrentMaxFeedback).Any()) {
+        this->DisablePower();
+        CMN_LOG_CLASS_RUN_ERROR << "UpdateStateAndEvents: detected current feedback above limit, current feedback: " << std::endl
+                                << motorFeedbackCurrent << std::endl
+                                << "Limits: " << std::endl
+                                << Configuration.MotorCurrentMaxFeedback << std::endl
+                                << "(comparaison results: "
+                                << motorControlCurrent.Abs().ElementwiseGreaterOrEqual(Configuration.MotorCurrentMaxFeedback) << ")"
+                                << std::endl;
+    }
+
+    // store requested current and current feedback to allow re-bias
     if (AmpsToBitsOffsetUsingFeedbackAmps.Count != 0) {
         const size_t index = --AmpsToBitsOffsetUsingFeedbackAmps.Count;
         // last motor current in amps is in motorFeedbackCurrent
@@ -493,6 +510,11 @@ void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)
         if (index == 0) {
             this->ResetAmpsToBitsOffsetUsingFeedbackAmps();
         }
+    }
+
+    // trigger events base on state changes
+    if (PreviousPowerStatus != PowerStatus) {
+        EventTriggers.PowerStatus(PowerStatus);
     }
 }
 
@@ -692,7 +714,7 @@ void mtsRobotIO1394::RobotInternal::ResetAmpsToBitsOffsetUsingFeedbackAmps(void)
 void mtsRobotIO1394::RobotInternal::ResetEncoderOffsetUsingPotPosSI(void)
 {
     if (this->Potentiometers == POTENTIOMETER_UNDEFINED) {
-        CMN_LOG_CLASS_INIT_ERROR << "ResetEncoderOffsetUsingPotPosSI: can't set encoder offset, potentiometer's position undefine";
+        CMN_LOG_CLASS_INIT_ERROR << "ResetEncoderOffsetUsingPotPosSI: can't set encoder offset, potentiometer's position undefined";
         return;
     }
     if (this->Potentiometers == POTENTIOMETER_ON_JOINTS) {
@@ -779,7 +801,7 @@ void mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosSI(const vctLongVec & fr
 {
     /**
      * See configGenerator.py for how to compute bitsToDeltaPosSIScale
-     * Velocoity = bitsToDeltaPosSIScale / timeCounter
+     * Velocity = bitsToDeltaPosSIScale / timeCounter
      */
     toData.SetAll(0.0);
     for (size_t index = 0; index < ActuatorList.size();index++) {
@@ -869,6 +891,3 @@ void mtsRobotIO1394::RobotInternal::AnalogInVoltsToPosSI(const vctDoubleVec & fr
     }
 }
 
-//Future Works:
-//Variable config file with ENC/POT. Set flags so Get/Set is properly configured. Configure Function should account for different
-//Layouts.
