@@ -276,7 +276,7 @@ void mtsRobotIO1394::RobotInternal::UpdateInternalConfiguration(void)
         Configuration.MotorCurrentMax[i] = ActuatorList[i].drive.MaxCurrentValue;
     }
     Configuration.MotorCurrentMaxFeedback.SetSize(NumberOfActuators);
-    Configuration.MotorCurrentMaxFeedback.ProductOf(Configuration.MotorCurrentMax, 1.2); // 120%
+    Configuration.MotorCurrentMaxFeedback.ProductOf(Configuration.MotorCurrentMax, 3.0); // 120%
     Configuration.MotorCurrentMaxFeedback.Add(50.0 / 1000.0); // add 50 mA for non motorized actuators due to a2d noise
 }
 
