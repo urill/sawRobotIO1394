@@ -92,7 +92,7 @@ void mtsRobotIO1394QtWidget::Startup(void)
     vctDoubleVec motorCurrentMax(this->NumberOfActuators);
     mtsExecutionResult result = Robot.GetMotorCurrentMax(motorCurrentMax);
     if (!result) {
-        CMN_LOG_CLASS_INIT_ERROR << "Startup: Robot interface isn't connected properly, enable to get motor current max.  Function call returned: "
+        CMN_LOG_CLASS_INIT_ERROR << "Startup: Robot interface isn't connected properly, unable to get motor current max.  Function call returned: "
                                  << result << std::endl;
     } else {
         // convert to mA

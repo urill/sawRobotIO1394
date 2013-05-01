@@ -286,12 +286,17 @@ void mtsRobotIO1394::RobotInternal::UpdateJointTorqueMax(void)
 {
     vctDoubleVec motorTorqueMax(ActuatorList.size());
     DriveAmpsToNm(Configuration.MotorCurrentMax, motorTorqueMax);
-    if (HasActuatorToJointCoupling)
-        jointTorqueMax.ProductOf(ActuatorToJointTorque, motorTorqueMax);
+    // Make sure maximum motor torques are all positive
+    motorTorqueMax.AbsSelf();
+    if (HasActuatorToJointCoupling) {
+        // Take absolute value of coupling matrix, to ensure that
+        // we obtain the maximum possible joint torque.
+        vctDoubleMat A2JT_Abs(NumberOfJoints, NumberOfActuators);
+        A2JT_Abs.AbsOf(ActuatorToJointTorque);
+        jointTorqueMax.ProductOf(A2JT_Abs, motorTorqueMax);
+    }
     else
         jointTorqueMax.Assign(motorTorqueMax);
-    // Make sure maximum joint torques are all positive
-    jointTorqueMax.AbsSelf();
     CMN_LOG_CLASS_INIT_WARNING << "Maximum joint torques = " << jointTorqueMax << std::endl;
 }
 
