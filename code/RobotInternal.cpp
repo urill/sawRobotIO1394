@@ -55,6 +55,7 @@ mtsRobotIO1394::RobotInternal::RobotInternal(const std::string & name,
     Valid(false),
     PowerStatus(false),
     PreviousPowerStatus(false),
+    IterationsWithCurrentFeedbackHigh(0),
     ampStatus(numActuators, false), ampEnable(numActuators, false),
     encPosRaw(numActuators), PositionJoint(numJoints),
     PositionJointGet(numJoints), PositionActuatorGet(numActuators),
@@ -276,7 +277,7 @@ void mtsRobotIO1394::RobotInternal::UpdateInternalConfiguration(void)
         Configuration.MotorCurrentMax[i] = ActuatorList[i].drive.MaxCurrentValue;
     }
     Configuration.MotorCurrentMaxFeedback.SetSize(NumberOfActuators);
-    Configuration.MotorCurrentMaxFeedback.ProductOf(Configuration.MotorCurrentMax, 3.0); // 120%
+    Configuration.MotorCurrentMaxFeedback.ProductOf(Configuration.MotorCurrentMax, 1.2); // 120%
     Configuration.MotorCurrentMaxFeedback.Add(50.0 / 1000.0); // add 50 mA for non motorized actuators due to a2d noise
 }
 
@@ -490,14 +491,19 @@ void mtsRobotIO1394::RobotInternal::UpdateStateAndEvents(void)
 {
     // check current feedback against maximum
     if (motorFeedbackCurrent.Abs().ElementwiseGreaterOrEqual(Configuration.MotorCurrentMaxFeedback).Any()) {
-        this->DisablePower();
-        CMN_LOG_CLASS_RUN_ERROR << "UpdateStateAndEvents: detected current feedback above limit, current feedback: " << std::endl
-                                << motorFeedbackCurrent << std::endl
-                                << "Limits: " << std::endl
-                                << Configuration.MotorCurrentMaxFeedback << std::endl
-                                << "(comparaison results: "
-                                << motorControlCurrent.Abs().ElementwiseGreaterOrEqual(Configuration.MotorCurrentMaxFeedback) << ")"
-                                << std::endl;
+        IterationsWithCurrentFeedbackHigh++;
+        if (IterationsWithCurrentFeedbackHigh > 100) {
+            this->DisablePower();
+            CMN_LOG_CLASS_RUN_ERROR << "UpdateStateAndEvents: detected current feedback above limit, current feedback: " << std::endl
+                                    << motorFeedbackCurrent << std::endl
+                                    << "Limits: " << std::endl
+                                    << Configuration.MotorCurrentMaxFeedback << std::endl
+                                    << "(comparaison results: "
+                                    << motorControlCurrent.Abs().ElementwiseGreaterOrEqual(Configuration.MotorCurrentMaxFeedback) << ")"
+                                    << std::endl;
+        }
+    } else {
+        IterationsWithCurrentFeedbackHigh = 0;
     }
 
     // store requested current and current feedback to allow re-bias
