@@ -99,6 +99,7 @@ void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int r
                                      << " for actuator " << i << std::endl;
             continue;
         }
+
         if (BoardList[tmpBoardID] == 0) {
             BoardList[tmpBoardID] = new AmpIO(tmpBoardID);
             // Following does not properly handle the case where a board is split
@@ -107,6 +108,24 @@ void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int r
             OwnBoards.push_back(BoardList[tmpBoardID]);
         }
         ActuatorList[i] = ActuatorInfo(BoardList[tmpBoardID], tmpAxisID);
+
+        std::string tmpType = "";
+        sprintf(path,"Robot[%d]/Actuator[%d]/@Type", robotNumber, xmlIndex);
+        xmlConfigFile.GetXMLValue(context.c_str(), path, tmpType);
+        if (tmpType == "") {
+            CMN_LOG_CLASS_INIT_WARNING << "Configure: no actuator type specified " << tmpAxisID
+                                     << " for actuator " << i << " set to Revolute by default" << std::endl;
+            tmpType = "Revolute";
+        }
+        double unitPosConversion;
+        if(tmpType == "Revolute") {
+            // deg to radian
+            unitPosConversion = cmnPI_180;
+            ActuatorList[i].jointType = PRM_REVOLUTE;
+        }else if (tmpType == "Prismatic") {
+            unitPosConversion = cmn_mm;
+            ActuatorList[i].jointType = PRM_PRISMATIC;
+        }
 
         sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].drive.AmpsToBitsScale);
@@ -128,11 +147,11 @@ void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int r
 
         sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToPosSIScale);
-        ActuatorList[i].encoder.BitsToPosSIScale *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
+        ActuatorList[i].encoder.BitsToPosSIScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
         sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToPosSIOffset);
-        ActuatorList[i].encoder.BitsToPosSIOffset *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
+        ActuatorList[i].encoder.BitsToPosSIOffset *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
         sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].encoder.BitsToDeltaPosSIScale);
@@ -157,11 +176,11 @@ void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int r
 
         sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Scale", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn.VoltsToPosSIScale);
-        ActuatorList[i].analogIn.VoltsToPosSIScale *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
+        ActuatorList[i].analogIn.VoltsToPosSIScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
         sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Offset", robotNumber, xmlIndex);
         xmlConfigFile.GetXMLValue(context.c_str(), path, ActuatorList[i].analogIn. VoltsToPosSIOffset);
-        ActuatorList[i].analogIn. VoltsToPosSIOffset *= cmnPI_180; // -------------------------------------------- adeguet1, make sure these are degrees
+        ActuatorList[i].analogIn. VoltsToPosSIOffset *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
     }
 
     // look for potentiometers position, if any
@@ -273,9 +292,12 @@ void mtsRobotIO1394::RobotInternal::ConfigureCouplingMatrix (cmnXMLPath & xmlCon
 void mtsRobotIO1394::RobotInternal::UpdateInternalConfiguration(void)
 {
     Configuration.MotorCurrentMax.SetSize(NumberOfActuators);
+    Configuration.JointType.SetSize(NumberOfActuators);
     for (size_t i = 0; i < NumberOfActuators; i++) {
         Configuration.MotorCurrentMax[i] = ActuatorList[i].drive.MaxCurrentValue;
+        Configuration.JointType[i] = ActuatorList[i].jointType;
     }
+
     Configuration.MotorCurrentMaxFeedback.SetSize(NumberOfActuators);
     Configuration.MotorCurrentMaxFeedback.ProductOf(Configuration.MotorCurrentMax, 1.2); // 120%
     Configuration.MotorCurrentMaxFeedback.Add(50.0 / 1000.0); // add 50 mA for non motorized actuators due to a2d noise
@@ -377,6 +399,8 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
                                     motorControlCurrent);
     robotInterface->AddCommandRead(&mtsRobotIO1394::RobotInternal::GetMotorCurrentMax, this, "GetMotorCurrentMax",
                                     Configuration.MotorCurrentMax);
+    robotInterface->AddCommandRead(&mtsRobotIO1394::RobotInternal::GetJointType, this, "GetJointType",
+                                    Configuration.JointType);
 
     robotInterface->AddCommandWrite(&mtsRobotIO1394::RobotInternal::SetEncoderPositionRaw, this, "SetEncoderPositionRaw",
                                     encSetPosRaw);
@@ -636,8 +660,16 @@ void mtsRobotIO1394::RobotInternal::SetTorqueJoint(const prmForceTorqueJointSet 
 {
     TorqueJoint = jointTorques;
     jointTorque.Assign(TorqueJoint.ForceTorque());
+
+//    std::cout << "tor: " << jointTorque;
+
     // Check joint torque limits
-    jointTorque.ElementwiseClipIn(jointTorqueMax);
+//    jointTorque.ElementwiseClipIn(jointTorqueMax);
+
+//    std::cout << "  tor2: " << jointTorque << std::endl;
+//    std::cout << " tmax: " << jointTorqueMax << std::endl;
+
+
     motorControlTorque.ProductOf(JointToActuatorTorque, jointTorque);
     DriveNmToAmps(motorControlTorque, motorControlCurrent);
     SetMotorCurrent(motorControlCurrent);
@@ -677,6 +709,9 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec & mcur)
         return;
     }
     motorControlCurrent = mcur;
+
+//    std::cout << mcur << std::endl;
+
     //MotorCurrentToDAC(motorControlCurrent, motorControlCurrentRaw);
     DriveAmpsToBits(motorControlCurrent, motorControlCurrentRaw);
     SetMotorCurrentRaw(motorControlCurrentRaw);
@@ -685,6 +720,11 @@ void mtsRobotIO1394::RobotInternal::SetMotorCurrent(const vctDoubleVec & mcur)
 void mtsRobotIO1394::RobotInternal::GetMotorCurrentMax(vctDoubleVec & placeHolder) const
 {
     placeHolder.ForceAssign(Configuration.MotorCurrentMax);
+}
+
+void mtsRobotIO1394::RobotInternal::GetJointType(prmJointTypeVec &placeHolder) const
+{
+    placeHolder.ForceAssign(Configuration.JointType);
 }
 
 void mtsRobotIO1394::RobotInternal::RequestAmpsToBitsOffsetUsingFeedbackAmps(const mtsInt & numberOfSamples)
@@ -812,7 +852,6 @@ void mtsRobotIO1394::RobotInternal::EncoderRawToDeltaPosSI(const vctLongVec & fr
     toData.SetAll(0.0);
     for (size_t index = 0; index < ActuatorList.size();index++) {
         double bitsToDeltaPosSIScale = ActuatorList[index].encoder.BitsToDeltaPosSIScale;
-        double bitsToDeltaPosSIOffset = ActuatorList[index].encoder.BitsToDeltaPosSIOffset;
         toData[index] = bitsToDeltaPosSIScale / (fromData[index]);
     }
 }

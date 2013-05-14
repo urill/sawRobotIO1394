@@ -31,6 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstOSAbstraction/osaGetTime.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
+#include <cisstParameterTypes/prmJointType.h>
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtWidget, mtsComponent, mtsComponentConstructorNameAndUInt)
 
@@ -60,6 +61,7 @@ void mtsRobotIO1394QtWidget::Init(void)
     lastEnableState.SetSize(NumberOfActuators);
     lastEnableState.SetAll(false);
 
+    unitFactor.SetSize(NumberOfActuators);
     jointPos.SetSize(NumberOfActuators);
     actuatorPos.SetSize(NumberOfActuators);
     actuatorPosGet.Position().SetSize(NumberOfActuators);
@@ -100,6 +102,25 @@ void mtsRobotIO1394QtWidget::Startup(void)
         CurrentSpinBoxWidget->SetRange(-motorCurrentMax, motorCurrentMax);
         CurrentSliderWidget->SetRange(-motorCurrentMax, motorCurrentMax);
     }
+
+    prmJointTypeVec jointType;
+    result = Robot.GetJointType(jointType);
+    if (!result) {
+        CMN_LOG_CLASS_INIT_ERROR << "Startup: Robot interface isn't connected properly, unable to get joint type.  Function call returned: "
+                                 << result << std::endl;
+        unitFactor.SetAll(0.0);
+    } else {
+        // set unitFactor;
+        for(size_t i = 0; i < this->NumberOfActuators; i++){
+            if (jointType[i] == PRM_REVOLUTE)
+                unitFactor[i] = cmn180_PI;
+            else if (jointType[i] == PRM_PRISMATIC)
+                unitFactor[i] = cmn_mm;
+            else
+                cmnThrow("mtsRobotIO1394QtWidget: Unknown joint type");
+        }
+    }
+
     show();
 }
 
@@ -120,6 +141,7 @@ void mtsRobotIO1394QtWidget::closeEvent(QCloseEvent * event)
     if(ret == QMessageBox::Yes) {
         Robot.DisablePower();
         event->accept();
+        QCoreApplication::quit();
     }else {
         event->ignore();
     }
@@ -280,10 +302,10 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
     if (flag) {
         Robot.GetPeriodStatistics(IntervalStatistics);
         Robot.GetPosition(jointPos); // vct
-        jointPos.Multiply(cmn180_PI); // to degrees
+        jointPos.ElementwiseMultiply(unitFactor); // to degrees or mm
         Actuators.GetPositionActuator(actuatorPosGet); // prm
         actuatorPos.Assign(actuatorPosGet.Position()); // vct
-        actuatorPos.Multiply(cmn180_PI); // to degrees
+        actuatorPos.ElementwiseMultiply(unitFactor); // to degrees or mm
         Robot.GetVelocity(vel);
         Robot.GetAnalogInputVolts(potVolt);
         Robot.GetAnalogInputPosSI(potPosSI);
@@ -351,6 +373,7 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("GetAnalogInputPosSI", Robot.GetAnalogInputPosSI);
         robotInterface->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorCurrent);
         robotInterface->AddFunction("GetMotorCurrentMax", Robot.GetMotorCurrentMax);
+        robotInterface->AddFunction("GetJointType", Robot.GetJointType);
         robotInterface->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
         robotInterface->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
         robotInterface->AddFunction("GetWatchdogTimeout", Robot.GetWatchdogTimeout);

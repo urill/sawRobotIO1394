@@ -29,6 +29,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstVector/vctDynamicVectorTypes.h>
 #include <cisstVector/vctDynamicMatrixTypes.h>
 
+//#include <cisstParameterTypes/prmForwardDeclarations.h>
+#include <cisstParameterTypes/prmJointType.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
@@ -39,7 +41,6 @@ class mtsStateTable;
 class AmpIO;
 
 /*!
-  \todo add software check to monitor current feedback vs. requested current
   \todo add check on configuration files to make sure all gains are non zero
   \todo add code to load units from config files and apply properly
   \todo create vectors for all data used in computations instead of digging into the vector of structures used to configure the robot.
@@ -55,6 +56,9 @@ class mtsRobotIO1394::RobotInternal {
 public:
     /*! Defines where the potentiometers are positioned, if any. */
     typedef enum {POTENTIOMETER_UNDEFINED, POTENTIOMETER_ON_ACTUATORS, POTENTIOMETER_ON_JOINTS} PotentiometerType;
+//    typedef enum {
+
+//    };
 
 protected:
 
@@ -104,8 +108,7 @@ protected:
         };
         AmpIO *board;
         int axisid;
-        std::string primaryPosSensor;
-        std::string secondaryPosSensor;
+        prmJointType jointType;
         Drive drive;
         Encoder encoder;
         AnalogIn analogIn;
@@ -144,6 +147,7 @@ protected:
       these vectors should be updated right after the configuration file is
       loaded. */
     struct {
+        prmJointTypeVec JointType;    // joint type
         vctDoubleVec MotorCurrentMax; // value used to cap requested current
         vctDoubleVec MotorCurrentMaxFeedback; // value used to check current feedback
     } Configuration;
@@ -201,6 +205,7 @@ protected:
     void SetMotorCurrentRaw(const vctLongVec &mcur);
     void SetMotorCurrent(const vctDoubleVec &mcur);
     void GetMotorCurrentMax(vctDoubleVec & placeHolder) const;
+    void GetJointType(prmJointTypeVec & placeHolder) const;
     void RequestAmpsToBitsOffsetUsingFeedbackAmps(const mtsInt & numberOfSamples);
     void ResetAmpsToBitsOffsetUsingFeedbackAmps(void);
     void ResetEncoderOffsetUsingPotPosSI(void);

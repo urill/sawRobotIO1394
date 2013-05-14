@@ -117,6 +117,7 @@ protected:
         mtsFunctionRead GetAnalogInputPosSI;
         mtsFunctionRead GetMotorCurrent;
         mtsFunctionRead GetMotorCurrentMax;
+        mtsFunctionRead GetJointType;
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
         mtsFunctionRead GetWatchdogTimeout;
@@ -161,6 +162,7 @@ private:
     vctLongVec potCnt;
     vctLongVec curCnt;
 
+    vctDoubleVec unitFactor;
     vctDoubleVec jointPos;
     prmPositionJointGet actuatorPosGet;
     vctDoubleVec actuatorPos;
