@@ -598,7 +598,6 @@ void mtsRobotIO1394::RobotInternal::EnableBoardsPower(void)
     // PK TEMP: disabled watchdog because it would otherwise trip due to
     // the subsequent 100 msec sleep.
     // SetWatchdogPeriod(5.0*TaskPeriod);
-    osaSleep(100.0 * cmn_ms); // Without the sleep, we can get power jumps and joints without power enabled
 }
 
 void mtsRobotIO1394::RobotInternal::DisableBoardsPower(void)
