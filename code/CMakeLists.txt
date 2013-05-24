@@ -36,7 +36,7 @@ if (cisst_FOUND_AS_REQUIRED)
   # create/configure file for find_package (sawRobotIO1394)
   set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include")
   set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
-  set (sawRobotIO1394_LIBRARIES sawRobotIO1394)
+  set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
 
   include_directories (${sawRobotIO1394_INCLUDE_DIR})
   set (sawRobotIO1394_HEADER_DIR "${sawRobotIO1394_INCLUDE_DIR}/sawRobotIO1394")
