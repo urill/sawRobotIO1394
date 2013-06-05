@@ -173,48 +173,11 @@ void mtsRobotIO1394::DigitalInInternal::GetName(std::string &placeHolder) const
 
 void mtsRobotIO1394::DigitalInInternal::SetupMasks(int bitNumber, AmpIO_UInt32 &maskResult) {
     //This function will setup the mask before reading starts.
-    //  maskResult = 0x00000000;
-    switch(bitNumber){
-    case 0:
-        maskResult = 1;     // 0x001
-	break;
-    case 1:
-        maskResult = 2;     // 0x002
-	break;
-    case 2:
-        maskResult = 4;     // 0x004
-	break;
-    case 3:
-        maskResult = 8;     // 0x008
-	break;
-    case 4:
-        maskResult = 16;    // 0x010
-	break;
-    case 5:
-        maskResult = 32;    // 0x020
-	break;
-    case 6:
-        maskResult = 64;    // 0x040
-	break;
-    case 7:
-        maskResult = 128;   // 0x080
-	break;
-    case 8:
-        maskResult = 256;   // 0x100
-	break;
-    case 9:
-        maskResult = 512;   // 0x200
-	break;
-    case 10:
-        maskResult = 1024;  // 0x400
-	break;
-    case 11:
-        maskResult = 2048;  // 0x800
-    break;
-    default:
+    if(bitNumber >= 0 && bitNumber < 12) {
+        maskResult = 0x1 << bitNumber;
+    } else {
         CMN_LOG_INIT_ERROR<<"Unreasonable bitNumber entered for masking with "<< bitNumber<<" requested."<<std::endl;
         maskResult = 0;
-	break;
     }
 }
 
