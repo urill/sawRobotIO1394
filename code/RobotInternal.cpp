@@ -183,6 +183,8 @@ void mtsRobotIO1394::RobotInternal::Configure(cmnXMLPath  & xmlConfigFile, int r
         ActuatorList[i].analogIn. VoltsToPosSIOffset *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
     }
 
+    this->ampTemperature.SetSize(OwnBoards.size() * 2);
+
     // look for potentiometers position, if any
     std::string potentiometerPosition;
     sprintf(path,"Robot[%d]/Potentiometers/@Position", robotNumber);
@@ -334,6 +336,7 @@ void mtsRobotIO1394::RobotInternal::SetupStateTable(mtsStateTable & stateTable)
     stateTable.AddData(PowerStatus, robotName + "PowerStatus");
     stateTable.AddData(SafetyRelay, robotName + "SafetyRelay");
     stateTable.AddData(WatchdogTimeout, robotName + "WatchdogTimeout");
+    stateTable.AddData(ampTemperature, robotName + "AmpTemperature");
     stateTable.AddData(ampStatus, robotName + "AmpStatus");
     stateTable.AddData(ampEnable, robotName + "AmpEnable");
     stateTable.AddData(encPosRaw, robotName + "PosRaw");
@@ -373,6 +376,7 @@ void mtsRobotIO1394::RobotInternal::SetupInterfaces(mtsInterfaceProvided * robot
     robotInterface->AddCommandReadState(stateTable, this->PowerStatus, "GetPowerStatus"); // bool
     robotInterface->AddCommandReadState(stateTable, this->SafetyRelay, "GetSafetyRelay"); // unsigned short
     robotInterface->AddCommandReadState(stateTable, this->WatchdogTimeout, "GetWatchdogTimeout"); // bool
+    robotInterface->AddCommandReadState(stateTable, this->ampTemperature, "GetAmpTemperature"); // vector[double]
 
     robotInterface->AddCommandReadState(stateTable, this->encPosRaw, "GetPositionEncoderRaw"); // vector[int]
     robotInterface->AddCommandReadState(stateTable, this->PositionJoint, "GetPosition"); // vector[double]
@@ -486,12 +490,16 @@ void mtsRobotIO1394::RobotInternal::GetData(void)
         analogInRaw[index] = board->GetAnalogInput(axis);
         motorFeedbackCurrentRaw[index] = board->GetMotorCurrent(axis);     
         ampEnable[index] = board->GetAmpEnable(axis);
-        ampStatus[index] = board->GetAmpStatus(axis);
+        ampStatus[index] = board->GetAmpStatus(axis);        
         PowerStatus &= board->GetPowerStatus();
         SafetyRelay &= board->GetSafetyRelayStatus();
         WatchdogTimeout &= board->GetWatchdogTimeoutStatus();
     }
 
+    for (size_t index = 0; index < OwnBoards.size(); index++){
+        ampTemperature[index*2] = OwnBoards[index]->GetAmpTemperature(0) / 2.0;
+        ampTemperature[index*2 + 1] = OwnBoards[index]->GetAmpTemperature(1) / 2.0;
+    }
 }
 
 void mtsRobotIO1394::RobotInternal::ConvertRawToSI(void)

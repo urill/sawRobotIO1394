@@ -56,9 +56,6 @@ class mtsRobotIO1394::RobotInternal {
 public:
     /*! Defines where the potentiometers are positioned, if any. */
     typedef enum {POTENTIOMETER_UNDEFINED, POTENTIOMETER_ON_ACTUATORS, POTENTIOMETER_ON_JOINTS} PotentiometerType;
-//    typedef enum {
-
-//    };
 
 protected:
 
@@ -180,6 +177,7 @@ protected:
     vctDoubleVec   motorControlTorque;
     vctIntVec      encSetPosRaw;
     vctDoubleVec   encSetPos;
+    vctDoubleVec   ampTemperature;
 
     vctDoubleMat ActuatorToJointPosition;
     vctDoubleMat JointToActuatorPosition;
