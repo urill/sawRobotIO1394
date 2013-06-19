@@ -31,13 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtCore>
 #include <QtGui>
 
-#define HAS_GC  0
-// #define HAS_DEBUG_INFO 1
-#define HAS_DIGITAL 0
-
-
 /*!
-  \todo use cisst naming convention
   \todo maybe rename this class to mtsRobotIO1394{Robot,DigitalInputs,Log}QtWidget and create using mtsRobotIO1394FactoryQtWidget
   \todo cisst Qt convention is now to start with the Qt prefix, i.e. mtsQtWidgetRobotIO1394 ...
   */
@@ -60,31 +54,17 @@ protected:
     virtual void closeEvent(QCloseEvent *event);
 
 private slots:
-    void slot_qcbEnableAmps(bool toggle);
-    void slot_qcbEnableAll(bool toggle);
-    void slot_qcbEnableDirectControl(bool toggle);
-    void slot_qcbEnable(void);
-    void slot_qpbResetCurrentAll(void);
-    void slot_qpbBiasCurrentAll(void);
-    void slot_qdsbMotorCurrent_valueChanged();
-    void slot_qsliderMotorCurrent_valueChanged(void);
-    void slot_qpbResetEncAll(void);
-    void slot_qpbBiasEncAll(void);
-    void slot_qdsbWatchdogPeriod(double period_ms);
-    void slot_qcbCurFBToggle(bool);
-    void slot_qdsbCurFBGain(double);
-    void slot_qdsbCurFBOffset(double);
-
-#if HAS_GC
-    void slot_qcbGCEnable(bool toggle){
-        GC.Enable(mtsBool(toggle));
-        std::cout << "Enable: " << toggle << std::endl;
-    }
-
-    void slot_qpbAdjustEncoder(void){
-        GC.AdjustEncoders();
-    }
-#endif
+    void SlotEnableAmps(bool toggle);
+    void SlotEnableAll(bool toggle);
+    void SlotEnableDirectControl(bool toggle);
+    void SlotEnable(void);
+    void SlotResetCurrentAll(void);
+    void SlotBiasCurrentAll(void);
+    void SlotMotorCurrentValueChanged();
+    void SlotSliderMotorCurrentValueChanged(void);
+    void SlotResetEncodersAll(void);
+    void SlotBiasEncodersAll(void);
+    void SlotWatchdogPeriod(double period_ms);
 
     void timerEvent(QTimerEvent * event);
 
@@ -121,6 +101,7 @@ protected:
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
         mtsFunctionRead GetWatchdogTimeout;
+        mtsFunctionRead GetAmpTemperature;
 
         mtsFunctionWrite SetMotorCurrent;
         mtsFunctionWrite SetEncoderPosition;
@@ -142,83 +123,68 @@ protected:
         mtsFunctionRead GetPositionActuator;
     } Actuators;
 
-#if HAS_GC
-    struct GCStruct {
-        mtsFunctionWrite Enable;
-        mtsFunctionVoid AdjustEncoders;
-    } GC;
-#endif
-
-
 private:
     mtsIntervalStatistics IntervalStatistics;
 
     int NumberOfActuators;
-    bool curFBState;
-    double curFBPGain;
-    double curFBOffset;
-    vctLongVec encCnt;
-    vctLongVec velCnt;
-    vctLongVec potCnt;
-    vctLongVec curCnt;
 
-    vctDoubleVec unitFactor;
-    vctDoubleVec jointPos;
-    prmPositionJointGet actuatorPosGet;
-    vctDoubleVec actuatorPos;
-    vctDoubleVec vel;
-    vctDoubleVec potVolt;
-    vctDoubleVec potPosSI;
-    vctDoubleVec motorFeedbackCurrent;
-    vctDoubleVec motorControlCurrent;
-    vctBoolVec ampEnable;
-    vctBoolVec ampStatus;
-    bool powerStatus;
-    unsigned short safetyRelay;
-    bool watchdogTimeout;
+    vctDoubleVec UnitFactor;
+    vctDoubleVec JointPosition;
+    prmPositionJointGet ActuatorPositionGet;
+    vctDoubleVec ActuatorPosition;
+    vctDoubleVec ActuatorVelocity;
+    vctDoubleVec PotentiometersVolts;
+    vctDoubleVec PotentiometersPosition;
+    vctDoubleVec MotorFeedbackCurrent;
+    vctDoubleVec MotorControlCurrent;
+    vctBoolVec AmpEnable;
+    vctBoolVec AmpStatus;
+    bool PowerStatus;
+    unsigned short SafetyRelay;
+    bool WatchdogTimeout;
+    vctDoubleVec AmpTemperature;
 
     // Interface
-    double tmpStatic;
-    vctDynamicVector<bool> lastEnableState;
-    mtsInterfaceRequired * reqQLA;
-    mtsInterfaceRequired * reqQLARaw;
-    double startTime;
+    double DummyValueWhenNotConnected;
+    vctDynamicVector<bool> LastEnableState;
+    double StartTime;
 
     // GUI: Commands
-    QCheckBox * EnableAmps;
-    QCheckBox * qcbEnableAll;
-    QPushButton * qpbResetCurrentAll;
-    QPushButton * qpbBiasCurrentAll;
+    QCheckBox * QCBEnableAmps;
+    QCheckBox * QCBEnableAll;
+    QPushButton * QPBResetCurrentAll;
+    QPushButton * QPBBiasCurrentAll;
 
     // GUI: Feedbacks
-    QPushButton* qpbResetEncAll;
-    QPushButton* qpbBiasEncAll;
-    QDoubleSpinBox* qdsbWatchdogPeriod;
-    QCheckBox* qcbEnableDirectControl;
+    QPushButton * QPBResetEncAll;
+    QPushButton * QPBBiasEncAll;
+    QDoubleSpinBox * QSBWatchdogPeriod;
+    QCheckBox * QCBEnableDirectControl;
 
-    vctQtWidgetDynamicVectorBoolWrite * CurrentEnableEachWidget;
-    vctQtWidgetDynamicVectorBoolRead * AmpStatusEachWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * CurrentSpinBoxWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * CurrentSliderWidget;
-    vctQtWidgetDynamicVectorDoubleRead * JointPositionWidget;
-    vctQtWidgetDynamicVectorDoubleRead * ActuatorPositionWidget;
-    vctQtWidgetDynamicVectorDoubleRead * ActuatorVelocityWidget;
-    vctQtWidgetDynamicVectorDoubleRead * PotVoltsWidget;
-    vctQtWidgetDynamicVectorDoubleRead * PotPositionWidget;
-    vctQtWidgetDynamicVectorDoubleRead * CurrentFeedbackWidget;
+    vctQtWidgetDynamicVectorBoolWrite * QVWCurrentEnableEachWidget;
+    vctQtWidgetDynamicVectorBoolRead * QVRAmpStatusEachWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * QVWCurrentSpinBoxWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * QVWCurrentSliderWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRJointPositionWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorPositionWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorVelocityWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRPotVoltsWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRPotPositionWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRCurrentFeedbackWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRAmpTemperature;
 
-    QPushButton* ampStatusButton;
-    QPushButton* powerStatusButton;
-    QPushButton* safetyRelayButton;
-    QPushButton* watchdogButton;
+    QPushButton * QPBAmpStatusButton;
+    QPushButton * QPBPowerStatusButton;
+    QPushButton * QPBSafetyRelayButton;
+    QPushButton * QPBWatchdogButton;
 
     void PowerStatusEventHandler(const bool & status);
 
     // signal and slot used by PowerStatusEventHandler
 signals:
-    void signal_PowerStatus(bool status);
+    void SignalPowerStatus(bool status);
 protected slots:
-    void slot_PowerStatus(bool status);
+    void SlotPowerStatus(bool status);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtWidget);

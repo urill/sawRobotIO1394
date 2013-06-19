@@ -54,27 +54,25 @@ mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const mtsComponentConstructorName
 
 void mtsRobotIO1394QtWidget::Init(void)
 {
-    curFBState = false;
-    curFBPGain = 1.0;
-    curFBOffset = 30.0;
-    tmpStatic = 0;
-    lastEnableState.SetSize(NumberOfActuators);
-    lastEnableState.SetAll(false);
+    DummyValueWhenNotConnected = 0;
+    LastEnableState.SetSize(NumberOfActuators);
+    LastEnableState.SetAll(false);
 
-    unitFactor.SetSize(NumberOfActuators);
-    jointPos.SetSize(NumberOfActuators);
-    actuatorPos.SetSize(NumberOfActuators);
-    actuatorPosGet.Position().SetSize(NumberOfActuators);
-    vel.SetSize(NumberOfActuators);
-    potVolt.SetSize(NumberOfActuators);
-    potPosSI.SetSize(NumberOfActuators);
-    motorFeedbackCurrent.SetSize(NumberOfActuators);
-    motorFeedbackCurrent.Zeros();
-    motorControlCurrent.SetSize(NumberOfActuators);
-    motorControlCurrent.Zeros();
-    ampEnable.SetSize(NumberOfActuators);
+    UnitFactor.SetSize(NumberOfActuators);
+    JointPosition.SetSize(NumberOfActuators);
+    ActuatorPosition.SetSize(NumberOfActuators);
+    ActuatorPositionGet.Position().SetSize(NumberOfActuators);
+    ActuatorVelocity.SetSize(NumberOfActuators);
+    PotentiometersVolts.SetSize(NumberOfActuators);
+    PotentiometersPosition.SetSize(NumberOfActuators);
+    MotorFeedbackCurrent.SetSize(NumberOfActuators);
+    MotorFeedbackCurrent.Zeros();
+    MotorControlCurrent.SetSize(NumberOfActuators);
+    MotorControlCurrent.Zeros();
+    AmpEnable.SetSize(NumberOfActuators);
+    AmpTemperature.SetSize(NumberOfActuators / 2);
 
-    startTime = osaGetTime();
+    StartTime = osaGetTime();
 
     setupMenu();
     SetupCisstInterface();
@@ -99,8 +97,8 @@ void mtsRobotIO1394QtWidget::Startup(void)
     } else {
         // convert to mA
         motorCurrentMax.Multiply(1000.0);
-        CurrentSpinBoxWidget->SetRange(-motorCurrentMax, motorCurrentMax);
-        CurrentSliderWidget->SetRange(-motorCurrentMax, motorCurrentMax);
+        QVWCurrentSpinBoxWidget->SetRange(-motorCurrentMax, motorCurrentMax);
+        QVWCurrentSliderWidget->SetRange(-motorCurrentMax, motorCurrentMax);
     }
 
     prmJointTypeVec jointType;
@@ -108,19 +106,18 @@ void mtsRobotIO1394QtWidget::Startup(void)
     if (!result) {
         CMN_LOG_CLASS_INIT_ERROR << "Startup: Robot interface isn't connected properly, unable to get joint type.  Function call returned: "
                                  << result << std::endl;
-        unitFactor.SetAll(0.0);
+        UnitFactor.SetAll(0.0);
     } else {
         // set unitFactor;
-        for(size_t i = 0; i < this->NumberOfActuators; i++){
+        for (size_t i = 0; i < this->NumberOfActuators; i++ ){
             if (jointType[i] == PRM_REVOLUTE)
-                unitFactor[i] = cmn180_PI;
+                UnitFactor[i] = cmn180_PI;
             else if (jointType[i] == PRM_PRISMATIC)
-                unitFactor[i] = cmn_mm;
+                UnitFactor[i] = cmn_mm;
             else
                 cmnThrow("mtsRobotIO1394QtWidget: Unknown joint type");
         }
     }
-
     show();
 }
 
@@ -134,22 +131,23 @@ void mtsRobotIO1394QtWidget::Cleanup()
 //---------- Protected --------------------------
 void mtsRobotIO1394QtWidget::closeEvent(QCloseEvent * event)
 {
-    int ret = QMessageBox::warning(this, tr("ExitBox"),
-                                   tr("Please power off the robot before quit. \n"
-                                      "Continue?"),
-                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-    if(ret == QMessageBox::Yes) {
+    int answer = QMessageBox::warning(this, tr("ExitBox"),
+                                      tr("Do you want to turn off power on robot controller and quit application?"),
+                                      QMessageBox::Yes | QMessageBox::Cancel);
+    if (answer == QMessageBox::Yes) {
+        SlotResetCurrentAll();
         Robot.DisablePower();
+        Actuators.DisableBoardsPower();
         event->accept();
         QCoreApplication::quit();
-    }else {
+    } else {
         event->ignore();
     }
 }
 
 
 //----------- Private Slot ------------------------------
-void mtsRobotIO1394QtWidget::slot_qcbEnableAmps(bool toggle)
+void mtsRobotIO1394QtWidget::SlotEnableAmps(bool toggle)
 {
     // send to controller first
     if (toggle) {
@@ -159,15 +157,16 @@ void mtsRobotIO1394QtWidget::slot_qcbEnableAmps(bool toggle)
     }
     // update GUI, make sure no signal is generated
     if (!toggle) {
-        qcbEnableAll->blockSignals(true); {
-            qcbEnableAll->setChecked(false);
-        } qcbEnableAll->blockSignals(false);
+        QCBEnableAll->blockSignals(true);
+        {
+            QCBEnableAll->setChecked(false);
+        } QCBEnableAll->blockSignals(false);
     }
     // set all current to 0
-    slot_qpbResetCurrentAll();
+    SlotResetCurrentAll();
 }
 
-void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
+void mtsRobotIO1394QtWidget::SlotEnableAll(bool toggle)
 {
     // send to controller first
     if (toggle) {
@@ -176,39 +175,40 @@ void mtsRobotIO1394QtWidget::slot_qcbEnableAll(bool toggle)
         Robot.DisablePower();
     }
     // update GUI, make sure no signal is generated
-    EnableAmps->blockSignals(true); {
-        EnableAmps->setChecked(toggle);
-    } EnableAmps->blockSignals(false);
+    QCBEnableAmps->blockSignals(true);
+    {
+        QCBEnableAmps->setChecked(toggle);
+    } QCBEnableAmps->blockSignals(false);
     vctBoolVec allEnable(NumberOfActuators, toggle);
-    CurrentEnableEachWidget->SetValue(allEnable);
+    QVWCurrentEnableEachWidget->SetValue(allEnable);
     // set all current to 0
-    slot_qpbResetCurrentAll();
+    SlotResetCurrentAll();
 }
 
-void mtsRobotIO1394QtWidget::slot_qcbEnableDirectControl(bool toggle)
+void mtsRobotIO1394QtWidget::SlotEnableDirectControl(bool toggle)
 {
     DirectControl = toggle;
     // if checked in DIRECT_CONTROL mode
-    CurrentSpinBoxWidget->setEnabled(toggle);
-    CurrentSliderWidget->setEnabled(toggle);
-    qpbResetCurrentAll->setEnabled(toggle);
-    qpbBiasCurrentAll->setEnabled(toggle);
+    QVWCurrentSpinBoxWidget->setEnabled(toggle);
+    QVWCurrentSliderWidget->setEnabled(toggle);
+    QPBResetCurrentAll->setEnabled(toggle);
+    QPBBiasCurrentAll->setEnabled(toggle);
     // set all current to 0
-    slot_qpbResetCurrentAll();
+    SlotResetCurrentAll();
 }
 
-void mtsRobotIO1394QtWidget::slot_qpbResetCurrentAll(void)
+void mtsRobotIO1394QtWidget::SlotResetCurrentAll(void)
 {
     // send to controller first
     vctDoubleVec cmdCurA(NumberOfActuators);
     cmdCurA.SetAll(0.0);
     Robot.SetMotorCurrent(cmdCurA);
     // update GUI
-    CurrentSpinBoxWidget->SetValue(cmdCurA);
-    CurrentSliderWidget->SetValue(cmdCurA);
+    QVWCurrentSpinBoxWidget->SetValue(cmdCurA);
+    QVWCurrentSliderWidget->SetValue(cmdCurA);
 }
 
-void mtsRobotIO1394QtWidget::slot_qpbBiasCurrentAll(void)
+void mtsRobotIO1394QtWidget::SlotBiasCurrentAll(void)
 {
     mtsExecutionResult result = Robot.BiasCurrent(mtsInt(1000)); // use a 1000 samples to average current feedback
     if (!result.IsOK()) {
@@ -216,38 +216,38 @@ void mtsRobotIO1394QtWidget::slot_qpbBiasCurrentAll(void)
     }
 }
 
-void mtsRobotIO1394QtWidget::slot_qcbEnable(void)
+void mtsRobotIO1394QtWidget::SlotEnable(void)
 {
-    ampEnable.SetSize(NumberOfActuators);
-    CurrentEnableEachWidget->GetValue(ampEnable);
-    Actuators.SetAmpEnable(ampEnable);
+    AmpEnable.SetSize(NumberOfActuators);
+    QVWCurrentEnableEachWidget->GetValue(AmpEnable);
+    Actuators.SetAmpEnable(AmpEnable);
 }
 
-void mtsRobotIO1394QtWidget::slot_qdsbMotorCurrent_valueChanged()
+void mtsRobotIO1394QtWidget::SlotMotorCurrentValueChanged()
 {
     vctDoubleVec cmdCurmA(NumberOfActuators);
     vctDoubleVec cmdCurA(NumberOfActuators);
     // get value from GUI
-    CurrentSpinBoxWidget->GetValue(cmdCurmA);
-    CurrentSliderWidget->SetValue(cmdCurmA);
+    QVWCurrentSpinBoxWidget->GetValue(cmdCurmA);
+    QVWCurrentSliderWidget->SetValue(cmdCurmA);
     // convert to amps and apply
     cmdCurA = cmdCurmA.Divide(1000.0);
     Robot.SetMotorCurrent(cmdCurA);
 }
 
-void mtsRobotIO1394QtWidget::slot_qsliderMotorCurrent_valueChanged()
+void mtsRobotIO1394QtWidget::SlotSliderMotorCurrentValueChanged()
 {
     vctDoubleVec cmdCurmA(NumberOfActuators);
     vctDoubleVec cmdCurA(NumberOfActuators);
     // get value from GUI
-    CurrentSliderWidget->GetValue(cmdCurmA);
-    CurrentSpinBoxWidget->SetValue(cmdCurmA);
+    QVWCurrentSliderWidget->GetValue(cmdCurmA);
+    QVWCurrentSpinBoxWidget->SetValue(cmdCurmA);
     // convert to amps and apply
     cmdCurA = cmdCurmA.Divide(1000.0);
     Robot.SetMotorCurrent(cmdCurA);
 }
 
-void mtsRobotIO1394QtWidget::slot_qpbResetEncAll()
+void mtsRobotIO1394QtWidget::SlotResetEncodersAll()
 {
     vctDoubleVec newEncoderValues(NumberOfActuators);
     newEncoderValues.SetAll(0.0);
@@ -257,7 +257,7 @@ void mtsRobotIO1394QtWidget::slot_qpbResetEncAll()
      }
 }
 
-void mtsRobotIO1394QtWidget::slot_qpbBiasEncAll()
+void mtsRobotIO1394QtWidget::SlotBiasEncodersAll()
 {
     mtsExecutionResult result = Robot.BiasEncoder();
     if (!result.IsOK()) {
@@ -265,7 +265,7 @@ void mtsRobotIO1394QtWidget::slot_qpbBiasEncAll()
     }
 }
 
-void mtsRobotIO1394QtWidget::slot_qdsbWatchdogPeriod(double period_ms)
+void mtsRobotIO1394QtWidget::SlotWatchdogPeriod(double period_ms)
 {
     if (period_ms == 0.0) {
         QMessageBox message;
@@ -280,74 +280,60 @@ void mtsRobotIO1394QtWidget::slot_qdsbWatchdogPeriod(double period_ms)
     }
 }
 
-void mtsRobotIO1394QtWidget::slot_qcbCurFBToggle(bool state)
-{
-    curFBState = state;
-}
-
-void mtsRobotIO1394QtWidget::slot_qdsbCurFBGain(double gain)
-{
-    curFBPGain = gain;
-}
-
-void mtsRobotIO1394QtWidget::slot_qdsbCurFBOffset(double offset)
-{
-    curFBOffset = offset;
-}
-
 void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
 {
     bool flag;
     Robot.IsValid(flag);
     if (flag) {
         Robot.GetPeriodStatistics(IntervalStatistics);
-        Robot.GetPosition(jointPos); // vct
-        jointPos.ElementwiseMultiply(unitFactor); // to degrees or mm
-        Actuators.GetPositionActuator(actuatorPosGet); // prm
-        actuatorPos.Assign(actuatorPosGet.Position()); // vct
-        actuatorPos.ElementwiseMultiply(unitFactor); // to degrees or mm
-        Robot.GetVelocity(vel);
-        Robot.GetAnalogInputVolts(potVolt);
-        Robot.GetAnalogInputPosSI(potPosSI);
-        potPosSI.Multiply((cmn180_PI));
-        Robot.GetMotorCurrent(motorFeedbackCurrent);
-        Actuators.GetAmpEnable(ampEnable);
-        Actuators.GetAmpStatus(ampStatus);
-        Robot.GetPowerStatus(powerStatus);
-        Robot.GetSafetyRelay(safetyRelay);
-        Robot.GetWatchdogTimeout(watchdogTimeout);
+        Robot.GetPosition(JointPosition); // vct
+        JointPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
+        Actuators.GetPositionActuator(ActuatorPositionGet); // prm
+        ActuatorPosition.Assign(ActuatorPositionGet.Position()); // vct
+        ActuatorPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
+        Robot.GetVelocity(ActuatorVelocity);
+        Robot.GetAnalogInputVolts(PotentiometersVolts);
+        Robot.GetAnalogInputPosSI(PotentiometersPosition);
+        PotentiometersPosition.Multiply((cmn180_PI));
+        Robot.GetMotorCurrent(MotorFeedbackCurrent);
+        Actuators.GetAmpEnable(AmpEnable);
+        Actuators.GetAmpStatus(AmpStatus);
+        Robot.GetPowerStatus(PowerStatus);
+        Robot.GetSafetyRelay(SafetyRelay);
+        Robot.GetWatchdogTimeout(WatchdogTimeout);
+        Robot.GetAmpTemperature(AmpTemperature);
     } else {
-        jointPos.SetAll(tmpStatic);
-        actuatorPos.SetAll(tmpStatic);
-        vel.SetAll(tmpStatic);
-        potVolt.SetAll(tmpStatic);
-        potPosSI.SetAll(tmpStatic);
-        motorFeedbackCurrent.SetAll(tmpStatic);
+        JointPosition.SetAll(DummyValueWhenNotConnected);
+        ActuatorPosition.SetAll(DummyValueWhenNotConnected);
+        ActuatorVelocity.SetAll(DummyValueWhenNotConnected);
+        PotentiometersVolts.SetAll(DummyValueWhenNotConnected);
+        PotentiometersPosition.SetAll(DummyValueWhenNotConnected);
+        MotorFeedbackCurrent.SetAll(DummyValueWhenNotConnected);
+        AmpTemperature.SetAll(DummyValueWhenNotConnected);
     }
 
-    CMN_LOG_CLASS_RUN_VERBOSE << (osaGetTime() - startTime) << std::endl;
+    CMN_LOG_CLASS_RUN_VERBOSE << (osaGetTime() - StartTime) << std::endl;
 
-    tmpStatic += 0.1;
+    DummyValueWhenNotConnected += 0.1;
 
-    JointPositionWidget->SetValue(jointPos);
-    ActuatorPositionWidget->SetValue(actuatorPos);
-    ActuatorVelocityWidget->SetValue(vel);
-    PotVoltsWidget->SetValue(potVolt);
-    PotPositionWidget->SetValue(potPosSI);
-    CurrentFeedbackWidget->SetValue(motorFeedbackCurrent * 1000.0);
+    QVRJointPositionWidget->SetValue(JointPosition);
+    QVRActuatorPositionWidget->SetValue(ActuatorPosition);
+    QVRActuatorVelocityWidget->SetValue(ActuatorVelocity);
+    QVRPotVoltsWidget->SetValue(PotentiometersVolts);
+    QVRPotPositionWidget->SetValue(PotentiometersPosition);
+    QVRCurrentFeedbackWidget->SetValue(MotorFeedbackCurrent * 1000.0);
+    QVRAmpTemperature->SetValue(AmpTemperature);
 
     UpdateRobotInfo();
 
-    // if (this->DirectControl) {
-        Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
-    // }
+    Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
 }
 
 ////------------ Private Methods ----------------
 
 void mtsRobotIO1394QtWidget::setupMenu()
 {
-    QMenu* fileMenu = this->menuBar()->addMenu("&File");
+    QMenu * fileMenu = this->menuBar()->addMenu("&File");
 
     fileMenu->addAction("E&xit", this, SLOT(close()),
                         QKeySequence(Qt::ALT + Qt::Key_F4));
@@ -377,6 +363,7 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
         robotInterface->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
         robotInterface->AddFunction("GetWatchdogTimeout", Robot.GetWatchdogTimeout);
+        robotInterface->AddFunction("GetAmpTemperature", Robot.GetAmpTemperature);
 
         robotInterface->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
         robotInterface->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
@@ -400,17 +387,6 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         actuatorInterface->AddFunction("GetAmpEnable", Actuators.GetAmpEnable);
         actuatorInterface->AddFunction("GetAmpStatus", Actuators.GetAmpStatus);
     }
-
-#if HAS_GC
-    mtsInterfaceRequired * req;
-    req = AddInterfaceRequired("GC");
-    if (req) {
-        req->AddFunction("Enable", GC.Enable);
-        req->AddFunction("AdjustEncoders", GC.AdjustEncoders);
-    }
-#endif
-
-
 }
 
 
@@ -427,15 +403,15 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     powerTitle->setFont(font);
     powerTitle->setAlignment(Qt::AlignCenter);
     powerLayout->addWidget(powerTitle);
-    qcbEnableAll = new QCheckBox("Enable all");
-    powerLayout->addWidget(qcbEnableAll);
-    EnableAmps = new QCheckBox("Enable amps only");
-    powerLayout->addWidget(EnableAmps);
+    QCBEnableAll = new QCheckBox("Enable all");
+    powerLayout->addWidget(QCBEnableAll);
+    QCBEnableAmps = new QCheckBox("Enable boards");
+    powerLayout->addWidget(QCBEnableAmps);
     powerLayout->addStretch(1);
-    ampStatusButton = new QPushButton("Amps status: ON");
-    powerLayout->addWidget(ampStatusButton);
-    powerStatusButton = new QPushButton("Power status ON");
-    powerLayout->addWidget(powerStatusButton);
+    QPBAmpStatusButton = new QPushButton("Actutators ON");
+    powerLayout->addWidget(QPBAmpStatusButton);
+    QPBPowerStatusButton = new QPushButton("Boards ON");
+    powerLayout->addWidget(QPBPowerStatusButton);
     powerFrame->setLayout(powerLayout);
     powerFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
@@ -449,20 +425,20 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     QHBoxLayout * watchdogSetLayout = new QHBoxLayout;
     {
         QLabel * wdogLabel = new QLabel("Wdog period (ms)");
-        qdsbWatchdogPeriod = new QDoubleSpinBox;
-        qdsbWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
-        qdsbWatchdogPeriod->setMinimum(0.0);
-        qdsbWatchdogPeriod->setSingleStep(0.05);
-        qdsbWatchdogPeriod->setValue(cmnInternalTo_ms(WatchdogPeriodInSeconds));
+        QSBWatchdogPeriod = new QDoubleSpinBox;
+        QSBWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
+        QSBWatchdogPeriod->setMinimum(0.0);
+        QSBWatchdogPeriod->setSingleStep(0.05);
+        QSBWatchdogPeriod->setValue(cmnInternalTo_ms(WatchdogPeriodInSeconds));
         watchdogSetLayout->addWidget(wdogLabel);
-        watchdogSetLayout->addWidget(qdsbWatchdogPeriod);
+        watchdogSetLayout->addWidget(QSBWatchdogPeriod);
     }
     watchdogLayout->addLayout(watchdogSetLayout);
     watchdogLayout->addStretch(1);
-    safetyRelayButton = new QPushButton("Safety relay: ON");
-    watchdogLayout->addWidget(safetyRelayButton);
-    watchdogButton = new QPushButton("Watchdog: OFF");
-    watchdogLayout->addWidget(watchdogButton);
+    QPBSafetyRelayButton = new QPushButton("Safety relay ON");
+    watchdogLayout->addWidget(QPBSafetyRelayButton);
+    QPBWatchdogButton = new QPushButton("Watchdog OFF");
+    watchdogLayout->addWidget(QPBWatchdogButton);
     watchdogFrame->setLayout(watchdogLayout);
     watchdogFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
@@ -473,10 +449,10 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     encoderTitle->setFont(font);
     encoderTitle->setAlignment(Qt::AlignCenter);
     encoderLayout->addWidget(encoderTitle);
-    qpbResetEncAll = new QPushButton("Reset all");
-    encoderLayout->addWidget(qpbResetEncAll);
-    qpbBiasEncAll = new QPushButton("Bias from potentiometers");
-    encoderLayout->addWidget(qpbBiasEncAll);
+    QPBResetEncAll = new QPushButton("Reset all");
+    encoderLayout->addWidget(QPBResetEncAll);
+    QPBBiasEncAll = new QPushButton("Bias from potentiometers");
+    encoderLayout->addWidget(QPBBiasEncAll);
     encoderLayout->addStretch(1);
     encoderFrame->setLayout(encoderLayout);
     encoderFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -488,10 +464,10 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     currentTitle->setFont(font);
     currentTitle->setAlignment(Qt::AlignCenter);
     currentLayout->addWidget(currentTitle);
-    qcbEnableDirectControl = new QCheckBox("Direct control");
-    currentLayout->addWidget(qcbEnableDirectControl);
-    qpbBiasCurrentAll = new QPushButton("Bias from feedback");
-    currentLayout->addWidget(qpbBiasCurrentAll);
+    QCBEnableDirectControl = new QCheckBox("Direct control");
+    currentLayout->addWidget(QCBEnableDirectControl);
+    QPBBiasCurrentAll = new QPushButton("Bias from feedback");
+    currentLayout->addWidget(QPBBiasCurrentAll);
     currentLayout->addStretch(1);
     currentFrame->setLayout(currentLayout);
     currentFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -512,87 +488,69 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     vctDoubleVec defaultCurrent(NumberOfActuators, 0.0);
 
     gridLayout->addWidget(new QLabel("Axis power requested"), row, 0);
-    CurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
-    CurrentEnableEachWidget->SetValue(defaultEnable);
-    gridLayout->addWidget(CurrentEnableEachWidget, row, 1);
+    QVWCurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
+    QVWCurrentEnableEachWidget->SetValue(defaultEnable);
+    gridLayout->addWidget(QVWCurrentEnableEachWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Axis power status"), row, 0);
-    AmpStatusEachWidget = new vctQtWidgetDynamicVectorBoolRead();
-    AmpStatusEachWidget->SetValue(defaultEnable);
-    gridLayout->addWidget(AmpStatusEachWidget, row, 1);
+    QVRAmpStatusEachWidget = new vctQtWidgetDynamicVectorBoolRead();
+    QVRAmpStatusEachWidget->SetValue(defaultEnable);
+    gridLayout->addWidget(QVRAmpStatusEachWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Desired current (mA)"), row, 0);
-    CurrentSpinBoxWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SPINBOX_WIDGET);
-    CurrentSpinBoxWidget->SetValue(defaultCurrent);
-    gridLayout->addWidget(CurrentSpinBoxWidget, row, 1);
+    QVWCurrentSpinBoxWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SPINBOX_WIDGET);
+    QVWCurrentSpinBoxWidget->SetValue(defaultCurrent);
+    gridLayout->addWidget(QVWCurrentSpinBoxWidget, row, 1);
     row++;
 
-    qpbResetCurrentAll = new QPushButton("Reset current");
-    gridLayout->addWidget(qpbResetCurrentAll, row, 0);
-    CurrentSliderWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SLIDER_WIDGET);
-    CurrentSliderWidget->SetValue(defaultCurrent);
-    gridLayout->addWidget(CurrentSliderWidget, row, 1);
+    QPBResetCurrentAll = new QPushButton("Reset current");
+    gridLayout->addWidget(QPBResetCurrentAll, row, 0);
+    QVWCurrentSliderWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SLIDER_WIDGET);
+    QVWCurrentSliderWidget->SetValue(defaultCurrent);
+    gridLayout->addWidget(QVWCurrentSliderWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Joint positions (deg)"), row, 0);
-    JointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(JointPositionWidget, row, 1);
+    QVRJointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(QVRJointPositionWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Actuator positions (deg)"), row, 0);
-    ActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(ActuatorPositionWidget, row, 1);
+    QVRActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(QVRActuatorPositionWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Velocities (deg/s)"), row, 0);
-    ActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(ActuatorVelocityWidget, row, 1);
+    QVRActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(QVRActuatorVelocityWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Analog inputs (V)"), row, 0);
-    PotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(PotVoltsWidget, row, 1);
+    QVRPotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(QVRPotVoltsWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Potentiometers (deg)"), row, 0);
-    PotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(PotPositionWidget, row, 1);
+    QVRPotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(QVRPotPositionWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Current feedback (mA)"), row, 0);
-    CurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(CurrentFeedbackWidget, row, 1);
+    QVRCurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(QVRCurrentFeedbackWidget, row, 1);
     row++;
 
-
-#if HAS_GC
-    //----------------- GC Controller -----------
-    QCheckBox* qcbGCEnable = new QCheckBox("Enable GC");
-    QPushButton* qpbAdjustEncoder = new QPushButton("Adjust Encoder");
-    quitButton = new QPushButton("Close");
-
-    QHBoxLayout* gcLayout = new QHBoxLayout;
-    gcLayout->addWidget(qcbGCEnable);
-    gcLayout->addWidget(qpbAdjustEncoder);
-    gcLayout->addStretch();
-    gcLayout->addWidget(quitButton);
-    QGroupBox* gcGroupBox = new QGroupBox("GC Controller");
-    gcGroupBox->setLayout(gcLayout);
-
-    connect(qcbGCEnable, SIGNAL(clicked(bool)), this, SLOT(slot_qcbGCEnable(bool)));
-    connect(qpbAdjustEncoder, SIGNAL(clicked()), this, SLOT(slot_qpbAdjustEncoder()));
-#endif
+    gridLayout->addWidget(new QLabel("Amp temperature (C)"), row, 0);
+    QVRAmpTemperature = new vctQtWidgetDynamicVectorDoubleRead();
+    gridLayout->addWidget(QVRAmpTemperature, row, 1);
+    row++;
 
     // main layout
     QVBoxLayout * mainLayout = new QVBoxLayout;
     mainLayout->addLayout(commandLayout);
     mainLayout->addLayout(gridLayout);
-
-#if HAS_GC
-    mainLayout->addWidget(gcGroupBox);
-#endif
 
     QFrame * mainFrame = new QFrame;
     mainFrame->setLayout(mainLayout);
@@ -602,68 +560,68 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     resize(sizeHint());
 
     // connect signals & slots
-    connect(EnableAmps, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableAmps(bool)));
-    connect(qcbEnableAll, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableAll(bool)));
-    connect(qcbEnableDirectControl, SIGNAL(toggled(bool)), this, SLOT(slot_qcbEnableDirectControl(bool)));
-    qcbEnableDirectControl->setChecked(DirectControl); // trigger right after this connected
-    connect(qpbResetCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetCurrentAll()));
-    connect(qpbBiasCurrentAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasCurrentAll()));
+    connect(QCBEnableAmps, SIGNAL(toggled(bool)), this, SLOT(SlotEnableAmps(bool)));
+    connect(QCBEnableAll, SIGNAL(toggled(bool)), this, SLOT(SlotEnableAll(bool)));
+    connect(QCBEnableDirectControl, SIGNAL(toggled(bool)), this, SLOT(SlotEnableDirectControl(bool)));
+    QCBEnableDirectControl->setChecked(DirectControl); // trigger right after this connected
+    connect(QPBResetCurrentAll, SIGNAL(clicked()), this, SLOT(SlotResetCurrentAll()));
+    connect(QPBBiasCurrentAll, SIGNAL(clicked()), this, SLOT(SlotBiasCurrentAll()));
 
-    connect(qpbResetEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbResetEncAll()));
-    connect(qpbBiasEncAll, SIGNAL(clicked()), this, SLOT(slot_qpbBiasEncAll()));
-    connect(qdsbWatchdogPeriod, SIGNAL(valueChanged(double)),
-            this, SLOT(slot_qdsbWatchdogPeriod(double)));
-    connect(CurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(slot_qcbEnable()));
-    connect(CurrentSpinBoxWidget, SIGNAL(valueChanged()), this, SLOT(slot_qdsbMotorCurrent_valueChanged()));
-    connect(CurrentSliderWidget, SIGNAL(valueChanged()), this, SLOT(slot_qsliderMotorCurrent_valueChanged()));
+    connect(QPBResetEncAll, SIGNAL(clicked()), this, SLOT(SlotResetEncodersAll()));
+    connect(QPBBiasEncAll, SIGNAL(clicked()), this, SLOT(SlotBiasEncodersAll()));
+    connect(QSBWatchdogPeriod, SIGNAL(valueChanged(double)),
+            this, SLOT(SlotWatchdogPeriod(double)));
+    connect(QVWCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotEnable()));
+    connect(QVWCurrentSpinBoxWidget, SIGNAL(valueChanged()), this, SLOT(SlotMotorCurrentValueChanged()));
+    connect(QVWCurrentSliderWidget, SIGNAL(valueChanged()), this, SLOT(SlotSliderMotorCurrentValueChanged()));
 
     // connect cisstMultiTask events
-    connect(this, SIGNAL(signal_PowerStatus(bool)), this, SLOT(slot_PowerStatus(bool)));
+    connect(this, SIGNAL(SignalPowerStatus(bool)), this, SLOT(SlotPowerStatus(bool)));
 
     // set initial value
-    EnableAmps->setChecked(false);
-    qcbEnableAll->setChecked(false);
+    QCBEnableAmps->setChecked(false);
+    QCBEnableAll->setChecked(false);
 }
 
 
 void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
 {
     // amplifier status
-    bool ampStatusGood = ampStatus.All();
-    AmpStatusEachWidget->SetValue(ampStatus);
+    bool ampStatusGood = AmpStatus.All();
+    QVRAmpStatusEachWidget->SetValue(AmpStatus);
     if (ampStatusGood) {
-        ampStatusButton->setText("Amps Status: ON");
-        ampStatusButton->setStyleSheet("QPushButton { background-color: green }");
+        QPBAmpStatusButton->setText("Actuators ON");
+        QPBAmpStatusButton->setStyleSheet("QPushButton { background-color: green }");
     } else {
-        ampStatusButton->setText("Amps Status: OFF");
-        ampStatusButton->setStyleSheet("QPushButton { background-color: red }");
+        QPBAmpStatusButton->setText("Actuators OFF");
+        QPBAmpStatusButton->setStyleSheet("QPushButton { background-color: red }");
     }
 
     // power status
-    if (powerStatus) {
-        powerStatusButton->setText("Power Enable: ON");
-        powerStatusButton->setStyleSheet("QPushButton { background-color: green }");
+    if (PowerStatus) {
+        QPBPowerStatusButton->setText("Boards ON");
+        QPBPowerStatusButton->setStyleSheet("QPushButton { background-color: green }");
     } else {
-        powerStatusButton->setText("Power Enable: OFF");
-        powerStatusButton->setStyleSheet("QPushButton { background-color: red }");
+        QPBPowerStatusButton->setText("Boards OFF");
+        QPBPowerStatusButton->setStyleSheet("QPushButton { background-color: red }");
     }
 
     // safety Relay
-    if (safetyRelay) {
-        safetyRelayButton->setText("Safety Relay: ON");
-        safetyRelayButton->setStyleSheet("QPushButton { background-color: green }");
+    if (SafetyRelay) {
+        QPBSafetyRelayButton->setText("Safety Relay ON");
+        QPBSafetyRelayButton->setStyleSheet("QPushButton { background-color: green }");
     } else {
-        safetyRelayButton->setText("Safety Relay: OFF");
-        safetyRelayButton->setStyleSheet("QPushButton { background-color: red }");
+        QPBSafetyRelayButton->setText("Safety Relay OFF");
+        QPBSafetyRelayButton->setStyleSheet("QPushButton { background-color: red }");
     }
 
     // watchdog timeout
-    if (watchdogTimeout) {
-        watchdogButton->setText("Watchdog Timeout: TRUE");
-        watchdogButton->setStyleSheet("QPushButton { background-color: red }");
+    if (WatchdogTimeout) {
+        QPBWatchdogButton->setText("Watchdog Timeout TRUE");
+        QPBWatchdogButton->setStyleSheet("QPushButton { background-color: red }");
     } else {
-        watchdogButton->setText("Watchdog Timeout: FALSE");
-        watchdogButton->setStyleSheet("QPushButton { background-color: green }");
+        QPBWatchdogButton->setText("Watchdog Timeout FALSE");
+        QPBWatchdogButton->setStyleSheet("QPushButton { background-color: green }");
     }
 }
 
@@ -673,13 +631,13 @@ void mtsRobotIO1394QtWidget::PowerStatusEventHandler(const bool & status)
     if (status == false) {
         // event handler is running in caller's thread since "this" is an mtsComponent
         // we should emit a signal and Qt should handle this in a thread safe way
-        emit signal_PowerStatus(status);
+        emit SignalPowerStatus(status);
     }
 }
 
-void mtsRobotIO1394QtWidget::slot_PowerStatus(bool status)
+void mtsRobotIO1394QtWidget::SlotPowerStatus(bool status)
 {
     if (status == false) {
-        qcbEnableAll->setChecked(false);
+        QCBEnableAll->setChecked(false);
     }
 }

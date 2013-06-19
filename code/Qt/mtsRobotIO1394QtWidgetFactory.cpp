@@ -28,42 +28,43 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstOSAbstraction/osaSleep.h>
 #include <cisstMultiTask/mtsInterfaceRequired.h>
 
-#include "sawRobotIO1394/mtsRobotIO1394QtManager.h"
+#include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 
-CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtManager, mtsComponent, std::string);
+CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtWidgetFactory, mtsComponent, std::string);
 
 
-mtsRobotIO1394QtManager::mtsRobotIO1394QtManager(const std::string &name):
+mtsRobotIO1394QtWidgetFactory::mtsRobotIO1394QtWidgetFactory(const std::string &name):
     mtsComponent(name),
     BuildWidgetsCalled(false)
 {
     // This function will make the required interface to be connected with
     // the provided interface of mtsRobotIO1394 named Configure with predefined function names.
-    RobotConfigureInterface = AddInterfaceRequired("Configuration_Qt");
+    RobotConfigureInterface = AddInterfaceRequired("RobotConfiguration");
     if (RobotConfigureInterface) {
-        RobotConfigureInterface->AddFunction("GetRobotNames",Configuration.GetRobotNames);
-        RobotConfigureInterface->AddFunction("GetNumActuators",Configuration.GetNumbersOfActuators);
+        RobotConfigureInterface->AddFunction("GetRobotNames", Configuration.GetRobotNames);
+        RobotConfigureInterface->AddFunction("GetNumActuators", Configuration.GetNumbersOfActuators);
 
-        RobotConfigureInterface->AddFunction("GetNumRobots",Configuration.GetNumberOfRobots);
-        RobotConfigureInterface->AddFunction("GetNumDigitalInputs",Configuration.GetNumberOfDigitalInputs);
+        RobotConfigureInterface->AddFunction("GetNumRobots", Configuration.GetNumberOfRobots);
+        RobotConfigureInterface->AddFunction("GetNumDigitalInputs", Configuration.GetNumberOfDigitalInputs);
 
-        RobotConfigureInterface->AddFunction("GetDigitalInputNames",Configuration.GetDigitalInputNames);
-        RobotConfigureInterface->AddFunction("GetName",Configuration.GetName);
+        RobotConfigureInterface->AddFunction("GetDigitalInputNames", Configuration.GetDigitalInputNames);
+        RobotConfigureInterface->AddFunction("GetName", Configuration.GetName);
     }
 }
 
-void mtsRobotIO1394QtManager::Configure(const std::string &) {
+void mtsRobotIO1394QtWidgetFactory::Configure(const std::string &) {
     this->BuildWidgets();
 }
 
-void mtsRobotIO1394QtManager::Startup(void) {
+void mtsRobotIO1394QtWidgetFactory::Startup(void) {
         this->BuildWidgets();
 }
 
-
-void mtsRobotIO1394QtManager::BuildWidgets(void)
+void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
 {
-    if (BuildWidgetsCalled) return;
+    if (BuildWidgetsCalled) {
+        return;
+    }
     BuildWidgetsCalled = true;
 
     if (!RobotConfigureInterface->GetConnectedInterface()) {
@@ -92,7 +93,7 @@ void mtsRobotIO1394QtManager::BuildWidgets(void)
         CMN_LOG_CLASS_INIT_ERROR << "BuildWidgets: no robot found" << std::endl;
     }
 
-    mtsManagerLocal * LCM = mtsManagerLocal::GetInstance();
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     Configuration.GetRobotNames(RobotNames);
     Configuration.GetNumbersOfActuators(NumberOfActuatorsPerRobot);
@@ -104,14 +105,14 @@ void mtsRobotIO1394QtManager::BuildWidgets(void)
         newInterfaceActuatorName = tmpRobotName.append(actuatorInterfaceSuffix);
         tmpRobotName = RobotNames[i];
 
-        mtsRobotIO1394QtWidget *robotDisplay =
+        mtsRobotIO1394QtWidget * robotWidget =
                 new mtsRobotIO1394QtWidget(newComponentName, NumberOfActuatorsPerRobot[i]);
-        robotDisplay->Configure();
-        LCM->AddComponent(robotDisplay);
-        LCM->Connect(newComponentName, "Robot", NameOfRobotIO1394, tmpRobotName);
-        LCM->Connect(newComponentName, "RobotActuators", NameOfRobotIO1394, newInterfaceActuatorName);
+        robotWidget->Configure();
+        componentManager->AddComponent(robotWidget);
+        componentManager->Connect(newComponentName, "Robot", NameOfRobotIO1394, tmpRobotName);
+        componentManager->Connect(newComponentName, "RobotActuators", NameOfRobotIO1394, newInterfaceActuatorName);
 
-        robotDisplay->Create();
-        robotDisplay->Start();
+        robotWidget->Create();
+        robotWidget->Start();
     }
 }

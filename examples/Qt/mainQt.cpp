@@ -24,8 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
-#include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>
-#include <sawRobotIO1394/mtsRobotIO1394QtManager.h>
+#include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 
 int main(int argc, char ** argv)
 {
@@ -42,7 +41,7 @@ int main(int argc, char ** argv)
     int port = 0;
     std::string configFile;
     options.AddOptionOneValue("c", "config",
-                              "configuration file, can be an absolute path or relative to CISST_ROOT share",
+                              "configuration file",
                               cmnCommandLineOptions::REQUIRED, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
@@ -55,52 +54,42 @@ int main(int argc, char ** argv)
         return -1;
     }
 
-    std::string fullFileName;
-    if (cmnPath::Exists(configFile)) {
-        fullFileName = configFile;
-    } else {
-        cmnPath path;
-        path.AddRelativeToCisstShare("sawRobotIO1394");
-        fullFileName = path.Find(configFile);
-        if (fullFileName == "") {
-            return 0;
-        }
+    if (!cmnPath::Exists(configFile)) {
+        std::cerr << "Can't find file \"" << configFile << "\"" << std::endl;
+        return -1;
     }
-    std::cout << "Configuration file: " << fullFileName << std::endl
+    std::cout << "Configuration file: " << configFile << std::endl
               << "Port: " << port << std::endl;
 
-    mtsManagerLocal *LCM = mtsManagerLocal::GetInstance();
+    mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
     // Robot
-    mtsRobotIO1394 *robot = new mtsRobotIO1394("robot", 1 * cmn_ms, port);
-    mtsRobotIO1394QtManager *qtManager = new mtsRobotIO1394QtManager("qtManager");
+    mtsRobotIO1394 * robot = new mtsRobotIO1394("robot", 1 * cmn_ms, port);
+    mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
 
-    LCM->AddComponent(robot);
-    LCM->AddComponent(qtManager);
+    componentManager->AddComponent(robot);
+    componentManager->AddComponent(robotWidgetFactory);
 
-    robot->Configure(fullFileName);
+    robot->Configure(configFile);
 
-    LCM->Connect("qtManager", "Configuration_Qt", "robot", "Configuration");
-    qtManager->Configure();
+    componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "robot", "Configuration");
+    robotWidgetFactory->Configure();
 
-    //-------------- create the components ------------------
-    LCM->CreateAll();
-    LCM->WaitForStateAll(mtsComponentState::READY, 2.0 * cmn_s);
+    // create the components
+    componentManager->CreateAllAndWait(2.0 * cmn_s);
 
     // start the periodic Run
-    LCM->StartAll();
-    LCM->WaitForStateAll(mtsComponentState::ACTIVE , 2.0 * cmn_s);
+    componentManager->StartAllAndWait(2.0 * cmn_s);
 
     // run Qt app
     application.exec();
 
     // cleanup
-    LCM->KillAll();
-    LCM->WaitForStateAll(mtsComponentState::FINISHED, 2.0 * cmn_s);
-    LCM->Cleanup();
+    componentManager->KillAllAndWait(2.0 * cmn_s);
+    componentManager->Cleanup();
 
     // delete dvgc robot
-    delete qtManager;
+    delete robotWidgetFactory;
     delete robot;
 
     // stop all logs

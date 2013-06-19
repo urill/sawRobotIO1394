@@ -33,13 +33,13 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>
 
-class mtsRobotIO1394QtManager: public mtsComponent
+class mtsRobotIO1394QtWidgetFactory: public mtsComponent
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsRobotIO1394QtManager(const std::string & name);
-    inline ~mtsRobotIO1394QtManager(void) {}
+    mtsRobotIO1394QtWidgetFactory(const std::string & name);
+    inline ~mtsRobotIO1394QtWidgetFactory(void) {}
 
     void Configure(const std::string & filename = "");
     void Startup(void);
@@ -70,6 +70,6 @@ protected:
 
 };
 
-CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtManager);
+CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtWidgetFactory);
 
 #endif // _mtsRobotIO1394QtManager_h
