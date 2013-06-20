@@ -121,32 +121,27 @@ void mtsRobotIO1394QtWidget::Startup(void)
     show();
 }
 
-void mtsRobotIO1394QtWidget::Cleanup()
+void mtsRobotIO1394QtWidget::Cleanup(void)
 {
+    this->hide();
     Robot.DisablePower();
     Robot.DisableSafetyRelay();
+    Actuators.DisableBoardsPower();
 }
 
-
-//---------- Protected --------------------------
 void mtsRobotIO1394QtWidget::closeEvent(QCloseEvent * event)
 {
-    int answer = QMessageBox::warning(this, tr("ExitBox"),
-                                      tr("Do you want to turn off power on robot controller and quit application?"),
-                                      QMessageBox::Yes | QMessageBox::Cancel);
+    int answer = QMessageBox::warning(this, tr("mtsRobotIO1394QtWidget"),
+                                      tr("Do you really want to quit this application?"),
+                                      QMessageBox::No | QMessageBox::Yes);
     if (answer == QMessageBox::Yes) {
-        SlotResetCurrentAll();
-        Robot.DisablePower();
-        Actuators.DisableBoardsPower();
         event->accept();
-        QCoreApplication::quit();
+        QCoreApplication::exit();
     } else {
         event->ignore();
     }
 }
 
-
-//----------- Private Slot ------------------------------
 void mtsRobotIO1394QtWidget::SlotEnableAmps(bool toggle)
 {
     // send to controller first
@@ -160,7 +155,8 @@ void mtsRobotIO1394QtWidget::SlotEnableAmps(bool toggle)
         QCBEnableAll->blockSignals(true);
         {
             QCBEnableAll->setChecked(false);
-        } QCBEnableAll->blockSignals(false);
+        }
+        QCBEnableAll->blockSignals(false);
     }
     // set all current to 0
     SlotResetCurrentAll();

@@ -191,7 +191,9 @@ protected:
     // Methods for provided interface
     void GetNumberOfJoints(int & placeHolder) const;
     void EnablePower(void);
+public:
     void DisablePower(void);
+protected:
     void EnableBoardsPower(void);
     void DisableBoardsPower(void);
     void EnableSafetyRelay(void);

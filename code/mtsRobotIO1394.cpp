@@ -295,6 +295,14 @@ void mtsRobotIO1394::Run(void)
 
 void mtsRobotIO1394::Cleanup(void)
 {
+    // Loop through the robots, processing feedback
+    for (size_t i = 0; i < RobotList.size(); i++) {
+        if (RobotList[i]->CheckIfValid()) {
+            RobotList[i]->DisablePower();
+        }
+    }
+    // Write to all boards
+    Port->WriteAllBoards();
 }
 
 void mtsRobotIO1394::GetNumberOfDigitalInputs(int &num) const
