@@ -32,59 +32,52 @@
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
+#include <sawRobotIO1394/osaRobotIO1394.h>
+#include <sawRobotIO1394/osaIO1394Port.h>
+#include <sawRobotIO1394/osaIO1394Robot.h>
+#include <sawRobotIO1394/osaIO1394XMLConfig.h>
 
-#include "FirewirePort.h"
-#include "AmpIO.h"
-#include "RobotInternal.h"
-#include "DigitalInInternal.h"
+#include "mtsIO1394Robot.h"
+#include "mtsIO1394DigitalInput.h"
+
+#include <FirewirePort.h>
+#include <AmpIO.h>
 
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
+using namespace sawRobotIO1394;
 
-//============ mtsRobotIO1394 =========================================
 
-mtsRobotIO1394::mtsRobotIO1394(const std::string &name, double period, int port_num):
+mtsRobotIO1394::mtsRobotIO1394(const std::string & name, double period, int port_num):
     mtsTaskPeriodic(name, period)
 {
-    Init();
-    MessageStream = new std::ostream(this->GetLogMultiplexer());
-    Port = new FirewirePort(port_num, *MessageStream);
-    if (Port->NumberOfUsers() > 1) {
-        CMN_LOG_CLASS_INIT_ERROR << "Found more than one user on firewire port" << std::endl;
-        abort();
-    }
+    Init(port_num);
 }
 
 mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg):
     mtsTaskPeriodic(arg)
 {
-    Init();
-    MessageStream = new std::ostream(this->GetLogMultiplexer());
-    Port = new FirewirePort(0, *MessageStream);
-    if (Port->NumberOfUsers() > 1) {
-        CMN_LOG_CLASS_INIT_ERROR << "Found more than one user on firewire port" << std::endl;
-        abort();
-    }
+    Init(0);
 }
 
 mtsRobotIO1394::~mtsRobotIO1394()
 {
-    // Delete boards
-    for (int i = 0; i < mtsRobotIO1394::MAX_BOARDS; i++) {
-        if (BoardList[i]) {
-            Port->RemoveBoard(i);
-            delete BoardList[i];
-        }
-    }
-    delete Port;
+    // Delete port and message stream
+    delete io1394_port_;
     delete MessageStream;
 }
 
-void mtsRobotIO1394::Init(void)
+void mtsRobotIO1394::Init(int port_num)
 {
-    for (int i = 0; i < mtsRobotIO1394::MAX_BOARDS; i++)
-        BoardList[i] = 0;
+    // Construct port
+    MessageStream = new std::ostream(this->GetLogMultiplexer());
+    try {
+        io1394_port_ = new sawRobotIO1394::osaIO1394Port(port_num, *MessageStream);
+    } catch (std::runtime_error &err) {
+        CMN_LOG_CLASS_INIT_ERROR << err.what();
+        abort();
+    }
 
     mtsInterfaceProvided * mainInterface = AddInterfaceProvided("MainInterface");
     if (mainInterface) {
@@ -105,159 +98,114 @@ void mtsRobotIO1394::Init(void)
 
     // All previous interfaces are ready. Good start. Let's make a new provided interface.
     mtsInterfaceProvided * configurationInterface   = this->AddInterfaceProvided("Configuration");
-    if(configurationInterface) {
-
-        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetRobotNames, this, "GetRobotNames"))){
-            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetRobotNames Failed. "<<std::endl;
-        }
-
-        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfActuatorPerRobot, this, "GetNumActuators"))){
-            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetNumActuators Failed. "<<std::endl;
-        }
-
-        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfRobots, this, "GetNumRobots"))) {
-            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetNumRobots Failed. "<<std::endl;
-        }
-        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfDigitalInputs, this, "GetNumDigitalInputs"))) {
-            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetNumDigitalInputs Failed. "<<std::endl;
-        }
-
-        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetDigitalInputNames, this, "GetDigitalInputNames"))) {
-            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetDigitalInputNames Failed. "<<std::endl;
-        }
-
-        if(!(configurationInterface->AddCommandRead(&mtsRobotIO1394::GetName, this, "GetName"))) {
-            CMN_LOG_CLASS_INIT_ERROR <<"Provided GetNames Failed. "<<std::endl;
-        }
-    }
-    else {
+    if (configurationInterface) {
+        configurationInterface->AddCommandRead(&osaIO1394Port::GetRobotNames, io1394_port_,
+                                               "GetRobotNames");
+        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfActuatorPerRobot, this,
+                                               "GetNumActuators");
+        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfRobots, this,
+                                               "GetNumRobots");
+        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfDigitalInputs, this,
+                                               "GetNumDigitalInputs");
+        configurationInterface->AddCommandRead(&osaIO1394Port::GetDigitalInputNames, io1394_port_,
+                                               "GetDigitalInputNames");
+        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetName, this,
+                                               "GetName");
+    } else {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to create configurationInterface." << std::endl;
     }
 }
 
 void mtsRobotIO1394::Configure(const std::string & filename)
 {
-    CMN_LOG_CLASS_INIT_VERBOSE << "Configuring from " << filename << std::endl;
+    CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring from " << filename << std::endl;
 
-    cmnXMLPath xmlConfig;
-    xmlConfig.SetInputSource(filename);
-    char path[64];
+    osaIO1394::Configuration config;
+    osaIO1394XMLConfig::LoadFromFile(filename, config);
 
-    int tmpNumActuator = 0;
-    int tmpNumJoint = 0;
-
-    std::string context = "Config";
-    std::string tmpRobotName = "ConfigStart";
-
-    //Let's activate the boards implied in the XML config file.
-    //Go robot by robot, Actuator by Actuator, and look for BoardID.
-    //This will not check for conflicting BoardID/AxisID assignments.
-    //Infinite loop for configuring for each robot.
-    int k = 0;
-
-    while (true) {
-        //Incrementing Counter for Robot.
-        k = k + 1;
-        sprintf(path, "Robot[%d]/@Name",k);
-        xmlConfig.GetXMLValue(context.c_str(), path, tmpRobotName);
-        if (tmpRobotName.empty()) {
-            //Reached the End of File For Robot
-            //Break from infinite loop.
-            //std::cout<<"Run Number "<< k <<" stopped." << std::endl;
-            //std::cin.ignore();
-            break;
-        }
-        sprintf(path, "Robot[%d]/@NumOfActuator", k);
-        xmlConfig.GetXMLValue(context.c_str(), path, tmpNumActuator);
-
-        sprintf(path, "Robot[%d]/@NumOfJoint", k);
-        xmlConfig.GetXMLValue(context.c_str(), path, tmpNumJoint);
-
-        //Create new temporary RobotInternal Initialized.
-        RobotInternal * robot = new RobotInternal(tmpRobotName, *this, tmpNumActuator, tmpNumJoint);
-
-        // Configure conversion factors and other variables.
-        robot->Configure(xmlConfig, k, BoardList);
-        // Configure StateTable for this Robot
-        robot->SetupStateTable(this->StateTable);
-
-        // Add new InterfaceProvided for this Robot with Name.
-        // Ensure all tmpRobotNames from XML Config file are UNIQUE!
-        mtsInterfaceProvided * robotInterface = this->AddInterfaceProvided(tmpRobotName);
-        if (!robotInterface) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create robot interface \""
-                                     << tmpRobotName << "\", do we have multiple robots with the same name?" << std::endl;
+    // Add all the robots
+    for (std::vector<osaIO1394::RobotConfiguration>::const_iterator it = config.Robots.begin();
+         it != config.Robots.end();
+         ++it) {
+        // Create a new robot
+        mtsIO1394Robot * robot = new mtsIO1394Robot(*this, *it);
+        // Set up the cisstMultiTask interfaces
+        if (!this->SetUpRobot(robot)) {
             delete robot;
-            robot = 0;
+        } else {
+            robots_.push_back(robot);
         }
-        std::string actuatorInterfaceName = tmpRobotName;
-        actuatorInterfaceName.append("Actuators");
-        mtsInterfaceProvided * actuatorInterface = this->AddInterfaceProvided(actuatorInterfaceName);
-        if (!actuatorInterface) {
-            CMN_LOG_CLASS_INIT_ERROR << "Configure: failed to create robot actuator interface \""
-                                     << actuatorInterfaceName << "\", do we have multiple robots with the same name?" << std::endl;
-            delete robot;
-            robot = 0;
-        }
-        if (robot) {
-            robot->SetupInterfaces(robotInterface, actuatorInterface, this->StateTable);
-        }
-
-        // Store the robot to RobotList
-        RobotList.push_back(robot);
     }
 
-    //////////////////////////////////////////////////////////////////
-    ///////////////// Digital Input Setup Stage///////////////////////
-    //////////////////////////////////////////////////////////////////
-
-    k = 0;
-    //Setup Digital Input Lists.
-    bool readStat0 = false;
-    bool readStat1 = false;
-    bool readStat2 = false;
-    std::string tmpDIName = "";
-    int tmpBoardID = -1;
-    int tmpBitID = -1;
-
-    while (true) {
-        //Initialize read confirm stats.
-        readStat0 = false;
-        readStat1 = false;
-        readStat2 = false;
-
-        //Check there is digital input entry. Return boolean result for success/fail.
-        k = k + 1;
-        sprintf(path,"DigitalIn[%i]/@Name", k);
-        readStat0 = xmlConfig.GetXMLValue(context.c_str(),path,tmpDIName);
-        sprintf(path,"DigitalIn[%i]/@BoardID", k);
-        readStat1 = xmlConfig.GetXMLValue(context.c_str(),path,tmpBoardID);
-        sprintf(path,"DigitalIn[%i]/@BitID", k);
-        readStat2 = xmlConfig.GetXMLValue(context.c_str(),path,tmpBitID);
-
-        if(!readStat0 || !readStat1 || !readStat2){
-            CMN_LOG_INIT_ERROR<<"Configuration for "<<path<<" finished/failed. Stopping config."<<std::endl;
-            CMN_LOG_INIT_ERROR<<"Total number of DigitalIn available: "<< DigitalInList.size() <<". "<<std::endl;
-            break;
+    // Add all the digital inputs
+    for (std::vector<osaIO1394::DigitalInputConfiguration>::const_iterator it = config.DigitalInputs.begin();
+         it != config.DigitalInputs.end();
+         ++it) {
+        // Create a new robot
+        mtsIO1394DigitalInput * digital_input = new mtsIO1394DigitalInput(*this, *it);
+        // Set up the cisstMultiTask interfaces
+        if (!this->SetUpDigitalIn(digital_input)) {
+            delete digital_input;
+        } else {
+            digital_inputs_.push_back(digital_input);
         }
-        //If not broken, go ahead.
-        DigitalInInternal * digitalIn = new DigitalInInternal(*this,tmpDIName,BoardList[tmpBoardID],tmpBitID);
-        // Make new DigitalIn provided interface.
-        digitalIn->Configure(xmlConfig,k);
-        // Configure pressed active direction and edge detection
-        digitalIn->SetupStateTable(this->StateTable);
+    }
+}
 
-        mtsInterfaceProvided * digitalInInterface = this->AddInterfaceProvided(tmpDIName);
+bool mtsRobotIO1394::SetUpRobot(mtsIO1394Robot * robot)
+{
+    // Configure StateTable for this Robot
+    robot->SetupStateTable(this->StateTable);
 
-        digitalIn->SetupProvidedInterface(digitalInInterface,this->StateTable);
-        DigitalInList.push_back(digitalIn);
+    // Add new InterfaceProvided for this Robot with Name.
+    // Ensure all names from XML Config file are UNIQUE!
+    mtsInterfaceProvided * robotInterface = this->AddInterfaceProvided(robot->Name());
+    if (!robotInterface) {
+        CMN_LOG_INIT_ERROR << "Configure: failed to create robot interface \""
+                           << robot->Name() << "\", do we have multiple robots with the same name?" << std::endl;
+        return false;
     }
 
-    // Now, add all boards to Firewire Port
-    for (k = 0; k < MAX_BOARDS; k++) {
-        if (BoardList[k])
-            Port->AddBoard(BoardList[k]);
+    // Create actuator interface
+    std::string actuatorInterfaceName = robot->Name();
+    actuatorInterfaceName.append("Actuators");
+    mtsInterfaceProvided * actuatorInterface = this->AddInterfaceProvided(actuatorInterfaceName);
+    if (!actuatorInterface) {
+        CMN_LOG_INIT_ERROR << "Configure: failed to create robot actuator interface \""
+                           << actuatorInterfaceName << "\", do we have multiple robots with the same name?" << std::endl;
+        return false;
     }
+
+    // Setup the MTS interfaces
+    robot->SetupInterfaces(robotInterface, actuatorInterface, this->StateTable);
+
+    // Add the mehcnism to the port
+    try {
+        io1394_port_->AddRobot(robot);
+    } catch (osaIO1394::configuration_error & err) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to add the robot to the port: " << err.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool mtsRobotIO1394::SetUpDigitalIn(mtsIO1394DigitalInput * digital_in)
+{
+    // Configure pressed active direction and edge detection
+    digital_in->SetupStateTable(this->StateTable);
+
+    mtsInterfaceProvided * digitalInInterface = this->AddInterfaceProvided(digital_in->Name());
+
+    digital_in->SetupProvidedInterface(digitalInInterface,this->StateTable);
+
+    // Add the mehcnism to the port
+    try {
+        io1394_port_->AddDigitalInput(digital_in);
+    } catch(osaIO1394::configuration_error & err) {
+        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to add the robot to the port: " << err.what() << std::endl;
+        return false;
+    }
+    return true;
 }
 
 void mtsRobotIO1394::Startup(void)
@@ -265,110 +213,73 @@ void mtsRobotIO1394::Startup(void)
     // osaCPUSetAffinity(OSA_CPU4);
 }
 
+void mtsRobotIO1394::TriggerEvents(void)
+{
+    // Trigger robot events
+    for (size_t i = 0; i < robots_.size(); i++) {
+        robots_[i]->TriggerEvents();
+    }
+    // Trigger digital input events
+    for (size_t i = 0; i < digital_inputs_.size(); i++) {
+        digital_inputs_[i]->TriggerEvents();
+    }
+}
+
 void mtsRobotIO1394::Run(void)
 {
-    size_t i;
     // Read from all boards
-    Port->ReadAllBoards();
-    // Loop through the robots, processing feedback
-    for (i = 0; i < RobotList.size(); i++) {
-        if (RobotList[i]->CheckIfValid()) {
-            // Copy data to state table
-            RobotList[i]->GetData();
-            // Convert from raw to SI units (TBD)
-            RobotList[i]->ConvertRawToSI();
-            //
-            RobotList[i]->UpdateStateAndEvents();
-        }
-    }
-    // Loop through the digital inputs
-    for (i = 0; i < DigitalInList.size(); i++) {
-        DigitalInList[i]->GetData();
-    }
+    io1394_port_->Read();
+
+    // Trigger MTS events
+    this->TriggerEvents();
+
     // Invoke connected components (if any)
-    RunEvent();
+    this->RunEvent();
+
     // Process queued commands (e.g., to set motor current)
-    ProcessQueuedCommands();
+    this->ProcessQueuedCommands();
+
     // Write to all boards
-    Port->WriteAllBoards();
+    io1394_port_->Write();
 }
 
 void mtsRobotIO1394::Cleanup(void)
 {
-    // Loop through the robots, processing feedback
-    for (size_t i = 0; i < RobotList.size(); i++) {
-        if (RobotList[i]->CheckIfValid()) {
-            RobotList[i]->DisablePower();
+    for (size_t i = 0; i < robots_.size(); i++) {
+        if (robots_[i]->Valid()) {
+            robots_[i]->DisablePower();
         }
     }
     // Write to all boards
-    Port->WriteAllBoards();
+    io1394_port_->Write();
 }
 
-void mtsRobotIO1394::GetNumberOfDigitalInputs(int &num) const
+void mtsRobotIO1394::GetNumberOfDigitalInputs(int & placeHolder) const
 {
-    num = DigitalInList.size();
+    placeHolder = io1394_port_->NumberOfDigitalInputs();
 }
 
-void mtsRobotIO1394::GetNumberOfBoards(int &num) const
+void mtsRobotIO1394::GetNumberOfBoards(int & placeHolder) const
 {
-    num = 0;
-    for (size_t i = 0; i < mtsRobotIO1394::MAX_BOARDS; i++)
-        if (BoardList[i]) num++;
+    placeHolder = io1394_port_->NumberOfBoards();
 }
 
-void mtsRobotIO1394::GetNumberOfRobots(int &num) const
+void mtsRobotIO1394::GetNumberOfRobots(int & placeHolder) const
 {
-    num = RobotList.size();
+    placeHolder = io1394_port_->NumberOfRobots();
 }
 
-void mtsRobotIO1394::GetRobotNames(std::vector<std::string> &result) const
+void mtsRobotIO1394::GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const
 {
-    int vecSize = 0;
-    GetNumberOfRobots(vecSize);
-    result.resize(vecSize);
+    size_t num_robots = io1394_port_->NumberOfRobots();
+    placeHolder.resize(num_robots);
 
-    int i = 0;
-    std::string tmpRobotName;
-
-    for(i = 0; i < vecSize; i++) {
-        RobotList[i]->GetName(tmpRobotName);
-        result[i] = tmpRobotName;
+    for (size_t i = 0; i < num_robots; i++) {
+        placeHolder[i] = io1394_port_->Robot(i)->NumberOfActuators();
     }
 }
 
-void mtsRobotIO1394::GetNumberOfActuatorPerRobot(vctIntVec &result) const
+void mtsRobotIO1394::GetName(std::string & placeHolder) const
 {
-    int vecSize = 0;
-    GetNumberOfRobots(vecSize);
-    result.resize(vecSize);
-
-    int i = 0;
-    int tmpNumActuator = 0;
-
-    for(i = 0; i < vecSize; i++) {
-        RobotList[i]->GetNumberOfActuators(tmpNumActuator);
-        result[i] = tmpNumActuator;
-    }
-}
-
-void mtsRobotIO1394::GetDigitalInputNames(std::vector<std::string> &result) const
-{
-    int vecSize = 0;
-    GetNumberOfDigitalInputs(vecSize);
-    result.resize(vecSize);
-    // If there is a size mismatch, this section should throw an error or warning.
-
-    int i = 0;
-    std::string tmpDigitalName;
-
-    for(i = 0; i < vecSize; i++) {
-        DigitalInList[i]->GetName(tmpDigitalName);
-        result[i] = tmpDigitalName;
-    }
-}
-
-void mtsRobotIO1394::GetName(std::string &result) const
-{
-    result = mtsComponent::GetName();
+    placeHolder = mtsComponent::GetName();
 }

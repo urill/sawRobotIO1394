@@ -18,8 +18,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef __mtsRobotIO1394_H__
-#define __mtsRobotIO1394_H__
+#ifndef _mtsRobotIO1394_h
+#define _mtsRobotIO1394_h
 
 #include <ostream>
 #include <iostream>
@@ -29,6 +29,12 @@ http://www.cisst.org/cisst/license.txt.
 
 class FirewirePort;
 class AmpIO;
+
+namespace sawRobotIO1394 {
+    class osaIO1394Port;
+    class mtsIO1394Robot;
+    class mtsIO1394DigitalInput;
+}
 
 class mtsRobotIO1394 : public mtsTaskPeriodic {
 
@@ -41,40 +47,40 @@ protected:
     class RobotInternal;
     class DigitalInInternal;
 
-    FirewirePort * Port;                      // Pointer to IEEE-1394 port handler
     std::ostream * MessageStream;             // Stream provided to the low level boards for messages, redirected to cmnLogger
-    std::vector<RobotInternal *> RobotList;   // List of robots (provided interfaces)
-    std::vector<DigitalInInternal *> DigitalInList; // List of digital inputs (provided interfaces)
-    AmpIO *BoardList[MAX_BOARDS];             // List of boards
 
-///////////// Public Class Methods ///////////////////////////
+    sawRobotIO1394::osaIO1394Port * io1394_port_;
+    std::vector<sawRobotIO1394::mtsIO1394Robot*> robots_;
+    std::vector<sawRobotIO1394::mtsIO1394DigitalInput*> digital_inputs_;
+
+    ///////////// Public Class Methods ///////////////////////////
 public:
     // Constructor & Destructor
-    mtsRobotIO1394(const std::string &name, double period, int port_num);
+    mtsRobotIO1394(const std::string & name, double period, int port_num);
     mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg); // TODO: add port_num
     virtual ~mtsRobotIO1394();
 
-    void Init();
+    void Init(int port_num);
 
-    void Configure(const std::string &filename);
+    void Configure(const std::string & filename);
+    bool SetUpRobot(sawRobotIO1394::mtsIO1394Robot * robot);
+    bool SetUpDigitalIn(sawRobotIO1394::mtsIO1394DigitalInput * digital_in);
     void Startup(void);
     void Run(void);
+    void TriggerEvents(void);
     void Cleanup(void);
-    void GetNumberOfDigitalInputs(int &num) const;
+    void GetNumberOfDigitalInputs(int & placeHolder) const;
 
 protected:
 
-    void GetNumberOfBoards(int &num) const;
-    void GetNumberOfRobots(int &num) const;
+    void GetNumberOfBoards(int & placeHolder) const;
+    void GetNumberOfRobots(int & placeHolder) const;
 
-    void GetRobotNames(std::vector<std::string> &result) const;
-    void GetNumberOfActuatorPerRobot(vctIntVec &result) const;
-
-    void GetDigitalInputNames(std::vector<std::string> &result) const;
-    void GetName(std::string &result) const;
+    void GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const;
+    void GetName(std::string & placeHolder) const;
 
 
-////////////// Private Class Methods /////////////////////////////
+    ////////////// Private Class Methods /////////////////////////////
 private:
     // Make uncopyable
     mtsRobotIO1394(const mtsRobotIO1394 &);
@@ -83,5 +89,4 @@ private:
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394);
 
-
-#endif  //__mtsRobotIO1394_H__
+#endif // _mtsRobotIO1394_h

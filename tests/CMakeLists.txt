@@ -41,7 +41,10 @@ if (cisst_FOUND_AS_REQUIRED)
     include_directories (${sawRobotIO1394_INCLUDE_DIR})
     link_directories (${sawRobotIO1394_LIBRARY_DIR})
 
-    add_executable (sawRobotIO1394Tests mtsRobotIO1394Test.cpp mtsRobotIO1394Test.h)
+    add_executable (sawRobotIO1394Tests
+      mtsRobotIO1394Test.cpp
+      mtsRobotIO1394Test.h
+      osaIO1394XMLConfigTest.cpp)
     set_property (TARGET sawRobotIO1394Tests PROPERTY FOLDER "sawRobotIO1394")
 
     # link against non cisst libraries and cisst components

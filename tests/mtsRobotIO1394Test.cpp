@@ -19,16 +19,15 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-
 #include "mtsRobotIO1394Test.h"
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <cisstVector/vctDynamicVectorTypes.h>
-
 
 void mtsRobotIO1394Test::TestCreate(void) {
     mtsRobotIO1394 * robot = new mtsRobotIO1394("robot", 1.0 * cmn_ms, 0);
     CPPUNIT_ASSERT(robot);
 }
+
 /*
 void mtsRobotIO1394Test::TestConfigure(void) {
     std::stringstream errorStream;
