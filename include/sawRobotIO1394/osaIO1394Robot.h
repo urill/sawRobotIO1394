@@ -101,7 +101,7 @@ namespace sawRobotIO1394 {
         void SetJointEffort(const vctDoubleVec & efforts);
         void SetActuatorEffort(const vctDoubleVec & efforts);
         void SetActuatorCurrent(const vctDoubleVec & currents);
-        void SetActuatorCurrentBits(const vctLongVec & bits);
+        void SetActuatorCurrentBits(const vctIntVec & bits);
         /**}**/
 
 
@@ -122,15 +122,15 @@ namespace sawRobotIO1394 {
         void get_encoder_pos_bits(vctIntVec & bits) const;
 
         void get_encoder_vel(vctDoubleVec & vel) const;
-        void get_encoder_vel_bits(vctLongVec & bits) const;
+        void get_encoder_vel_bits(vctIntVec & bits) const;
 
         void get_actuator_command_efforts(vctDoubleVec & efforts) const;
         void get_actuator_command_amps(vctDoubleVec & currents) const;
-        void get_actuator_command_bits(vctLongVec & bits) const;
+        void get_actuator_command_bits(vctIntVec & bits) const;
 
         void get_actuator_feedback_efforts(vctDoubleVec & efforts) const;
         void get_actuator_feedback_amps(vctDoubleVec & currents) const;
-        void get_actuator_feedback_bits(vctLongVec & bits) const;
+        void get_actuator_feedback_bits(vctIntVec & bits) const;
 
         void get_actuator_enabled(vctBoolVec & enabled) const;
         void get_actuator_status(vctBoolVec & enabled) const;
@@ -171,8 +171,8 @@ namespace sawRobotIO1394 {
 
         //! Conversions for current commands amd measurements
         void ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const;
-        void ActuatorCurrentToBits(const vctDoubleVec & currents, vctLongVec & bits) const;
-        void ActuatorBitsToCurrent(const vctLongVec & bits, vctDoubleVec & currents) const;
+        void ActuatorCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const;
+        void ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & currents) const;
         void ActuatorCurrentToEffort(const vctDoubleVec & currents, vctDoubleVec & efforts) const;
 
         //! Conversions for potentiometers
@@ -252,7 +252,7 @@ namespace sawRobotIO1394 {
             EncoderDPositionBits_,
             EncoderDTimeBits_;
 
-        vctLongVec
+        vctIntVec
             ActuatorCurrentBitsCommand_,
             ActuatorCurrentBitsFeedback_;
 

@@ -414,7 +414,7 @@ void osaIO1394Robot::SetActuatorCurrent(const vctDoubleVec & currents)
 {
     // Convert amps to bits and set the command
     vctDoubleVec clipped_amps = currents;
-    vctLongVec bits(NumberOfActuators_);
+    vctIntVec bits(NumberOfActuators_);
 
     this->ClipActuatorCurrent(clipped_amps);
     this->ActuatorCurrentToBits(clipped_amps, bits);
@@ -424,7 +424,7 @@ void osaIO1394Robot::SetActuatorCurrent(const vctDoubleVec & currents)
     ActuatorCurrentCommand_ = clipped_amps;
 }
 
-void osaIO1394Robot::SetActuatorCurrentBits(const vctLongVec & bits)
+void osaIO1394Robot::SetActuatorCurrentBits(const vctIntVec & bits)
 {
     for (size_t i=0; i<NumberOfActuators_; i++) {
         Boards_[i]->SetMotorCurrent(BoardAxes_[i], bits[i]);
@@ -578,12 +578,12 @@ void osaIO1394Robot::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec 
 void osaIO1394Robot::ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const {
     currents = currents.ElementwiseProductOf(efforts, EffortToCurrentScales_);
 }
-void osaIO1394Robot::ActuatorCurrentToBits(const vctDoubleVec & currents, vctLongVec & bits) const {
+void osaIO1394Robot::ActuatorCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const {
     for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
         bits[i] = static_cast<long>(currents[i] * CurrentToBitsScales_[i] + CurrentToBitsOffsets_[i]);
     }
 }
-void osaIO1394Robot::ActuatorBitsToCurrent(const vctLongVec & bits, vctDoubleVec & currents) const {
+void osaIO1394Robot::ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & currents) const {
     for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
         currents[i] = static_cast<double>(bits[i]) * BitsToCurrentScales_[i] + BitsToCurrentOffsets_[i];
     }
@@ -620,10 +620,10 @@ void osaIO1394::encoder_bits_to_vel(const vctIntVec & bits, vctDoubleVec & vel) 
     vel = bits.cast<double>().cwiseProduct(bits_to_volts_ratios_) + bits_to_vel_offsets_;
 }
 
-void osaIO1394::actuator_bits_to_amps(const vctLongVec & bits, vctDoubleVec & currents) const {
+void osaIO1394::actuator_bits_to_amps(const vctIntVec & bits, vctDoubleVec & currents) const {
     currents = bits.cast<double>().cwiseProduct(bits_to_amps_ratios_) + bits_to_amps_offsets_;
 }
-void osaIO1394::actuator_amps_to_bits(const vctDoubleVec & currents, vctLongVec & bits) const {
+void osaIO1394::actuator_amps_to_bits(const vctDoubleVec & currents, vctIntVec & bits) const {
     bits = (currents.cwiseProduct(amps_to_bits_ratios_) + amps_to_bits_offsets_).cast<uint32_t>();
 }
 void osaIO1394::actuator_efforts_to_amps(const vctDoubleVec & efforts, vctDoubleVec & currents) const {
