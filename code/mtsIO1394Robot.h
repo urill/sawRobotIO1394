@@ -55,12 +55,15 @@ namespace sawRobotIO1394 {
         mtsIO1394Robot(const cmnGenericObject & owner,
                        const osaIO1394::RobotConfiguration & config);
 
-        void SetupStateTable(mtsStateTable & stateTable);
+        bool SetupStateTables(const size_t stateTableSize,
+                              mtsStateTable * & stateTableRead,
+                              mtsStateTable * & stateTableWrite);
         void SetupInterfaces(mtsInterfaceProvided * robotInterface,
-                             mtsInterfaceProvided * actuatorInterface,
-                             mtsStateTable & stateTable);
+                             mtsInterfaceProvided * actuatorInterface);
 
-        void TriggerEvents(void);
+        void StartReadStateTable(void);
+        void AdvanceReadStateTable(void);
+        void CheckState(void);
 
         // Wrapper of osa methods to match command signatures
         void GetNumberOfActuators(int & num_actuators) const;
@@ -71,9 +74,12 @@ namespace sawRobotIO1394 {
         void ResetSingleEncoder(const int & index);
 
     protected:
-        prmForceTorqueJointSet TorqueJoint;
-        prmPositionJointGet PositionJointGet;
-        prmPositionJointGet PositionActuatorGet;
+        mtsStateTable * StateTableRead_;
+        mtsStateTable * StateTableWrite_;
+
+        prmForceTorqueJointSet TorqueJoint_;
+        prmPositionJointGet PositionJointGet_;
+        prmPositionJointGet PositionActuatorGet_;
 
         // Functions for events
         struct {

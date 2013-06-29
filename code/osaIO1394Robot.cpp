@@ -111,6 +111,8 @@ void osaIO1394Robot::Configure(const osaIO1394::RobotConfiguration & config)
     VoltageToPositionOffsets_.resize(NumberOfActuators_);
     CountsPerTurn_.resize(NumberOfActuators_);
 
+    Temperature_.resize(NumberOfActuators_);
+
     // Construct property vectors
     for (size_t i = 0; i < NumberOfActuators_; i++) {
 
@@ -171,9 +173,6 @@ void osaIO1394Robot::SetBoards(std::vector<AmpIO*> boards)
         // Construct a list of unique boards
         UniqueBoards_[Boards_[i]->GetBoardId()] = Boards_[i];
     }
-
-    // Resize amp temperature array
-    BoardTemperature_.resize(UniqueBoards_.size() * 2);
 }
 
 void osaIO1394Robot::PollValidity(void)
@@ -225,8 +224,15 @@ void osaIO1394Robot::PollState(void)
         ActuatorCurrentBitsFeedback_[i] = board->GetMotorCurrent(axis);
         ActuatorPowerEnabled_[i] = board->GetAmpEnable(axis);
         ActuatorPowerStatus_[i] = board->GetAmpStatus(axis);
-    }
 
+        // first temperature corresponds to first 2 actuators, second to last 2
+        // board reports temperature in celsius * 2
+        Temperature_[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
+    }
+}
+
+void osaIO1394Robot::ConvertState(void)
+{
     // Perform read conversions
     EncoderBitsToPosition(EncoderPositionBits_, EncoderPosition_);
     JointPosition_ = Configuration_.ActuatorToJointPosition * EncoderPosition_;
@@ -239,7 +245,10 @@ void osaIO1394Robot::PollState(void)
 
     PotBitsToVoltage(PotBits_, PotVoltage_);
     PotVoltageToPosition(PotVoltage_, PotPosition_);
+}
 
+void osaIO1394Robot::CheckState(void)
+{
     // Store currents for biasing and re-bias if appropriate
     if (CalibrateCurrentCommandOffsetRequested_
         && (CalibrateCurrentBufferIndex_ < CalibrateCurrentBufferSize_)) {

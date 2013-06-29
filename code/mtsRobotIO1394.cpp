@@ -49,10 +49,10 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394, mtsTaskPeriodic, mtsTaskPe
 using namespace sawRobotIO1394;
 
 
-mtsRobotIO1394::mtsRobotIO1394(const std::string & name, double period, int port_num):
-    mtsTaskPeriodic(name, period)
+mtsRobotIO1394::mtsRobotIO1394(const std::string & name, double periodInSeconds, int portNumber):
+    mtsTaskPeriodic(name, periodInSeconds)
 {
-    Init(port_num);
+    Init(portNumber);
 }
 
 mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg):
@@ -63,17 +63,17 @@ mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg):
 
 mtsRobotIO1394::~mtsRobotIO1394()
 {
-    // Delete port and message stream
-    delete io1394_port_;
+    // delete port and message stream
+    delete Port_;
     delete MessageStream;
 }
 
 void mtsRobotIO1394::Init(int port_num)
 {
-    // Construct port
+    // construct port
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     try {
-        io1394_port_ = new sawRobotIO1394::osaIO1394Port(port_num, *MessageStream);
+        Port_ = new sawRobotIO1394::osaIO1394Port(port_num, *MessageStream);
     } catch (std::runtime_error &err) {
         CMN_LOG_CLASS_INIT_ERROR << err.what();
         abort();
@@ -99,7 +99,7 @@ void mtsRobotIO1394::Init(int port_num)
     // All previous interfaces are ready. Good start. Let's make a new provided interface.
     mtsInterfaceProvided * configurationInterface   = this->AddInterfaceProvided("Configuration");
     if (configurationInterface) {
-        configurationInterface->AddCommandRead(&osaIO1394Port::GetRobotNames, io1394_port_,
+        configurationInterface->AddCommandRead(&osaIO1394Port::GetRobotNames, Port_,
                                                "GetRobotNames");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfActuatorPerRobot, this,
                                                "GetNumActuators");
@@ -107,7 +107,7 @@ void mtsRobotIO1394::Init(int port_num)
                                                "GetNumRobots");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfDigitalInputs, this,
                                                "GetNumDigitalInputs");
-        configurationInterface->AddCommandRead(&osaIO1394Port::GetDigitalInputNames, io1394_port_,
+        configurationInterface->AddCommandRead(&osaIO1394Port::GetDigitalInputNames, Port_,
                                                "GetDigitalInputNames");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetName, this,
                                                "GetName");
@@ -130,10 +130,10 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         // Create a new robot
         mtsIO1394Robot * robot = new mtsIO1394Robot(*this, *it);
         // Set up the cisstMultiTask interfaces
-        if (!this->SetUpRobot(robot)) {
+        if (!this->SetupRobot(robot)) {
             delete robot;
         } else {
-            robots_.push_back(robot);
+            Robots_.push_back(robot);
         }
     }
 
@@ -144,25 +144,35 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         // Create a new robot
         mtsIO1394DigitalInput * digital_input = new mtsIO1394DigitalInput(*this, *it);
         // Set up the cisstMultiTask interfaces
-        if (!this->SetUpDigitalIn(digital_input)) {
+        if (!this->SetupDigitalInput(digital_input)) {
             delete digital_input;
         } else {
-            digital_inputs_.push_back(digital_input);
+            DigitalInputs_.push_back(digital_input);
         }
     }
 }
 
-bool mtsRobotIO1394::SetUpRobot(mtsIO1394Robot * robot)
+bool mtsRobotIO1394::SetupRobot(mtsIO1394Robot * robot)
 {
+    mtsStateTable * stateTableRead;
+    mtsStateTable * stateTableWrite;
+
     // Configure StateTable for this Robot
-    robot->SetupStateTable(this->StateTable);
+    if (!robot->SetupStateTables(this->StateTable.GetHistoryLength(),
+                                 stateTableRead, stateTableWrite)) {
+        CMN_LOG_CLASS_INIT_ERROR << "SetupRobot: unable to setup state tables" << std::endl;
+        return false;
+    }
+
+    this->AddStateTable(stateTableRead);
+    this->AddStateTable(stateTableWrite);
 
     // Add new InterfaceProvided for this Robot with Name.
     // Ensure all names from XML Config file are UNIQUE!
     mtsInterfaceProvided * robotInterface = this->AddInterfaceProvided(robot->Name());
     if (!robotInterface) {
-        CMN_LOG_INIT_ERROR << "Configure: failed to create robot interface \""
-                           << robot->Name() << "\", do we have multiple robots with the same name?" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "SetupRobot: failed to create robot interface \""
+                                 << robot->Name() << "\", do we have multiple robots with the same name?" << std::endl;
         return false;
     }
 
@@ -171,38 +181,38 @@ bool mtsRobotIO1394::SetUpRobot(mtsIO1394Robot * robot)
     actuatorInterfaceName.append("Actuators");
     mtsInterfaceProvided * actuatorInterface = this->AddInterfaceProvided(actuatorInterfaceName);
     if (!actuatorInterface) {
-        CMN_LOG_INIT_ERROR << "Configure: failed to create robot actuator interface \""
-                           << actuatorInterfaceName << "\", do we have multiple robots with the same name?" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "SetupRobot: failed to create robot actuator interface \""
+                                 << actuatorInterfaceName << "\", do we have multiple robots with the same name?" << std::endl;
         return false;
     }
 
     // Setup the MTS interfaces
-    robot->SetupInterfaces(robotInterface, actuatorInterface, this->StateTable);
+    robot->SetupInterfaces(robotInterface, actuatorInterface);
 
-    // Add the mehcnism to the port
+    // Add the robot to the port
     try {
-        io1394_port_->AddRobot(robot);
+        Port_->AddRobot(robot);
     } catch (osaIO1394::configuration_error & err) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to add the robot to the port: " << err.what() << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "SetupRobot: unable to add the robot to the port: " << err.what() << std::endl;
         return false;
     }
     return true;
 }
 
-bool mtsRobotIO1394::SetUpDigitalIn(mtsIO1394DigitalInput * digital_in)
+bool mtsRobotIO1394::SetupDigitalInput(mtsIO1394DigitalInput * digitalInput)
 {
     // Configure pressed active direction and edge detection
-    digital_in->SetupStateTable(this->StateTable);
+    digitalInput->SetupStateTable(this->StateTable);
 
-    mtsInterfaceProvided * digitalInInterface = this->AddInterfaceProvided(digital_in->Name());
+    mtsInterfaceProvided * digitalInInterface = this->AddInterfaceProvided(digitalInput->Name());
 
-    digital_in->SetupProvidedInterface(digitalInInterface,this->StateTable);
+    digitalInput->SetupProvidedInterface(digitalInInterface, this->StateTable);
 
     // Add the mehcnism to the port
     try {
-        io1394_port_->AddDigitalInput(digital_in);
-    } catch(osaIO1394::configuration_error & err) {
-        CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to add the robot to the port: " << err.what() << std::endl;
+        Port_->AddDigitalInput(digitalInput);
+    } catch (osaIO1394::configuration_error & err) {
+        CMN_LOG_CLASS_INIT_ERROR << "SetupDigitalInput: unable to add the robot to the port: " << err.what() << std::endl;
         return false;
     }
     return true;
@@ -213,25 +223,41 @@ void mtsRobotIO1394::Startup(void)
     // osaCPUSetAffinity(OSA_CPU4);
 }
 
-void mtsRobotIO1394::TriggerEvents(void)
+void mtsRobotIO1394::PreRead(void)
+{
+    const robots_iterator robots_end = Robots_.end();
+    for (robots_iterator robot = Robots_.begin();
+         robot != robots_end;
+         ++robot) {
+        (*robot)->StartReadStateTable();
+    }
+}
+
+void mtsRobotIO1394::PostRead(void)
 {
     // Trigger robot events
-    for (size_t i = 0; i < robots_.size(); i++) {
-        robots_[i]->TriggerEvents();
+    const robots_iterator robots_end = Robots_.end();
+    for (robots_iterator robot = Robots_.begin();
+         robot != robots_end;
+         ++robot) {
+        (*robot)->CheckState();
+        (*robot)->AdvanceReadStateTable();
     }
     // Trigger digital input events
-    for (size_t i = 0; i < digital_inputs_.size(); i++) {
-        digital_inputs_[i]->TriggerEvents();
+    const digital_inputs_iterator digital_inputs_end = DigitalInputs_.end();
+    for (digital_inputs_iterator digital_input = DigitalInputs_.begin();
+         digital_input != digital_inputs_end;
+         ++digital_input) {
+        (*digital_input)->CheckState();
     }
 }
 
 void mtsRobotIO1394::Run(void)
 {
     // Read from all boards
-    io1394_port_->Read();
-
-    // Trigger MTS events
-    this->TriggerEvents();
+    this->PreRead();
+    Port_->Read();
+    this->PostRead();
 
     // Invoke connected components (if any)
     this->RunEvent();
@@ -240,42 +266,42 @@ void mtsRobotIO1394::Run(void)
     this->ProcessQueuedCommands();
 
     // Write to all boards
-    io1394_port_->Write();
+    Port_->Write();
 }
 
 void mtsRobotIO1394::Cleanup(void)
 {
-    for (size_t i = 0; i < robots_.size(); i++) {
-        if (robots_[i]->Valid()) {
-            robots_[i]->DisablePower();
+    for (size_t i = 0; i < Robots_.size(); i++) {
+        if (Robots_[i]->Valid()) {
+            Robots_[i]->DisablePower();
         }
     }
     // Write to all boards
-    io1394_port_->Write();
+    Port_->Write();
 }
 
 void mtsRobotIO1394::GetNumberOfDigitalInputs(int & placeHolder) const
 {
-    placeHolder = io1394_port_->NumberOfDigitalInputs();
+    placeHolder = Port_->NumberOfDigitalInputs();
 }
 
 void mtsRobotIO1394::GetNumberOfBoards(int & placeHolder) const
 {
-    placeHolder = io1394_port_->NumberOfBoards();
+    placeHolder = Port_->NumberOfBoards();
 }
 
 void mtsRobotIO1394::GetNumberOfRobots(int & placeHolder) const
 {
-    placeHolder = io1394_port_->NumberOfRobots();
+    placeHolder = Port_->NumberOfRobots();
 }
 
 void mtsRobotIO1394::GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const
 {
-    size_t num_robots = io1394_port_->NumberOfRobots();
+    size_t num_robots = Port_->NumberOfRobots();
     placeHolder.resize(num_robots);
 
     for (size_t i = 0; i < num_robots; i++) {
-        placeHolder[i] = io1394_port_->Robot(i)->NumberOfActuators();
+        placeHolder[i] = Port_->Robot(i)->NumberOfActuators();
     }
 }
 

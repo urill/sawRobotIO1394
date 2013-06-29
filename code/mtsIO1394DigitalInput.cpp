@@ -45,9 +45,10 @@ void mtsIO1394DigitalInput::SetupProvidedInterface(mtsInterfaceProvided * prov, 
     prov->AddEventWrite(this->Button, "Button", prmEventButton());
 }
 
-void mtsIO1394DigitalInput::TriggerEvents(void)
+void mtsIO1394DigitalInput::CheckState(void)
 {
-    prmEventButton pressed = prmEventButton::PRESSED,
+    static const prmEventButton
+        pressed = prmEventButton::PRESSED,
         released = prmEventButton::RELEASED;
 
     // Send appropriate events if the value changed in the last update

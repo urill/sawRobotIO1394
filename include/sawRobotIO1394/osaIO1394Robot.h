@@ -72,6 +72,8 @@ namespace sawRobotIO1394 {
          *\{**/
         void PollValidity(void);
         void PollState(void);
+        void ConvertState(void);
+        void CheckState(void);
         /**}**/
 
         /** \name Command Functions
@@ -269,7 +271,7 @@ namespace sawRobotIO1394 {
             ActuatorEffortCommand_,
             ActuatorCurrentFeedback_,
             ActuatorEffortFeedback_,
-            BoardTemperature_;
+            Temperature_;
 
         //! Actuator current measurement structures
         bool CalibrateCurrentCommandOffsetRequested_;

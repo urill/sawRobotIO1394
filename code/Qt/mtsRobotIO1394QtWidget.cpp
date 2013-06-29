@@ -70,7 +70,7 @@ void mtsRobotIO1394QtWidget::Init(void)
     MotorControlCurrent.SetSize(NumberOfActuators);
     MotorControlCurrent.Zeros();
     AmpEnable.SetSize(NumberOfActuators);
-    AmpTemperature.SetSize(NumberOfActuators / 2);
+    AmpTemperature.SetSize(NumberOfActuators);
 
     StartTime = osaGetTime();
 

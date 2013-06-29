@@ -49,25 +49,30 @@ protected:
 
     std::ostream * MessageStream;             // Stream provided to the low level boards for messages, redirected to cmnLogger
 
-    sawRobotIO1394::osaIO1394Port * io1394_port_;
-    std::vector<sawRobotIO1394::mtsIO1394Robot*> robots_;
-    std::vector<sawRobotIO1394::mtsIO1394DigitalInput*> digital_inputs_;
+    sawRobotIO1394::osaIO1394Port * Port_;
+
+    typedef std::vector<sawRobotIO1394::mtsIO1394Robot*> RobotsType;
+    typedef typename RobotsType::iterator robots_iterator;
+    RobotsType Robots_;
+
+    typedef std::vector<sawRobotIO1394::mtsIO1394DigitalInput*> DigitalInputsType;
+    typedef typename DigitalInputsType::iterator digital_inputs_iterator;
+    DigitalInputsType DigitalInputs_;
 
     ///////////// Public Class Methods ///////////////////////////
 public:
     // Constructor & Destructor
-    mtsRobotIO1394(const std::string & name, double period, int port_num);
+    mtsRobotIO1394(const std::string & name, double periodInSeconds, int portNumber);
     mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg); // TODO: add port_num
     virtual ~mtsRobotIO1394();
 
-    void Init(int port_num);
+    void Init(int portNumber);
 
     void Configure(const std::string & filename);
-    bool SetUpRobot(sawRobotIO1394::mtsIO1394Robot * robot);
-    bool SetUpDigitalIn(sawRobotIO1394::mtsIO1394DigitalInput * digital_in);
+    bool SetupRobot(sawRobotIO1394::mtsIO1394Robot * robot);
+    bool SetupDigitalInput(sawRobotIO1394::mtsIO1394DigitalInput * digitalInput);
     void Startup(void);
     void Run(void);
-    void TriggerEvents(void);
     void Cleanup(void);
     void GetNumberOfDigitalInputs(int & placeHolder) const;
 
@@ -79,6 +84,8 @@ protected:
     void GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const;
     void GetName(std::string & placeHolder) const;
 
+    void PreRead(void);
+    void PostRead(void);
 
     ////////////// Private Class Methods /////////////////////////////
 private:

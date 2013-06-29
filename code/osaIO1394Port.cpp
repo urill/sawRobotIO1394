@@ -199,6 +199,12 @@ void osaIO1394Port::Read(void)
         
         // Poll this robot's state
         (*robot)->PollState();
+
+        // Convert bits to usable numbers
+        (*robot)->ConvertState();
+
+        // Perform post conversion checks and computations
+        (*robot)->CheckState();
     }
 
     // Poll the state for each digital input

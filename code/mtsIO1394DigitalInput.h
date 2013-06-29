@@ -53,7 +53,9 @@ namespace sawRobotIO1394 {
 
         void SetupStateTable(mtsStateTable & stateTable);
         void SetupProvidedInterface(mtsInterfaceProvided * interfaceProvided, mtsStateTable & stateTable);
-        void TriggerEvents(void);
+
+        /*! Check state and trigger events as needed. */
+        void CheckState(void);
 
     protected:
         mtsFunctionWrite Button;    // The event funciton for button, will return prmEventButton
