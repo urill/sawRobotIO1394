@@ -286,6 +286,7 @@ void osaIO1394Robot::CheckState(void)
 void osaIO1394Robot::EnablePower(void)
 {
     this->EnableBoardsPower();
+    osaSleep(50.0 * cmn_ms);
     this->SetActuatorPower(true);
 }
 
@@ -297,7 +298,6 @@ void osaIO1394Robot::EnableBoardsPower(void)
         board->second->WriteSafetyRelay(true);
         board->second->WritePowerEnable(true);
     }
-    this->SetActuatorPower(true);
 }
 
 void osaIO1394Robot::DisablePower(void)

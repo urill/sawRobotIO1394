@@ -27,6 +27,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #ifndef SAW_ROBOT_IO_1394_WO_CISST
 #include <cisstCommon/cmnXMLPath.h>
+#include <cisstOSAbstraction/osaSleep.h>
 #include <cisstVector/vctDynamicVectorTypes.h>
 #include <cisstVector/vctDynamicMatrixTypes.h>
 #include <cisstParameterTypes/prmJointType.h>
