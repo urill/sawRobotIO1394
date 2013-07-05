@@ -37,15 +37,15 @@ if (cisst_FOUND_AS_REQUIRED)
     include_directories (${sawRobotIO1394_INCLUDE_DIR})
     link_directories (${sawRobotIO1394_LIBRARY_DIR})
 
-    add_executable (sawRobotIO1394ExampleQt mainQt.cpp)
-    set_property (TARGET sawRobotIO1394ExampleQt PROPERTY FOLDER "sawRobotIO1394")
+    add_executable (sawRobotIO1394QtConsole mainQt.cpp)
+    set_property (TARGET sawRobotIO1394QtConsole PROPERTY FOLDER "sawRobotIO1394")
 
     # link against non cisst libraries and cisst components
-    target_link_libraries (sawRobotIO1394ExampleQt
+    target_link_libraries (sawRobotIO1394QtConsole
                            ${sawRobotIO1394_LIBRARIES})
 
     # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawRobotIO1394ExampleQt ${REQUIRED_CISST_LIBRARIES})
+    cisst_target_link_libraries (sawRobotIO1394QtConsole ${REQUIRED_CISST_LIBRARIES})
 
   endif (sawRobotIO1394_FOUND)
 

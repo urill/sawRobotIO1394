@@ -11,13 +11,5 @@
 #
 # --- end cisst license ---
 
-# Example program uses curses for text-based display
-find_package (Curses)
-if (CURSES_FOUND)
-  add_subdirectory(curses)
-else (CURSES_FOUND)
-  message ("sawRobotIO1394 curses based example not available -- curses lib not found")
-endif (CURSES_FOUND)
-
 # Qt based example, CMake will look for cisstQt
 add_subdirectory (Qt)
