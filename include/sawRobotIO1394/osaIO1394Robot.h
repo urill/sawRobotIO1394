@@ -69,7 +69,7 @@ namespace sawRobotIO1394 {
 
         /** \name State Update Functions
          * These functions interact with the lower-level hardware to query
-         * information only and update this class's members.
+         * information only and update this class' members.
          *\{**/
         void PollValidity(void);
         void PollState(void);

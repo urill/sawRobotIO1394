@@ -208,7 +208,7 @@ bool mtsRobotIO1394::SetupDigitalInput(mtsIO1394DigitalInput * digitalInput)
 
     digitalInput->SetupProvidedInterface(digitalInInterface, this->StateTable);
 
-    // Add the mehcnism to the port
+    // Add the mechanism to the port
     try {
         Port_->AddDigitalInput(digitalInput);
     } catch (osaIO1394::configuration_error & err) {

@@ -27,9 +27,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 
-class FirewirePort;
-class AmpIO;
-
 namespace sawRobotIO1394 {
     class osaIO1394Port;
     class mtsIO1394Robot;
@@ -43,9 +40,6 @@ public:
     enum { MAX_BOARDS = 16 };
 
 protected:
-
-    class RobotInternal;
-    class DigitalInInternal;
 
     std::ostream * MessageStream;             // Stream provided to the low level boards for messages, redirected to cmnLogger
 

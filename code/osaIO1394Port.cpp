@@ -65,7 +65,7 @@ void osaIO1394Port::AddRobot(osaIO1394Robot * robot)
 
     const osaIO1394::RobotConfiguration & config = robot->GetConfiguration();
 
-    // Check to make sure this robot isn't alreay added
+    // Check to make sure this robot isn't already added
     if (RobotsByName_.count(config.Name) > 0) {
         throw osaIO1394::configuration_error("Robot name is not unique.");
     }
@@ -134,7 +134,7 @@ void osaIO1394Port::AddDigitalInput(osaIO1394DigitalInput * digitalInput)
 
     const osaIO1394::DigitalInputConfiguration & config = digitalInput->Configuration();
 
-    // Check to make sure this digital_input isn't alreay added
+    // Check to make sure this digital_input isn't already added
     if (DigitalInputsByName_.count(config.Name) > 0) {
         throw osaIO1394::configuration_error("Digital input name is not unique.");
     }
