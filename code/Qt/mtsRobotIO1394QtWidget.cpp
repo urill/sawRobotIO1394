@@ -38,9 +38,9 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtWidget, mtsComponent, mtsC
 
 mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators):
     mtsComponent(componentName),
-    NumberOfActuators(numberOfActuators),
     DirectControl(true),
-    TimerPeriodInMilliseconds(50)
+    TimerPeriodInMilliseconds(50),
+    NumberOfActuators(numberOfActuators)
 {
     WatchdogPeriodInSeconds = 140.0 * cmn_ms;
     Init();

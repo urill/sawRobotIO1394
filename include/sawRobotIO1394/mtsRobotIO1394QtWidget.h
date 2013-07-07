@@ -126,7 +126,7 @@ protected:
 private:
     mtsIntervalStatistics IntervalStatistics;
 
-    int NumberOfActuators;
+    size_t NumberOfActuators;
 
     vctDoubleVec UnitFactor;
     vctDoubleVec JointPosition;
