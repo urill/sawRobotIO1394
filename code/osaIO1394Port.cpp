@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/osaIO1394Port.h>
 #include <stdexcept>
+#include <exception>
 
 using namespace sawRobotIO1394;
 using namespace osaIO1394;
@@ -204,7 +205,11 @@ void osaIO1394Port::Read(void)
         (*robot)->ConvertState();
 
         // Perform post conversion checks and computations
-        (*robot)->CheckState();
+        try{
+            (*robot)->CheckState();
+        }catch (std::exception& e){
+            std::cerr << e.what() << std::endl;
+        }
     }
 
     // Poll the state for each digital input

@@ -260,9 +260,11 @@ namespace sawRobotIO1394 {
             ActuatorCurrentBitsFeedback_;
 
         vctDoubleVec
+            TimeStamp_,
             PotVoltage_,
             PotPosition_,
             EncoderPosition_,
+            EncoderPositionPrev_,
             EncoderVelocity_,
             EncoderDPosition_,
             EncoderDTime_,

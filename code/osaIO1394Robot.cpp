@@ -72,9 +72,11 @@ void osaIO1394Robot::Configure(const osaIO1394::RobotConfiguration & config)
     EncoderVelocityBits_.resize(NumberOfActuators_);
     ActuatorCurrentBitsCommand_.resize(NumberOfActuators_);
     ActuatorCurrentBitsFeedback_.resize(NumberOfActuators_);
+    TimeStamp_.resize(NumberOfActuators_);
     PotVoltage_.resize(NumberOfActuators_);
     PotPosition_.resize(NumberOfActuators_);
     EncoderPosition_.resize(NumberOfActuators_);
+    EncoderPositionPrev_.resize(NumberOfActuators_);
     EncoderVelocity_.resize(NumberOfActuators_);
     JointPosition_.resize(NumberOfJoints_);
     JointVelocity_.resize(NumberOfJoints_);
@@ -153,6 +155,7 @@ void osaIO1394Robot::Configure(const osaIO1394::RobotConfiguration & config)
 
         // Initialize state vectors
         EncoderPosition_[i] = 0.0;
+        EncoderPositionPrev_[i] = 0.0;
         ActuatorCurrentCommand_[i] = 0.0;
         ActuatorCurrentFeedback_[i] = 0.0;
     }
@@ -214,10 +217,13 @@ void osaIO1394Robot::PollState(void)
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
 
+        TimeStamp_[i] = board->GetTimestamp() * 1.0 / 49125000.0;
         DigitalInputs_[i] = board->GetDigitalInput();
 
-        EncoderPositionBits_[i] = ((int)(board->GetEncoderPosition(axis) << 8)) >> 8; // convert from 24 bits signed stored in 32 unsigned to 32 signed
-        EncoderVelocityBits_[i] = ((int)(board->GetEncoderVelocity(axis) << 16)) >> 16; // convert from 16 bits signed stored in 32 unsigned to 32 signed
+        // convert from 24 bits signed stored in 32 unsigned to 32 signed
+        EncoderPositionBits_[i] = ((int)(board->GetEncoderPosition(axis) << 8)) >> 8;
+        // convert from 16 bits signed stored in 32 unsigned to 32 signed
+        EncoderVelocityBits_[i] = ((int)(board->GetEncoderVelocity(axis) << 16)) >> 16;
 
         PotBits_[i] = board->GetAnalogInput(axis);
 
@@ -249,6 +255,9 @@ void osaIO1394Robot::ConvertState(void)
 
 void osaIO1394Robot::CheckState(void)
 {
+    // Save EncoderPositionPrev
+    EncoderPositionPrev_.Assign(EncoderPosition_);
+
     // Store currents for biasing and re-bias if appropriate
     if (CalibrateCurrentCommandOffsetRequested_
         && (CalibrateCurrentBufferIndex_ < CalibrateCurrentBufferSize_)) {
@@ -281,6 +290,17 @@ void osaIO1394Robot::CheckState(void)
         this->DisablePower();
         throw osaIO1394::safety_error("Too many consecutive current safety violations.  power has been disabled.");
     }
+
+    // ZC: check safety amp disable
+    for (unique_board_iterator board = UniqueBoards_.begin();
+         board != UniqueBoards_.end();
+         ++board)
+    {
+        AmpIO_UInt32 safetyAmpDisable = board->second->GetSafetyAmpDisable();
+        if (safetyAmpDisable){
+            throw osaIO1394::safety_error("Hardware current safety ampdisable tripped." + TimeStamp_.ToString());
+        }
+    }
 }
 
 void osaIO1394Robot::EnablePower(void)
@@ -302,8 +322,16 @@ void osaIO1394Robot::EnableBoardsPower(void)
 
 void osaIO1394Robot::DisablePower(void)
 {
+    // write to boards directly
+    // disable all axes
+    for (unique_board_iterator board = UniqueBoards_.begin();
+         board != UniqueBoards_.end();
+         ++board) {
+        board->second->WriteAmpEnable(0x0f, 0x00);
+    }
+
+    // disable all boards
     this->DisableBoardPower();
-    this->SetActuatorPower(false);
 }
 
 void osaIO1394Robot::DisableBoardPower(void)
@@ -580,8 +608,20 @@ void osaIO1394Robot::EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & d
     }
 }
 void osaIO1394Robot::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const {
+
+#if 0
+    // ZC: velocity computed using FPGA encoder
+    // NOTE: BitsToVecocityScales, BitsToVelocityOffsets = 0
     for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
         vel[i] = static_cast<double>(bits[i]) * BitsToVecocityScales_[i] + BitsToVelocityOffsets_[i];
+    }
+#endif
+
+    // ZC: use timestamp from FPGA to compute velocity
+    // inaccurate if vel is small
+    // TODO: test using PID
+    for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
+        vel[i] = (EncoderPosition_[i] - EncoderPositionPrev_[i]) / TimeStamp_[i];
     }
 }
 void osaIO1394Robot::ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const {
