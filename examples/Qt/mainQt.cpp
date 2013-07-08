@@ -26,6 +26,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 
+#ifdef WITH_ROS
+#include <ros/ros.h>
+#include <sensor_msgs/JointState.h>
+#include <sawROS/mtsROSBridge.h>
+#endif
+
+
 int main(int argc, char ** argv)
 {
     // log configuration
@@ -40,12 +47,17 @@ int main(int argc, char ** argv)
     cmnCommandLineOptions options;
     int port = 0;
     std::string configFile;
+    std::string robotName = "Robot";
     options.AddOptionOneValue("c", "config",
                               "configuration file",
                               cmnCommandLineOptions::REQUIRED, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL, &port);
+    options.AddOptionOneValue("n", "name",
+                              "robot name",
+                              cmnCommandLineOptions::OPTIONAL, &robotName);
+
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
@@ -74,6 +86,20 @@ int main(int argc, char ** argv)
 
     componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "robot", "Configuration");
     robotWidgetFactory->Configure();
+
+#ifdef WITH_ROS
+    // ros wrapper
+    mtsROSBridge robotBridge("RobotBridge", 20 * cmn_ms);
+    robotBridge.AddTopicFromReadFunction<prmPositionJointGet, sensor_msgs::JointState>(
+                robotName, "GetPositionJoint", "/" + robotName + "/joint_position");
+    robotBridge.AddTopicFromReadFunction<vctDoubleVec, sawROS::vctDoubleVec>(
+                robotName, "GetVelocity", "/" + robotName + "/joint_velocity");
+    componentManager->AddComponent(&robotBridge);
+
+    componentManager->Connect(robotBridge.GetName(), robotName,
+                              "robot", robotName);
+
+#endif
 
     // create the components
     componentManager->CreateAllAndWait(2.0 * cmn_s);
