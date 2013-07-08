@@ -57,12 +57,17 @@ namespace sawRobotIO1394 {
         osaIO1394Port(int portNumber, std::ostream & messageStream = std::cerr);
         ~osaIO1394Port();
 
-        //! Add a robot to this port
+        //! Configure the port using the specified configuration file. This method is not
+        //  used by the mtsRobotIO1394 SAW component.
         void Configure(const osaIO1394::Configuration & config);
 
+        //! Add a robot to this port. The first method is called by Configure. The second
+        //  method is used by the mtsRobotIO1394 SAW component.
         void AddRobot(const osaIO1394::RobotConfiguration & config);
         void AddRobot(osaIO1394Robot * Robot);
 
+        //! Add a digital input to this port. The first method is called by Configure. The second
+        //  method is used by the mtsRobotIO1394 SAW component.
         void AddDigitalInput(const osaIO1394::DigitalInputConfiguration & config);
         void AddDigitalInput(osaIO1394DigitalInput * digital_input);
 

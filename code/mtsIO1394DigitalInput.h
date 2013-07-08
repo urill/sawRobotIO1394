@@ -36,7 +36,7 @@ namespace sawRobotIO1394 {
           after the cmnNamedMap is constructed. */
         const cmnClassServicesBase * OwnerServices;
 
-        /*! Method use to emulate the cmnGenericObject interface used by
+        /*! Method used to emulate the cmnGenericObject interface used by
           CMN_LOG_CLASS macros. */
         //@{
         inline const cmnClassServicesBase * Services(void) const {
@@ -58,7 +58,7 @@ namespace sawRobotIO1394 {
         void CheckState(void);
 
     protected:
-        mtsFunctionWrite Button;    // The event funciton for button, will return prmEventButton
+        mtsFunctionWrite Button;    // The event function for button, will return prmEventButton
     };
 }
 

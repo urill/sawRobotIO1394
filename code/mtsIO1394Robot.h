@@ -40,7 +40,7 @@ namespace sawRobotIO1394 {
           after the cmnNamedMap is constructed. */
         const cmnClassServicesBase * OwnerServices;
 
-        /*! Method use to emulate the cmnGenericObject interface used by
+        /*! Method used to emulate the cmnGenericObject interface used by
           CMN_LOG_CLASS macros. */
         //@{
         inline const cmnClassServicesBase * Services(void) const {

@@ -63,7 +63,7 @@ void osaIO1394DigitalInput::PollState(void)
     // Store previous value
     PreviousValue_ = Value_;
 
-    // Get thenew value
+    // Get the new value
     DigitalInputBits_ =  Board_->GetDigitalInput();
 
     // If the masked bit is low, set the value to the pressed value

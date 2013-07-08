@@ -141,7 +141,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
     for (std::vector<osaIO1394::DigitalInputConfiguration>::const_iterator it = config.DigitalInputs.begin();
          it != config.DigitalInputs.end();
          ++it) {
-        // Create a new robot
+        // Create a new digital input
         mtsIO1394DigitalInput * digital_input = new mtsIO1394DigitalInput(*this, *it);
         // Set up the cisstMultiTask interfaces
         if (!this->SetupDigitalInput(digital_input)) {
@@ -208,7 +208,7 @@ bool mtsRobotIO1394::SetupDigitalInput(mtsIO1394DigitalInput * digitalInput)
 
     digitalInput->SetupProvidedInterface(digitalInInterface, this->StateTable);
 
-    // Add the mechanism to the port
+    // Add the digital input to the port
     try {
         Port_->AddDigitalInput(digitalInput);
     } catch (osaIO1394::configuration_error & err) {
