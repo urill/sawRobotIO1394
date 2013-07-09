@@ -217,6 +217,8 @@ void mtsIO1394Robot::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                     thisBase, "BiasCurrent");
     robotInterface->AddCommandVoid(&osaIO1394Robot::CalibrateEncoderOffsetsFromPots,
                                    thisBase, "BiasEncoder");
+    robotInterface->AddCommandWrite(&mtsIO1394Robot::ResetSingleEncoder, this,
+                                    "ResetSingleEncoder"); // int
 
     // Events
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
