@@ -20,6 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 
 
 #include <sawRobotIO1394/osaXML1394.h>
+#include <cisstCommon/cmnUnits.h>
 
 namespace sawRobotIO1394 {
 
