@@ -22,30 +22,30 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsStateTable.h>
 #include <cisstParameterTypes/prmEventButton.h>
 
-#include "mtsIO1394DigitalInput.h"
+#include "mtsDigitalInput1394.h"
 
 using namespace sawRobotIO1394;
 
 
-mtsIO1394DigitalInput::mtsIO1394DigitalInput(const cmnGenericObject & owner,
-                                             const osaIO1394::DigitalInputConfiguration & config):
-    osaIO1394DigitalInput(config),
+mtsDigitalInput1394::mtsDigitalInput1394(const cmnGenericObject & owner,
+                                         const osaDigitalInput1394Configuration & config):
+    osaDigitalInput1394(config),
     OwnerServices(owner.Services())
 {
 }
 
-void mtsIO1394DigitalInput::SetupStateTable(mtsStateTable & stateTable)
+void mtsDigitalInput1394::SetupStateTable(mtsStateTable & stateTable)
 {
     stateTable.AddData(Value_, Name_ + "Value");
 }
 
-void mtsIO1394DigitalInput::SetupProvidedInterface(mtsInterfaceProvided * prov, mtsStateTable & stateTable)
+void mtsDigitalInput1394::SetupProvidedInterface(mtsInterfaceProvided * prov, mtsStateTable & stateTable)
 {
     prov->AddCommandReadState(stateTable, this->Value_, "GetButton");
     prov->AddEventWrite(this->Button, "Button", prmEventButton());
 }
 
-void mtsIO1394DigitalInput::CheckState(void)
+void mtsDigitalInput1394::CheckState(void)
 {
     static const prmEventButton
         pressed = prmEventButton::PRESSED,

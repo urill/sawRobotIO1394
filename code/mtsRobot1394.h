@@ -18,8 +18,8 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _mtsIO1394Robot_h
-#define _mtsIO1394Robot_h
+#ifndef _mtsRobot1394_h
+#define _mtsRobot1394_h
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
@@ -27,12 +27,11 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
-#include <sawRobotIO1394/osaRobotIO1394.h>
-#include <sawRobotIO1394/osaIO1394Robot.h>
+#include <sawRobotIO1394/osaRobot1394.h>
 
 namespace sawRobotIO1394 {
 
-    class mtsIO1394Robot: public osaIO1394Robot {
+    class mtsRobot1394: public osaRobot1394 {
     public:
         /*! Pointer on existing services.  This allows to use the class
           name and level of detail of another class, e.g. the class that
@@ -52,8 +51,8 @@ namespace sawRobotIO1394 {
         }
         //@}
 
-        mtsIO1394Robot(const cmnGenericObject & owner,
-                       const osaIO1394::RobotConfiguration & config);
+        mtsRobot1394(const cmnGenericObject & owner,
+                     const osaRobot1394Configuration & config);
 
         bool SetupStateTables(const size_t stateTableSize,
                               mtsStateTable * & stateTableRead,
@@ -87,6 +86,6 @@ namespace sawRobotIO1394 {
         } EventTriggers;
     };
 
-}
+} // namespace sawRobotIO1394
 
-#endif // _mtsIO1394Robot_h
+#endif // _mtsRobot1394_h

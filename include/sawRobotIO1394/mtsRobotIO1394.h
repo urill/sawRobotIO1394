@@ -28,9 +28,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 
 namespace sawRobotIO1394 {
-    class osaIO1394Port;
-    class mtsIO1394Robot;
-    class mtsIO1394DigitalInput;
+    class osaPort1394;
+    class mtsRobot1394;
+    class mtsDigitalInput1394;
 }
 
 class mtsRobotIO1394 : public mtsTaskPeriodic {
@@ -43,14 +43,14 @@ protected:
 
     std::ostream * MessageStream;             // Stream provided to the low level boards for messages, redirected to cmnLogger
 
-    sawRobotIO1394::osaIO1394Port * Port_;
+    sawRobotIO1394::osaPort1394 * Port_;
 
-    typedef std::vector<sawRobotIO1394::mtsIO1394Robot*> RobotsType;
-    typedef typename RobotsType::iterator robots_iterator;
+    typedef std::vector<sawRobotIO1394::mtsRobot1394*> RobotsType;
+    typedef RobotsType::iterator robots_iterator;
     RobotsType Robots_;
 
-    typedef std::vector<sawRobotIO1394::mtsIO1394DigitalInput*> DigitalInputsType;
-    typedef typename DigitalInputsType::iterator digital_inputs_iterator;
+    typedef std::vector<sawRobotIO1394::mtsDigitalInput1394*> DigitalInputsType;
+    typedef DigitalInputsType::iterator digital_inputs_iterator;
     DigitalInputsType DigitalInputs_;
 
     ///////////// Public Class Methods ///////////////////////////
@@ -63,8 +63,8 @@ public:
     void Init(int portNumber);
 
     void Configure(const std::string & filename);
-    bool SetupRobot(sawRobotIO1394::mtsIO1394Robot * robot);
-    bool SetupDigitalInput(sawRobotIO1394::mtsIO1394DigitalInput * digitalInput);
+    bool SetupRobot(sawRobotIO1394::mtsRobot1394 * robot);
+    bool SetupDigitalInput(sawRobotIO1394::mtsDigitalInput1394 * digitalInput);
     void Startup(void);
     void Run(void);
     void Cleanup(void);

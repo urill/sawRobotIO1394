@@ -18,17 +18,17 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _mtsIO1394DigitalInput_h
-#define _mtsIO1394DigitalInput_h
+#ifndef _mtsDigitalInput1394_h
+#define _mtsDigitalInput1394_h
 
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstParameterTypes/prmEventButton.h>
 
-#include <sawRobotIO1394/mtsRobotIO1394.h>
-#include <sawRobotIO1394/osaIO1394DigitalInput.h>
+#include <sawRobotIO1394/osaDigitalInput1394.h>
 
 namespace sawRobotIO1394 {
-    class mtsIO1394DigitalInput : public osaIO1394DigitalInput {
+
+    class mtsDigitalInput1394: public osaDigitalInput1394 {
     public:
         /*! Pointer on existing services.  This allows to use the class
           name and level of detail of another class, e.g. the class that
@@ -48,8 +48,8 @@ namespace sawRobotIO1394 {
         }
         //@}
 
-        mtsIO1394DigitalInput(const cmnGenericObject & owner,
-                              const osaIO1394::DigitalInputConfiguration & config);
+        mtsDigitalInput1394(const cmnGenericObject & owner,
+                              const osaDigitalInput1394Configuration & config);
 
         void SetupStateTable(mtsStateTable & stateTable);
         void SetupProvidedInterface(mtsInterfaceProvided * interfaceProvided, mtsStateTable & stateTable);
@@ -60,6 +60,7 @@ namespace sawRobotIO1394 {
     protected:
         mtsFunctionWrite Button;    // The event function for button, will return prmEventButton
     };
-}
 
-#endif // _mtsIO1394DigitalInput_h
+} // namespace sawRobotIO1394
+
+#endif // _mtsDigitalInput1394_h

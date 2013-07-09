@@ -31,23 +31,16 @@
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 
 #include <sawRobotIO1394/mtsRobotIO1394.h>
+#include <sawRobotIO1394/osaPort1394.h>
+#include <sawRobotIO1394/osaXML1394.h>
 
-#include <sawRobotIO1394/osaRobotIO1394.h>
-#include <sawRobotIO1394/osaIO1394Port.h>
-#include <sawRobotIO1394/osaIO1394Robot.h>
-#include <sawRobotIO1394/osaIO1394XMLConfig.h>
-
-#include "mtsIO1394Robot.h"
-#include "mtsIO1394DigitalInput.h"
-
-#include <FirewirePort.h>
-#include <AmpIO.h>
+#include "mtsRobot1394.h"
+#include "mtsDigitalInput1394.h"
 
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
 using namespace sawRobotIO1394;
-
 
 mtsRobotIO1394::mtsRobotIO1394(const std::string & name, double periodInSeconds, int portNumber):
     mtsTaskPeriodic(name, periodInSeconds)
@@ -73,7 +66,7 @@ void mtsRobotIO1394::Init(int port_num)
     // construct port
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     try {
-        Port_ = new sawRobotIO1394::osaIO1394Port(port_num, *MessageStream);
+        Port_ = new sawRobotIO1394::osaPort1394(port_num, *MessageStream);
     } catch (std::runtime_error &err) {
         CMN_LOG_CLASS_INIT_ERROR << err.what();
         abort();
@@ -99,7 +92,7 @@ void mtsRobotIO1394::Init(int port_num)
     // All previous interfaces are ready. Good start. Let's make a new provided interface.
     mtsInterfaceProvided * configurationInterface   = this->AddInterfaceProvided("Configuration");
     if (configurationInterface) {
-        configurationInterface->AddCommandRead(&osaIO1394Port::GetRobotNames, Port_,
+        configurationInterface->AddCommandRead(&osaPort1394::GetRobotNames, Port_,
                                                "GetRobotNames");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfActuatorPerRobot, this,
                                                "GetNumActuators");
@@ -107,7 +100,7 @@ void mtsRobotIO1394::Init(int port_num)
                                                "GetNumRobots");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfDigitalInputs, this,
                                                "GetNumDigitalInputs");
-        configurationInterface->AddCommandRead(&osaIO1394Port::GetDigitalInputNames, Port_,
+        configurationInterface->AddCommandRead(&osaPort1394::GetDigitalInputNames, Port_,
                                                "GetDigitalInputNames");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetName, this,
                                                "GetName");
@@ -120,15 +113,15 @@ void mtsRobotIO1394::Configure(const std::string & filename)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Configure: configuring from " << filename << std::endl;
 
-    osaIO1394::Configuration config;
-    osaIO1394XMLConfig::LoadFromFile(filename, config);
+    osaPort1394Configuration config;
+    osaXML1394ConfigurePort(filename, config);
 
     // Add all the robots
-    for (std::vector<osaIO1394::RobotConfiguration>::const_iterator it = config.Robots.begin();
+    for (std::vector<osaRobot1394Configuration>::const_iterator it = config.Robots.begin();
          it != config.Robots.end();
          ++it) {
         // Create a new robot
-        mtsIO1394Robot * robot = new mtsIO1394Robot(*this, *it);
+        mtsRobot1394 * robot = new mtsRobot1394(*this, *it);
         // Set up the cisstMultiTask interfaces
         if (!this->SetupRobot(robot)) {
             delete robot;
@@ -138,11 +131,11 @@ void mtsRobotIO1394::Configure(const std::string & filename)
     }
 
     // Add all the digital inputs
-    for (std::vector<osaIO1394::DigitalInputConfiguration>::const_iterator it = config.DigitalInputs.begin();
+    for (std::vector<osaDigitalInput1394Configuration>::const_iterator it = config.DigitalInputs.begin();
          it != config.DigitalInputs.end();
          ++it) {
         // Create a new digital input
-        mtsIO1394DigitalInput * digital_input = new mtsIO1394DigitalInput(*this, *it);
+        mtsDigitalInput1394 * digital_input = new mtsDigitalInput1394(*this, *it);
         // Set up the cisstMultiTask interfaces
         if (!this->SetupDigitalInput(digital_input)) {
             delete digital_input;
@@ -152,7 +145,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
     }
 }
 
-bool mtsRobotIO1394::SetupRobot(mtsIO1394Robot * robot)
+bool mtsRobotIO1394::SetupRobot(mtsRobot1394 * robot)
 {
     mtsStateTable * stateTableRead;
     mtsStateTable * stateTableWrite;
@@ -192,14 +185,14 @@ bool mtsRobotIO1394::SetupRobot(mtsIO1394Robot * robot)
     // Add the robot to the port
     try {
         Port_->AddRobot(robot);
-    } catch (osaIO1394::configuration_error & err) {
+    } catch (osaRuntimeError1394 & err) {
         CMN_LOG_CLASS_INIT_ERROR << "SetupRobot: unable to add the robot to the port: " << err.what() << std::endl;
         return false;
     }
     return true;
 }
 
-bool mtsRobotIO1394::SetupDigitalInput(mtsIO1394DigitalInput * digitalInput)
+bool mtsRobotIO1394::SetupDigitalInput(mtsDigitalInput1394 * digitalInput)
 {
     // Configure pressed active direction and edge detection
     digitalInput->SetupStateTable(this->StateTable);
@@ -211,7 +204,7 @@ bool mtsRobotIO1394::SetupDigitalInput(mtsIO1394DigitalInput * digitalInput)
     // Add the digital input to the port
     try {
         Port_->AddDigitalInput(digitalInput);
-    } catch (osaIO1394::configuration_error & err) {
+    } catch (osaRuntimeError1394 & err) {
         CMN_LOG_CLASS_INIT_ERROR << "SetupDigitalInput: unable to add the robot to the port: " << err.what() << std::endl;
         return false;
     }

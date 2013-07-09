@@ -43,21 +43,21 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # create the library
   add_library (sawRobotIO1394
-               ${sawRobotIO1394_HEADER_DIR}/osaRobotIO1394.h
-               ${sawRobotIO1394_HEADER_DIR}/osaIO1394Port.h
-               ${sawRobotIO1394_HEADER_DIR}/osaIO1394XMLConfig.h
-               ${sawRobotIO1394_HEADER_DIR}/osaIO1394Robot.h
-               ${sawRobotIO1394_HEADER_DIR}/osaIO1394DigitalInput.h
-               osaIO1394XMLConfig.cpp
-               osaIO1394Robot.cpp
-               osaIO1394DigitalInput.cpp
-               osaIO1394Port.cpp
+               ${sawRobotIO1394_HEADER_DIR}/osaConfiguration1394.h
+               ${sawRobotIO1394_HEADER_DIR}/osaPort1394.h
+               ${sawRobotIO1394_HEADER_DIR}/osaRobot1394.h
+               ${sawRobotIO1394_HEADER_DIR}/osaDigitalInput1394.h
+               ${sawRobotIO1394_HEADER_DIR}/osaXML1394.h
+               osaRobot1394.cpp
+               osaDigitalInput1394.cpp
+               osaPort1394.cpp
+               osaXML1394.cpp
                ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394.h
-               mtsIO1394Robot.h
-               mtsIO1394DigitalInput.h
-               mtsRobotIO1394.cpp
-               mtsIO1394Robot.cpp
-               mtsIO1394DigitalInput.cpp)
+               mtsRobot1394.h
+               mtsRobot1394.cpp
+               mtsDigitalInput1394.h
+               mtsDigitalInput1394.cpp
+               mtsRobotIO1394.cpp)
 
   set_property (TARGET sawRobotIO1394 PROPERTY FOLDER "sawRobotIO1394")
   target_link_libraries (sawRobotIO1394 Amp1394)

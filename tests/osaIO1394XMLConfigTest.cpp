@@ -81,7 +81,7 @@ void osaIO1394XMLConfigTest::TestConfigure(void)
     CPPUNIT_ASSERT(xml_path.length() > 0);
 
     osaIO1394::Configuration config;
-    osaIO1394XMLConfig::LoadFromFile(xml_path, config);
+    osaIO1394XMLConfig::ConfigurePort(xml_path, config);
 
     CPPUNIT_ASSERT(config.Robots.size() == 1);
     CPPUNIT_ASSERT(config.DigitalInputs.size() == 12);

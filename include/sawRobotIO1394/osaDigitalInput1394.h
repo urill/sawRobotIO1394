@@ -18,23 +18,24 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _osaIO1394DigitalInput_h
-#define _osaIO1394DigitalInput_h
+#ifndef _osaDigitalInput1394_h
+#define _osaDigitalInput1394_h
 
-#include <sawRobotIO1394/osaRobotIO1394.h>
+#include <sawRobotIO1394/osaConfiguration1394.h>
 #include "AmpIO.h"
 
 namespace sawRobotIO1394 {
-    class osaIO1394DigitalInput {
-    public:
-        osaIO1394DigitalInput(const osaIO1394::DigitalInputConfiguration & config);
 
-        void Configure(const osaIO1394::DigitalInputConfiguration & config);
+    class osaDigitalInput1394 {
+    public:
+        osaDigitalInput1394(const osaDigitalInput1394Configuration & config);
+
+        void Configure(const osaDigitalInput1394Configuration & config);
         void SetBoard(AmpIO * board);
 
         void PollState(void);
 
-        osaIO1394::DigitalInputConfiguration Configuration(void) const;
+        osaDigitalInput1394Configuration Configuration(void) const;
 
         std::string Name(void) const;
         bool Value(void) const;
@@ -43,7 +44,7 @@ namespace sawRobotIO1394 {
     protected:
         AmpIO * Board_;              // Board Assignment
 
-        osaIO1394::DigitalInputConfiguration Configuration_;
+        osaDigitalInput1394Configuration Configuration_;
         std::string Name_;
         int BitID_;                  // Board assigned bitID for this Digital Input
         AmpIO_UInt32 BitMask_;       // BitMask for this input. From DigitalInput Stream.
@@ -56,6 +57,7 @@ namespace sawRobotIO1394 {
         bool Value_;                    // Current read value
         bool PreviousValue_;            // Saved value from the previous read
     };
+
 }
 
-#endif // _osaIO1394DigitalInput_h
+#endif // _osaDigitalInput1394_h

@@ -18,15 +18,14 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#include <sawRobotIO1394/osaIO1394DigitalInput.h>
+#include <sawRobotIO1394/osaDigitalInput1394.h>
 
 #include "FirewirePort.h"
 #include "AmpIO.h"
 
 using namespace sawRobotIO1394;
-using namespace osaIO1394;
 
-osaIO1394DigitalInput::osaIO1394DigitalInput(const osaIO1394::DigitalInputConfiguration & config):
+osaDigitalInput1394::osaDigitalInput1394(const osaDigitalInput1394Configuration & config):
     DigitalInputBits_(0x0),
     Value_(false),
     PreviousValue_(false)
@@ -34,7 +33,7 @@ osaIO1394DigitalInput::osaIO1394DigitalInput(const osaIO1394::DigitalInputConfig
     this->Configure(config);
 }
 
-void osaIO1394DigitalInput::Configure(const osaIO1394::DigitalInputConfiguration & config)
+void osaDigitalInput1394::Configure(const osaDigitalInput1394Configuration & config)
 {
     // Store configuration
     Configuration_ = config;
@@ -50,15 +49,15 @@ void osaIO1394DigitalInput::Configure(const osaIO1394::DigitalInputConfiguration
     PreviousValue_ = Value_;
 }
 
-void osaIO1394DigitalInput::SetBoard(AmpIO * board)
+void osaDigitalInput1394::SetBoard(AmpIO * board)
 {
     if (board == 0) {
-        throw osaIO1394::configuration_error("Invalid board pointer.");
+        cmnThrow(osaRuntimeError1394("Invalid board pointer."));
     }
     Board_ = board;
 }
 
-void osaIO1394DigitalInput::PollState(void)
+void osaDigitalInput1394::PollState(void)
 {
     // Store previous value
     PreviousValue_ = Value_;
@@ -70,18 +69,18 @@ void osaIO1394DigitalInput::PollState(void)
     Value_ = (DigitalInputBits_ & BitMask_) ? (!PressedValue_) : (PressedValue_);
 }
 
-osaIO1394::DigitalInputConfiguration osaIO1394DigitalInput::Configuration(void) const {
+osaDigitalInput1394Configuration osaDigitalInput1394::Configuration(void) const {
     return Configuration_;
 }
 
-std::string osaIO1394DigitalInput::Name(void) const {
+std::string osaDigitalInput1394::Name(void) const {
     return Name_;
 }
 
-bool osaIO1394DigitalInput::Value(void) const {
+bool osaDigitalInput1394::Value(void) const {
     return Value_;
 }
 
-bool osaIO1394DigitalInput::PreviousValue(void) const {
+bool osaDigitalInput1394::PreviousValue(void) const {
     return PreviousValue_;
 }

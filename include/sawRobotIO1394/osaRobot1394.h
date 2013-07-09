@@ -18,18 +18,15 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _osaIO1394Robot_h
-#define _osaIO1394Robot_h
+#ifndef _osaRobot1394_h
+#define _osaRobot1394_h
 
 #include <vector>
 #include <map>
 #include <stdint.h>
 
 #ifndef SAW_ROBOT_IO_1394_WO_CISST
-#include <cisstCommon/cmnXMLPath.h>
-#include <cisstOSAbstraction/osaSleep.h>
 #include <cisstVector/vctDynamicVectorTypes.h>
-#include <cisstVector/vctDynamicMatrixTypes.h>
 #include <cisstParameterTypes/prmJointType.h>
 #else
 #include <boost/shared_ptr.hpp>
@@ -38,19 +35,19 @@ http://www.cisst.org/cisst/license.txt.
 #include "MinimalPrm.h"
 #endif
 
-#include <sawRobotIO1394/osaRobotIO1394.h>
+#include <sawRobotIO1394/osaConfiguration1394.h>
 
 class AmpIO;
 
 namespace sawRobotIO1394 {
+
     /**
      * IO1394 Robot Abstraction Layer
      * This class is responsible for robot-level actuation and unit
      * conversion as well as safety monitoring for the QLA robot control
      * architecture.
      **/
-
-    class osaIO1394Robot {
+    class osaRobot1394 {
 
     public:
         //! Watchdog counts per ms (note counter width, e.g. 16 bits)
@@ -58,11 +55,11 @@ namespace sawRobotIO1394 {
 
         /** \name Lifecycle
          *\{**/
-        osaIO1394Robot(const osaIO1394::RobotConfiguration & config,
-                       const size_t max_consecutive_current_safety_violations = 100,
-                       const size_t actuator_current_buffer_size = 1000);
+        osaRobot1394(const osaRobot1394Configuration & config,
+                     const size_t max_consecutive_current_safety_violations = 100,
+                     const size_t actuator_current_buffer_size = 1000);
 
-        void Configure(const osaIO1394::RobotConfiguration & config);
+        void Configure(const osaRobot1394Configuration & config);
 
         void SetBoards(std::vector<AmpIO*> boards);
         /**}**/
@@ -117,33 +114,11 @@ namespace sawRobotIO1394 {
         bool PowerStatus(void) const;
         bool SafetyRelay(void) const;
         bool WatchdogStatus(void) const;
-
-#if 0 // defined but not implemented - when implemented, remove equivalent methods from mtsIO1394Robot
-        void GetDigitalInput(vctBoolVec & digital) const;
-
-        void get_encoder_pos(vctDoubleVec & pos) const;
-        void get_encoder_pos_bits(vctIntVec & bits) const;
-
-        void get_encoder_vel(vctDoubleVec & vel) const;
-        void get_encoder_vel_bits(vctIntVec & bits) const;
-
-        void get_actuator_command_efforts(vctDoubleVec & efforts) const;
-        void get_actuator_command_amps(vctDoubleVec & currents) const;
-        void get_actuator_command_bits(vctIntVec & bits) const;
-
-        void get_actuator_feedback_efforts(vctDoubleVec & efforts) const;
-        void get_actuator_feedback_amps(vctDoubleVec & currents) const;
-        void get_actuator_feedback_bits(vctIntVec & bits) const;
-
-        void get_actuator_enabled(vctBoolVec & enabled) const;
-        void get_actuator_status(vctBoolVec & enabled) const;
-#endif
-
         /**}**/
 
         /** \name Parameter Accessors
          *\{**/
-        osaIO1394::RobotConfiguration GetConfiguration(void) const;
+        osaRobot1394Configuration GetConfiguration(void) const;
         std::string Name(void) const;
         double NumberOfJoints(void) const;
         double NumberOfActuators(void) const;
@@ -195,7 +170,7 @@ namespace sawRobotIO1394 {
         typedef std::map<int, AmpIO*>::const_iterator unique_board_const_iterator;
 
         //! Robot Configuration
-        osaIO1394::RobotConfiguration Configuration_;
+        osaRobot1394Configuration Configuration_;
         std::string Name_;
         size_t NumberOfActuators_;
         size_t NumberOfJoints_;
@@ -232,11 +207,11 @@ namespace sawRobotIO1394 {
 
         //! Robot type
         prmJointTypeVec JointType_;
-        osaIO1394::PotLocationType PotType_;
+        osaPot1394Location PotType_;
 
         //! State Members
         bool
-            Valid_,
+        Valid_,
             PowerStatus_,
             PreviousPowerStatus_,
             WatchdogStatus_;
@@ -290,6 +265,7 @@ namespace sawRobotIO1394 {
             CalibrateCurrentCommandBuffers_,
             CalibrateCurrentFeedbackBuffers_;
     };
-}
 
-#endif // _osaIO1394Robot_h
+} // namespace sawRobotIO1394
+
+#endif // _osaRobot1394_h

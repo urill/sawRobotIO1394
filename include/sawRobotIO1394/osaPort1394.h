@@ -18,17 +18,14 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifndef _osaIO1394Port_h
-#define _osaIO1394Port_h
+#ifndef _osaPort1394_h
+#define _osaPort1394_h
 
 #include <vector>
 #include <map>
 
 #ifndef SAW_ROBOT_IO_1394_WO_CISST
-#include <cisstCommon/cmnXMLPath.h>
-#include <cisstVector/vctDynamicVectorTypes.h>
-#include <cisstVector/vctDynamicMatrixTypes.h>
-#include <cisstParameterTypes/prmJointType.h>
+
 #else
 #include <boost/shared_ptr.hpp>
 #include <Eigen/Dense>
@@ -36,15 +33,16 @@ http://www.cisst.org/cisst/license.txt.
 #include "MinimalPrm.h"
 #endif
 
-#include <sawRobotIO1394/osaRobotIO1394.h>
-#include <sawRobotIO1394/osaIO1394Robot.h>
-#include <sawRobotIO1394/osaIO1394DigitalInput.h>
+#include <sawRobotIO1394/osaConfiguration1394.h>
+#include <sawRobotIO1394/osaRobot1394.h>
+#include <sawRobotIO1394/osaDigitalInput1394.h>
 
 class AmpIO;
 class FirewirePort;
 
 namespace sawRobotIO1394 {
-    class osaIO1394Port {
+
+    class osaPort1394 {
         /**
          * IO1394 Port Abstraction Layer
          * This class handles allocation, interfacing, and power-control for the QLA
@@ -54,29 +52,29 @@ namespace sawRobotIO1394 {
 
     public:
 
-        osaIO1394Port(int portNumber, std::ostream & messageStream = std::cerr);
-        ~osaIO1394Port();
+        osaPort1394(int portNumber, std::ostream & messageStream = std::cerr);
+        ~osaPort1394();
 
         //! Configure the port using the specified configuration file. This method is not
         //  used by the mtsRobotIO1394 SAW component.
-        void Configure(const osaIO1394::Configuration & config);
+        void Configure(const osaPort1394Configuration & config);
 
         //! Add a robot to this port. The first method is called by Configure. The second
         //  method is used by the mtsRobotIO1394 SAW component.
-        void AddRobot(const osaIO1394::RobotConfiguration & config);
-        void AddRobot(osaIO1394Robot * Robot);
+        void AddRobot(const osaRobot1394Configuration & config);
+        void AddRobot(osaRobot1394 * Robot);
 
         //! Add a digital input to this port. The first method is called by Configure. The second
         //  method is used by the mtsRobotIO1394 SAW component.
-        void AddDigitalInput(const osaIO1394::DigitalInputConfiguration & config);
-        void AddDigitalInput(osaIO1394DigitalInput * digital_input);
+        void AddDigitalInput(const osaDigitalInput1394Configuration & config);
+        void AddDigitalInput(osaDigitalInput1394 * digital_input);
 
         //! Robot Accessors
-        osaIO1394Robot * Robot(const std::string & name);
-        const osaIO1394Robot * Robot(const std::string & name) const;
+        osaRobot1394 * Robot(const std::string & name);
+        const osaRobot1394 * Robot(const std::string & name) const;
 
-        osaIO1394Robot * Robot(const int index);
-        const osaIO1394Robot * Robot(const int index) const;
+        osaRobot1394 * Robot(const int index);
+        const osaRobot1394 * Robot(const int index) const;
 
         void GetRobotNames(std::vector<std::string> & names) const;
         void GetDigitalInputNames(std::vector<std::string> & names) const;
@@ -99,16 +97,17 @@ namespace sawRobotIO1394 {
         typedef std::map<int, AmpIO*>::const_iterator board_const_iterator;
 
         //! Robot Objects
-        std::vector<osaIO1394Robot*> Robots_;
-        std::map<std::string, osaIO1394Robot*> RobotsByName_;
-        typedef std::vector<osaIO1394Robot*>::iterator robot_iterator;
-        typedef std::vector<osaIO1394Robot*>::const_iterator robot_const_iterator;
+        std::vector<osaRobot1394*> Robots_;
+        std::map<std::string, osaRobot1394*> RobotsByName_;
+        typedef std::vector<osaRobot1394*>::iterator robot_iterator;
+        typedef std::vector<osaRobot1394*>::const_iterator robot_const_iterator;
 
-        std::vector<osaIO1394DigitalInput*> DigitalInputs_;
-        std::map<std::string, osaIO1394DigitalInput*> DigitalInputsByName_;
-        typedef std::vector<osaIO1394DigitalInput*>::iterator digital_input_iterator;
-        typedef std::vector<osaIO1394DigitalInput*>::const_iterator digital_input_const_iterator;
+        std::vector<osaDigitalInput1394*> DigitalInputs_;
+        std::map<std::string, osaDigitalInput1394*> DigitalInputsByName_;
+        typedef std::vector<osaDigitalInput1394*>::iterator digital_input_iterator;
+        typedef std::vector<osaDigitalInput1394*>::const_iterator digital_input_const_iterator;
     };
-}
 
-#endif // _osaIO1394Port_h
+} // namespace sawRobotIO1394
+
+#endif // _osaPort1394_h

@@ -21,22 +21,22 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsStateTable.h>
 
-#include "mtsIO1394Robot.h"
+#include "mtsRobot1394.h"
 
 using namespace sawRobotIO1394;
 
-mtsIO1394Robot::mtsIO1394Robot(const cmnGenericObject & owner,
-                               const osaIO1394::RobotConfiguration & config):
-    osaIO1394Robot(config, 100, 1000),
+mtsRobot1394::mtsRobot1394(const cmnGenericObject & owner,
+                           const osaRobot1394Configuration & config):
+    osaRobot1394(config, 100, 1000),
     OwnerServices(owner.Services()),
     StateTableRead_(0),
     StateTableWrite_(0)
 {
 }
 
-bool mtsIO1394Robot::SetupStateTables(const size_t stateTableSize,
-                                      mtsStateTable * & stateTableRead,
-                                      mtsStateTable * & stateTableWrite)
+bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
+                                    mtsStateTable * & stateTableRead,
+                                    mtsStateTable * & stateTableWrite)
 {
     if (StateTableRead_ || StateTableWrite_) {
         CMN_LOG_CLASS_INIT_ERROR << "SetupStateTables: state tables have already been created" << std::endl;
@@ -75,63 +75,63 @@ bool mtsIO1394Robot::SetupStateTables(const size_t stateTableSize,
     return true;
 }
 
-void mtsIO1394Robot::StartReadStateTable(void) {
+void mtsRobot1394::StartReadStateTable(void) {
     StateTableRead_->Start();
 }
 
 
-void mtsIO1394Robot::AdvanceReadStateTable(void) {
+void mtsRobot1394::AdvanceReadStateTable(void) {
     StateTableRead_->Advance();
 }
 
-void mtsIO1394Robot::GetNumberOfActuators(int & numberOfActuators) const {
+void mtsRobot1394::GetNumberOfActuators(int & numberOfActuators) const {
     numberOfActuators = this->NumberOfActuators();
 }
 
-void mtsIO1394Robot::GetNumberOfJoints(int & numberOfJoints) const {
+void mtsRobot1394::GetNumberOfJoints(int & numberOfJoints) const {
     numberOfJoints = this->NumberOfJoints();
 }
 
-void mtsIO1394Robot::SetTorqueJoint(const prmForceTorqueJointSet & efforts) {
+void mtsRobot1394::SetTorqueJoint(const prmForceTorqueJointSet & efforts) {
     this->SetJointEffort(efforts.ForceTorque());
 }
 
-void mtsIO1394Robot::EnableSafetyRelay(void) {
+void mtsRobot1394::EnableSafetyRelay(void) {
     this->SetSafetyRelay(true);
 }
 
-void mtsIO1394Robot::DisableSafetyRelay(void) {
+void mtsRobot1394::DisableSafetyRelay(void) {
     this->SetSafetyRelay(false);
 }
 
-void mtsIO1394Robot::ResetSingleEncoder(const int & index) {
+void mtsRobot1394::ResetSingleEncoder(const int & index) {
     this->SetSingleEncoderPosition(index, 0.0);
 }
 
-void mtsIO1394Robot::SetupInterfaces(mtsInterfaceProvided * robotInterface,
-                                     mtsInterfaceProvided * actuatorInterface)
+void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
+                                   mtsInterfaceProvided * actuatorInterface)
 {
-    osaIO1394Robot * thisBase = dynamic_cast<osaIO1394Robot *>(this);
+    osaRobot1394 * thisBase = dynamic_cast<osaRobot1394 *>(this);
     CMN_ASSERT(thisBase);
 
-    robotInterface->AddCommandRead(&mtsIO1394Robot::GetNumberOfActuators, this,
+    robotInterface->AddCommandRead(&mtsRobot1394::GetNumberOfActuators, this,
                                    "GetNumberOfActuators");
-    robotInterface->AddCommandRead(&mtsIO1394Robot::GetNumberOfJoints, this,
+    robotInterface->AddCommandRead(&mtsRobot1394::GetNumberOfJoints, this,
                                    "GetNumberOfJoints");
     robotInterface->AddCommandReadState(*StateTableRead_, this->Valid_,
                                         "IsValid");
 
     // Enable // Disable
-    robotInterface->AddCommandVoid(&osaIO1394Robot::EnablePower, thisBase,
+    robotInterface->AddCommandVoid(&osaRobot1394::EnablePower, thisBase,
                                    "EnablePower");
-    robotInterface->AddCommandVoid(&osaIO1394Robot::DisablePower, thisBase,
+    robotInterface->AddCommandVoid(&osaRobot1394::DisablePower, thisBase,
                                    "DisablePower");
-    robotInterface->AddCommandVoid(&mtsIO1394Robot::EnableSafetyRelay, this,
+    robotInterface->AddCommandVoid(&mtsRobot1394::EnableSafetyRelay, this,
                                    "EnableSafetyRelay");
-    robotInterface->AddCommandVoid(&mtsIO1394Robot::DisableSafetyRelay, this,
+    robotInterface->AddCommandVoid(&mtsRobot1394::DisableSafetyRelay, this,
                                    "DisableSafetyRelay");
 
-    robotInterface->AddCommandWrite(&osaIO1394Robot::SetWatchdogPeriod, thisBase,
+    robotInterface->AddCommandWrite(&osaRobot1394::SetWatchdogPeriod, thisBase,
                                     "SetWatchdogPeriod");
 
     robotInterface->AddCommandReadState(*StateTableRead_, StateTableRead_->PeriodStats,
@@ -170,39 +170,39 @@ void mtsIO1394Robot::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*StateTableRead_, ActuatorCurrentFeedback_,
                                         "GetMotorFeedbackCurrent");
 
-    robotInterface->AddCommandWrite(&mtsIO1394Robot::SetTorqueJoint, this,
+    robotInterface->AddCommandWrite(&mtsRobot1394::SetTorqueJoint, this,
                                     "SetTorqueJoint", TorqueJoint_);
-    robotInterface->AddCommandRead(&osaIO1394Robot::GetJointEffortCommandLimits, thisBase,
+    robotInterface->AddCommandRead(&osaRobot1394::GetJointEffortCommandLimits, thisBase,
                                    "GetTorqueJointMax", JointEffortCommandLimits_);
 
-    robotInterface->AddCommandWrite(&osaIO1394Robot::SetActuatorCurrentBits, thisBase,
+    robotInterface->AddCommandWrite(&osaRobot1394::SetActuatorCurrentBits, thisBase,
                                     "SetMotorCurrentRaw", ActuatorCurrentBitsCommand_);
-    robotInterface->AddCommandWrite(&osaIO1394Robot::SetActuatorCurrent, thisBase,
+    robotInterface->AddCommandWrite(&osaRobot1394::SetActuatorCurrent, thisBase,
                                     "SetMotorCurrent", ActuatorCurrentCommand_);
-    robotInterface->AddCommandRead(&osaIO1394Robot::GetActuatorCurrentCommandLimits, thisBase,
+    robotInterface->AddCommandRead(&osaRobot1394::GetActuatorCurrentCommandLimits, thisBase,
                                    "GetMotorCurrentMax", ActuatorCurrentCommandLimits_);
-    robotInterface->AddCommandRead(&osaIO1394Robot::GetJointTypes, thisBase,
+    robotInterface->AddCommandRead(&osaRobot1394::GetJointTypes, thisBase,
                                    "GetJointType", JointType_);
 
-    robotInterface->AddCommandWrite(&osaIO1394Robot::SetEncoderPositionBits, thisBase,
+    robotInterface->AddCommandWrite(&osaRobot1394::SetEncoderPositionBits, thisBase,
                                     "SetEncoderPositionRaw");
-    robotInterface->AddCommandWrite(&osaIO1394Robot::SetEncoderPosition, thisBase,
+    robotInterface->AddCommandWrite(&osaRobot1394::SetEncoderPosition, thisBase,
                                     "SetEncoderPosition");
 
     // unit conversion methods (Qualified Read)
-    robotInterface->AddCommandQualifiedRead(&osaIO1394Robot::EncoderBitsToPosition, thisBase,
+    robotInterface->AddCommandQualifiedRead(&osaRobot1394::EncoderBitsToPosition, thisBase,
                                             "EncoderRawToSI", vctIntVec(), vctDoubleVec());
-    robotInterface->AddCommandQualifiedRead(&osaIO1394Robot::EncoderPositionToBits, thisBase,
+    robotInterface->AddCommandQualifiedRead(&osaRobot1394::EncoderPositionToBits, thisBase,
                                             "EncoderSIToRaw", vctDoubleVec(), vctIntVec());
-    robotInterface->AddCommandQualifiedRead(&osaIO1394Robot::EncoderBitsToDPosition, thisBase,
+    robotInterface->AddCommandQualifiedRead(&osaRobot1394::EncoderBitsToDPosition, thisBase,
                                             "EncoderRawToDeltaPosSI", EncoderVelocityBits_, EncoderVelocity_);
-    robotInterface->AddCommandQualifiedRead(&osaIO1394Robot::EncoderBitsToDTime, thisBase,
+    robotInterface->AddCommandQualifiedRead(&osaRobot1394::EncoderBitsToDTime, thisBase,
                                             "EncoderRawToDeltaPosT", EncoderDTimeBits_, EncoderDTime_);
-    robotInterface->AddCommandQualifiedRead(&osaIO1394Robot::ActuatorCurrentToEffort, thisBase,
+    robotInterface->AddCommandQualifiedRead(&osaRobot1394::ActuatorCurrentToEffort, thisBase,
                                             "DriveAmpsToNm", ActuatorCurrentCommand_, ActuatorEffortCommand_);
-    robotInterface->AddCommandQualifiedRead(&osaIO1394Robot::ActuatorEffortToCurrent, thisBase,
+    robotInterface->AddCommandQualifiedRead(&osaRobot1394::ActuatorEffortToCurrent, thisBase,
                                             "DriveNmToAmps", ActuatorEffortCommand_, ActuatorCurrentCommand_);
-    robotInterface->AddCommandQualifiedRead(&osaIO1394Robot::PotBitsToVoltage, thisBase,
+    robotInterface->AddCommandQualifiedRead(&osaRobot1394::PotBitsToVoltage, thisBase,
                                             "AnalogInBitsToVolts", PotBits_, PotVoltage_);
 
     //Debug to run Cursor Example
@@ -213,24 +213,24 @@ void mtsIO1394Robot::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*StateTableRead_, PositionActuatorGet_,
                                         "GetPositionActuator"); // prmPositionJointGet
 
-    robotInterface->AddCommandWrite(&osaIO1394Robot::CalibrateCurrentCommandOffsetsRequest,
+    robotInterface->AddCommandWrite(&osaRobot1394::CalibrateCurrentCommandOffsetsRequest,
                                     thisBase, "BiasCurrent");
-    robotInterface->AddCommandVoid(&osaIO1394Robot::CalibrateEncoderOffsetsFromPots,
+    robotInterface->AddCommandVoid(&osaRobot1394::CalibrateEncoderOffsetsFromPots,
                                    thisBase, "BiasEncoder");
-    robotInterface->AddCommandWrite(&mtsIO1394Robot::ResetSingleEncoder, this,
+    robotInterface->AddCommandWrite(&mtsRobot1394::ResetSingleEncoder, this,
                                     "ResetSingleEncoder"); // int
 
     // Events
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
 
     // fine tune power, board vs. axis
-    actuatorInterface->AddCommandVoid(&osaIO1394Robot::EnableBoardsPower, thisBase,
+    actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
                                       "EnableBoardsPower");
-    actuatorInterface->AddCommandVoid(&osaIO1394Robot::DisableBoardPower, thisBase,
+    actuatorInterface->AddCommandVoid(&osaRobot1394::DisableBoardPower, thisBase,
                                       "DisableBoardsPower");
-    actuatorInterface->AddCommandWrite(&osaIO1394Robot::SetActuatorPower, this,
+    actuatorInterface->AddCommandWrite(&osaRobot1394::SetActuatorPower, this,
                                        "SetAmpEnable", ActuatorPowerEnabled_); // vector[bool]
-    actuatorInterface->AddCommandWrite(&mtsIO1394Robot::ResetSingleEncoder, this,
+    actuatorInterface->AddCommandWrite(&mtsRobot1394::ResetSingleEncoder, this,
                                        "ResetSingleEncoder"); // int
 
     actuatorInterface->AddCommandReadState(*StateTableRead_, ActuatorPowerEnabled_,
@@ -240,13 +240,13 @@ void mtsIO1394Robot::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     actuatorInterface->AddCommandReadState(*StateTableRead_, this->PositionActuatorGet_,
                                            "GetPositionActuator"); // prmPositionJointGet
 
-    actuatorInterface->AddCommandQualifiedRead(&osaIO1394Robot::ActuatorCurrentToBits, thisBase,
+    actuatorInterface->AddCommandQualifiedRead(&osaRobot1394::ActuatorCurrentToBits, thisBase,
                                                "DriveAmpsToBits", ActuatorCurrentFeedback_, ActuatorCurrentBitsFeedback_);
-    actuatorInterface->AddCommandQualifiedRead(&osaIO1394Robot::PotVoltageToPosition, thisBase,
+    actuatorInterface->AddCommandQualifiedRead(&osaRobot1394::PotVoltageToPosition, thisBase,
                                                "AnalogInVoltsToPosSI", PotVoltage_, PotPosition_);
 }
 
-void mtsIO1394Robot::CheckState(void)
+void mtsRobot1394::CheckState(void)
 {
     PositionJointGet_.Position().ForceAssign(JointPosition_);
     PositionActuatorGet_.Position().ForceAssign(EncoderPosition_);

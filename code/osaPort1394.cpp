@@ -21,14 +21,13 @@ http://www.cisst.org/cisst/license.txt.
 #include "FirewirePort.h"
 #include "AmpIO.h"
 
-#include <sawRobotIO1394/osaIO1394Port.h>
+#include <sawRobotIO1394/osaPort1394.h>
 #include <stdexcept>
 #include <exception>
 
 using namespace sawRobotIO1394;
-using namespace osaIO1394;
 
-osaIO1394Port::osaIO1394Port(int portNumber, std::ostream & messageStream)
+osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
 {
     // Construct handle to firewire port
     Port_ = new FirewirePort(portNumber, messageStream);
@@ -37,38 +36,38 @@ osaIO1394Port::osaIO1394Port(int portNumber, std::ostream & messageStream)
     if (Port_->NumberOfUsers() > 1) {
         std::ostringstream oss;
         oss << "osaIO1394Port: Found more than one user on firewire port: " << portNumber;
-        throw std::runtime_error(oss.str());
+        cmnThrow(osaRuntimeError1394(oss.str()));
     }
 }
 
-void osaIO1394Port::Configure(const osaIO1394::Configuration & config)
+void osaPort1394::Configure(const osaPort1394Configuration & config)
 {
     // Add all the robots
-    for (std::vector<osaIO1394::RobotConfiguration>::const_iterator it = config.Robots.begin();
+    for (std::vector<osaRobot1394Configuration>::const_iterator it = config.Robots.begin();
          it != config.Robots.end();
          ++it) {
         this->AddRobot(*it);
     }
 
     // Add all the digital inputs
-    for (std::vector<osaIO1394::DigitalInputConfiguration>::const_iterator it = config.DigitalInputs.begin();
+    for (std::vector<osaDigitalInput1394Configuration>::const_iterator it = config.DigitalInputs.begin();
          it != config.DigitalInputs.end();
          ++it) {
         this->AddDigitalInput(*it);
     }
 }
 
-void osaIO1394Port::AddRobot(osaIO1394Robot * robot)
+void osaPort1394::AddRobot(osaRobot1394 * robot)
 {
     if (robot == 0) {
-        throw osaIO1394::configuration_error("Robot pointer is null.");
+        cmnThrow(osaRuntimeError1394("Robot pointer is null."));
     }
 
-    const osaIO1394::RobotConfiguration & config = robot->GetConfiguration();
+    const osaRobot1394Configuration & config = robot->GetConfiguration();
 
     // Check to make sure this robot isn't already added
     if (RobotsByName_.count(config.Name) > 0) {
-        throw osaIO1394::configuration_error("Robot name is not unique.");
+        cmnThrow(osaRuntimeError1394("Robot name is not unique."));
     }
 
     // Construct a vector of boards relevant to this robot
@@ -95,49 +94,49 @@ void osaIO1394Port::AddRobot(osaIO1394Robot * robot)
     RobotsByName_[config.Name] = robot;
 }
 
-void osaIO1394Port::AddRobot(const osaIO1394::RobotConfiguration & config)
+void osaPort1394::AddRobot(const osaRobot1394Configuration & config)
 {
-    osaIO1394Robot * robot = new osaIO1394Robot(config);
+    osaRobot1394 * robot = new osaRobot1394(config);
     this->AddRobot(robot);
 }
 
-osaIO1394Robot * osaIO1394Port::Robot(const std::string & name)
+osaRobot1394 * osaPort1394::Robot(const std::string & name)
 {
     return RobotsByName_.at(name);
 }
 
-const osaIO1394Robot * osaIO1394Port::Robot(const std::string & name) const
+const osaRobot1394 * osaPort1394::Robot(const std::string & name) const
 {
     return RobotsByName_.at(name);
 }
 
-osaIO1394Robot * osaIO1394Port::Robot(const int i)
+osaRobot1394 * osaPort1394::Robot(const int i)
 {
     return Robots_[i];
 }
 
-const osaIO1394Robot * osaIO1394Port::Robot(const int i) const
+const osaRobot1394 * osaPort1394::Robot(const int i) const
 {
     return Robots_[i];
 }
 
-void osaIO1394Port::AddDigitalInput(const osaIO1394::DigitalInputConfiguration & config)
+void osaPort1394::AddDigitalInput(const osaDigitalInput1394Configuration & config)
 {
-    osaIO1394DigitalInput * digitalInput = new osaIO1394DigitalInput(config);
+    osaDigitalInput1394 * digitalInput = new osaDigitalInput1394(config);
     this->AddDigitalInput(digitalInput);
 }
 
-void osaIO1394Port::AddDigitalInput(osaIO1394DigitalInput * digitalInput)
+void osaPort1394::AddDigitalInput(osaDigitalInput1394 * digitalInput)
 {
     if (digitalInput == 0) {
-        throw osaIO1394::configuration_error("Digital input pointer is null.");
+        cmnThrow(osaRuntimeError1394("Digital input pointer is null."));
     }
 
-    const osaIO1394::DigitalInputConfiguration & config = digitalInput->Configuration();
+    const osaDigitalInput1394Configuration & config = digitalInput->Configuration();
 
     // Check to make sure this digital_input isn't already added
     if (DigitalInputsByName_.count(config.Name) > 0) {
-        throw osaIO1394::configuration_error("Digital input name is not unique.");
+        cmnThrow(osaRuntimeError1394("Digital input name is not unique."));
     }
 
     // Construct a vector of boards relevant to this digital_input
@@ -157,7 +156,7 @@ void osaIO1394Port::AddDigitalInput(osaIO1394DigitalInput * digitalInput)
     DigitalInputsByName_[config.Name] = digitalInput;
 }
 
-osaIO1394Port::~osaIO1394Port() 
+osaPort1394::~osaPort1394()
 {
     // Delete robots before deleting boards
     for (robot_iterator robot = Robots_.begin();
@@ -186,7 +185,7 @@ osaIO1394Port::~osaIO1394Port()
     }
 }
 
-void osaIO1394Port::Read(void)
+void osaPort1394::Read(void)
 {
     // Read from all boards on the port
     Port_->ReadAllBoards();
@@ -197,7 +196,7 @@ void osaIO1394Port::Read(void)
          ++robot) {
         // Poll the board validity
         (*robot)->PollValidity();
-        
+
         // Poll this robot's state
         (*robot)->PollState();
 
@@ -221,25 +220,25 @@ void osaIO1394Port::Read(void)
     }
 }
 
-void osaIO1394Port::Write(void)
+void osaPort1394::Write(void)
 {
     // Write to all boards
     Port_->WriteAllBoards();
 }
 
-int osaIO1394Port::NumberOfBoards(void) const {
+int osaPort1394::NumberOfBoards(void) const {
     return Boards_.size();
 }
 
-int osaIO1394Port::NumberOfRobots(void) const {
+int osaPort1394::NumberOfRobots(void) const {
     return Robots_.size();
 }
 
-int osaIO1394Port::NumberOfDigitalInputs(void) const {
+int osaPort1394::NumberOfDigitalInputs(void) const {
     return DigitalInputs_.size();
 }
 
-void osaIO1394Port::GetRobotNames(std::vector<std::string> & names) const
+void osaPort1394::GetRobotNames(std::vector<std::string> & names) const
 {
     names.clear();
     for (robot_const_iterator robot = Robots_.begin();
@@ -249,7 +248,7 @@ void osaIO1394Port::GetRobotNames(std::vector<std::string> & names) const
     }
 }
 
-void osaIO1394Port::GetDigitalInputNames(std::vector<std::string> & names) const
+void osaPort1394::GetDigitalInputNames(std::vector<std::string> & names) const
 {
     names.clear();
     for (digital_input_const_iterator digitalInput = DigitalInputs_.begin();
