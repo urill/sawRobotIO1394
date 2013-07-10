@@ -34,6 +34,12 @@ mtsRobot1394::mtsRobot1394(const cmnGenericObject & owner,
 {
 }
 
+mtsRobot1394::~mtsRobot1394()
+{
+    delete StateTableRead_;
+    delete StateTableWrite_;
+}
+
 bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
                                     mtsStateTable * & stateTableRead,
                                     mtsStateTable * & stateTableWrite)

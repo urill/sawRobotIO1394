@@ -24,9 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <vector>
 #include <map>
 
-#ifndef SAW_ROBOT_IO_1394_WO_CISST
-
-#else
+#ifdef SAW_ROBOT_IO_1394_WO_CISST
 #include <boost/shared_ptr.hpp>
 #include <Eigen/Dense>
 #include "EigenWrapper.h"
@@ -59,14 +57,16 @@ namespace sawRobotIO1394 {
         //  used by the mtsRobotIO1394 SAW component.
         void Configure(const osaPort1394Configuration & config);
 
-        //! Add a robot to this port. The first method is called by Configure. The second
-        //  method is used by the mtsRobotIO1394 SAW component.
-        void AddRobot(const osaRobot1394Configuration & config);
+        //! Add a robot to this port. This method is used by the mtsRobotIO1394 SAW component,
+        // which provides an instance of an mtsRobot1394 component (derived from osaRobot1394).
+        // This class takes "ownership" of the pointer and deletes it in the destructor (it
+        // assumes the object was dynamically created).
         void AddRobot(osaRobot1394 * Robot);
 
-        //! Add a digital input to this port. The first method is called by Configure. The second
-        //  method is used by the mtsRobotIO1394 SAW component.
-        void AddDigitalInput(const osaDigitalInput1394Configuration & config);
+        //! Add a digital input to this port. This method is used by the mtsRobotIO1394 SAW component,
+        // which provides an instance of an mtsDigitalInput1394 component (derived from osaDigitalInput1394).
+        // This class takes "ownership" of the pointer and deletes it in the destructor (it
+        // assumes the object was dynamically created).
         void AddDigitalInput(osaDigitalInput1394 * digital_input);
 
         //! Robot Accessors

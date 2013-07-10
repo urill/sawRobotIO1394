@@ -46,14 +46,16 @@ void osaPort1394::Configure(const osaPort1394Configuration & config)
     for (std::vector<osaRobot1394Configuration>::const_iterator it = config.Robots.begin();
          it != config.Robots.end();
          ++it) {
-        this->AddRobot(*it);
+        osaRobot1394 * robot = new osaRobot1394(*it);
+        this->AddRobot(robot);
     }
 
     // Add all the digital inputs
     for (std::vector<osaDigitalInput1394Configuration>::const_iterator it = config.DigitalInputs.begin();
          it != config.DigitalInputs.end();
          ++it) {
-        this->AddDigitalInput(*it);
+        osaDigitalInput1394 * digitalInput = new osaDigitalInput1394(*it);
+        this->AddDigitalInput(digitalInput);
     }
 }
 
@@ -71,7 +73,7 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
     }
 
     // Construct a vector of boards relevant to this robot
-    std::vector<AmpIO*> robot_boards(config.NumberOfActuators);
+    std::vector<osaActuatorMapping> robot_boards(config.NumberOfActuators);
 
     for (int i=0; i < config.NumberOfActuators; i++) {
         int board_id = config.Actuators[i].BoardID;
@@ -83,7 +85,8 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
         }
 
         // Add the board to the list of boards relevant to this robot
-        robot_boards[i] = Boards_[board_id];
+        robot_boards[i].board = Boards_[board_id];
+        robot_boards[i].axis = config.Actuators[i].AxisID;
     }
 
     // Set the robot boards
@@ -92,12 +95,6 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
     // Store the robot by name
     Robots_.push_back(robot);
     RobotsByName_[config.Name] = robot;
-}
-
-void osaPort1394::AddRobot(const osaRobot1394Configuration & config)
-{
-    osaRobot1394 * robot = new osaRobot1394(config);
-    this->AddRobot(robot);
 }
 
 osaRobot1394 * osaPort1394::Robot(const std::string & name)
@@ -118,12 +115,6 @@ osaRobot1394 * osaPort1394::Robot(const int i)
 const osaRobot1394 * osaPort1394::Robot(const int i) const
 {
     return Robots_[i];
-}
-
-void osaPort1394::AddDigitalInput(const osaDigitalInput1394Configuration & config)
-{
-    osaDigitalInput1394 * digitalInput = new osaDigitalInput1394(config);
-    this->AddDigitalInput(digitalInput);
 }
 
 void osaPort1394::AddDigitalInput(osaDigitalInput1394 * digitalInput)
@@ -167,6 +158,16 @@ osaPort1394::~osaPort1394()
         }
     }
     Robots_.clear();
+
+    // Delete digital inputs before deleting boards
+    for (digital_input_iterator digitalInput = DigitalInputs_.begin();
+         digitalInput != DigitalInputs_.end();
+         ++digitalInput) {
+        if (*digitalInput != 0) {
+            delete *digitalInput;
+        }
+    }
+    DigitalInputs_.clear();
 
     // Delete board structures
     for (board_iterator board = Boards_.begin();

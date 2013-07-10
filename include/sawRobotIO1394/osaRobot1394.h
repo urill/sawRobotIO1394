@@ -61,7 +61,7 @@ namespace sawRobotIO1394 {
 
         void Configure(const osaRobot1394Configuration & config);
 
-        void SetBoards(std::vector<AmpIO*> boards);
+        void SetBoards(const std::vector<osaActuatorMapping> & boards);
         /**}**/
 
         /** \name State Update Functions
@@ -164,7 +164,7 @@ namespace sawRobotIO1394 {
         void ClipActuatorCurrent(vctDoubleVec & currents);
 
         //! Board Objects
-        std::vector<AmpIO*> Boards_;
+        std::vector<osaActuatorMapping> ActuatorInfo_;
         std::map<int, AmpIO*> UniqueBoards_;
         typedef std::map<int, AmpIO*>::iterator unique_board_iterator;
         typedef std::map<int, AmpIO*>::const_iterator unique_board_const_iterator;
@@ -177,7 +177,6 @@ namespace sawRobotIO1394 {
 
         //! Vectors of actuator properties
         vctIntVec
-            BoardAxes_,
             CountsPerTurn_;
 
         vctDoubleVec

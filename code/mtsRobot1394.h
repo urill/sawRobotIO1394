@@ -53,6 +53,7 @@ namespace sawRobotIO1394 {
 
         mtsRobot1394(const cmnGenericObject & owner,
                      const osaRobot1394Configuration & config);
+        ~mtsRobot1394();
 
         bool SetupStateTables(const size_t stateTableSize,
                               mtsStateTable * & stateTableRead,

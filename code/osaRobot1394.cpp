@@ -33,7 +33,7 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
                            const size_t max_consecutive_current_safety_violations,
                            const size_t actuator_current_buffer_size):
     // IO Structures
-    Boards_(),
+    ActuatorInfo_(),
     UniqueBoards_(),
     // State Initialization
     Valid_(false),
@@ -63,7 +63,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     PotType_ = config.PotLocation;
 
     // Low-level API
-    Boards_.resize(NumberOfActuators_);
+    ActuatorInfo_.resize(NumberOfActuators_);
 
     // Initialize state vectors to the appropriate sizes
     ActuatorPowerStatus_.resize(NumberOfActuators_);
@@ -88,7 +88,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     ActuatorEffortFeedback_.resize(NumberOfActuators_);
 
     // Initialize property vectors to the appropriate sizes
-    BoardAxes_.resize(NumberOfActuators_);
     JointType_.resize(NumberOfJoints_);
 
     EffortToCurrentScales_.resize(NumberOfActuators_);
@@ -126,7 +125,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
         const osaEncoder1394Configuration & encoder = actuator.Encoder;
         const osaPot1394Configuration & pot = actuator.Pot;
 
-        BoardAxes_[i] = actuator.AxisID;
         JointType_[i] = actuator.JointType;
 
         EffortToCurrentScales_[i]         = drive.EffortToCurrentScale;
@@ -166,7 +164,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     JointEffortCommandLimits_ = Configuration_.ActuatorToJointEffort * ActuatorEffortCommandLimits_;
 }
 
-void osaRobot1394::SetBoards(std::vector<AmpIO*> boards)
+void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & boards)
 {
     if (boards.size() != NumberOfActuators_) {
         cmnThrow(osaRuntimeError1394("Number of boards different than the number of actuators."));
@@ -174,16 +172,17 @@ void osaRobot1394::SetBoards(std::vector<AmpIO*> boards)
 
     for (size_t i = 0; i < NumberOfActuators_; i++) {
         // Store this board
-        Boards_[i] = boards[i];
+        ActuatorInfo_[i].board = boards[i].board;
+        ActuatorInfo_[i].axis = boards[i].axis;
         // Construct a list of unique boards
-        UniqueBoards_[Boards_[i]->GetBoardId()] = Boards_[i];
+        UniqueBoards_[boards[i].board->GetBoardId()] = boards[i].board;
     }
 }
 
 void osaRobot1394::PollValidity(void)
 {
     // Make sure the boards have been configured
-    if (NumberOfActuators_ != Boards_.size()) {
+    if (NumberOfActuators_ != ActuatorInfo_.size()) {
         cmnThrow(osaRuntimeError1394("Number of boards different than the number of actuators."));
     }
 
@@ -214,8 +213,8 @@ void osaRobot1394::PollState(void)
 {
     // Poll data
     for (size_t i = 0; i < NumberOfActuators_; i++) {
-        AmpIO * board = Boards_[i];
-        int axis = BoardAxes_[i];
+        AmpIO * board = ActuatorInfo_[i].board;
+        int axis = ActuatorInfo_[i].axis;
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
 
@@ -378,14 +377,14 @@ void osaRobot1394::SetWatchdogPeriod(const double & periodInSeconds)
 void osaRobot1394::SetActuatorPower(const bool & enabled)
 {
     for (size_t i = 0; i < NumberOfActuators_; i++) {
-        Boards_[i]->SetAmpEnable(BoardAxes_[i], enabled);
+        ActuatorInfo_[i].board->SetAmpEnable(ActuatorInfo_[i].axis, enabled);
     }
 }
 
 void osaRobot1394::SetActuatorPower(const vctBoolVec & enabled)
 {
     for (size_t i = 0; i < NumberOfActuators_; i++) {
-        Boards_[i]->SetAmpEnable(BoardAxes_[i], enabled[i]);
+        ActuatorInfo_[i].board->SetAmpEnable(ActuatorInfo_[i].axis, enabled[i]);
     }
 }
 
@@ -399,7 +398,7 @@ void osaRobot1394::SetEncoderPosition(const vctDoubleVec & pos)
 void osaRobot1394::SetEncoderPositionBits(const vctIntVec & bits)
 {
     for (size_t i = 0; i < NumberOfActuators_; i++) {
-        Boards_[i]->WriteEncoderPreload(BoardAxes_[i], bits[i]);
+        ActuatorInfo_[i].board->WriteEncoderPreload(ActuatorInfo_[i].axis, bits[i]);
     }
 }
 
@@ -410,7 +409,7 @@ void osaRobot1394::SetSingleEncoderPosition(const int index, const double pos)
 
 void osaRobot1394::SetSingleEncoderPositionBits(const int index, const int bits)
 {
-    Boards_[index]->WriteEncoderPreload(BoardAxes_[index], bits);
+    ActuatorInfo_[index].board->WriteEncoderPreload(ActuatorInfo_[index].axis, bits);
 }
 
 void osaRobot1394::ClipActuatorEffort(vctDoubleVec & efforts)
@@ -465,7 +464,7 @@ void osaRobot1394::SetActuatorCurrent(const vctDoubleVec & currents)
 void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 {
     for (size_t i=0; i<NumberOfActuators_; i++) {
-        Boards_[i]->SetMotorCurrent(BoardAxes_[i], bits[i]);
+        ActuatorInfo_[i].board->SetMotorCurrent(ActuatorInfo_[i].axis, bits[i]);
     }
 
     // Store commanded bits

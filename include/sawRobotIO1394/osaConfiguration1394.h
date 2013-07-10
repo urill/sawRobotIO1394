@@ -32,6 +32,8 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <stdexcept>
 
+class AmpIO;
+
 namespace sawRobotIO1394 {
 
     const size_t MAX_BOARDS = 16;
@@ -119,6 +121,12 @@ namespace sawRobotIO1394 {
     struct osaPort1394Configuration {
         std::vector<osaRobot1394Configuration> Robots;
         std::vector<osaDigitalInput1394Configuration> DigitalInputs;
+    };
+
+    // Maps an actuator to the hardware (board and axis)
+    struct osaActuatorMapping {
+        AmpIO *board;
+        int axis;
     };
 
 } // namespace sawRobotIO1394
