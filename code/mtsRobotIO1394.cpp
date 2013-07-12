@@ -102,8 +102,8 @@ void mtsRobotIO1394::Init(int port_num)
                                                "GetNumDigitalInputs");
         configurationInterface->AddCommandRead(&osaPort1394::GetDigitalInputNames, Port_,
                                                "GetDigitalInputNames");
-        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetName, this,
-                                               "GetName");
+        configurationInterface->AddCommandRead<mtsComponent>(&mtsComponent::GetName, this,
+                                                             "GetName");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to create configurationInterface." << std::endl;
     }
@@ -319,9 +319,4 @@ void mtsRobotIO1394::GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const
     for (size_t i = 0; i < num_robots; i++) {
         placeHolder[i] = Port_->Robot(i)->NumberOfActuators();
     }
-}
-
-void mtsRobotIO1394::GetName(std::string & placeHolder) const
-{
-    placeHolder = mtsComponent::GetName();
 }

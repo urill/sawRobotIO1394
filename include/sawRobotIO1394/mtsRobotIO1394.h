@@ -71,12 +71,10 @@ public:
     void GetNumberOfDigitalInputs(int & placeHolder) const;
 
 protected:
-
     void GetNumberOfBoards(int & placeHolder) const;
     void GetNumberOfRobots(int & placeHolder) const;
 
     void GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const;
-    void GetName(std::string & placeHolder) const;
 
     void PreRead(void);
     void PostRead(void);
