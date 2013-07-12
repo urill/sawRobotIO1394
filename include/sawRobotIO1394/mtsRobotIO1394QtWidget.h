@@ -95,7 +95,8 @@ protected:
         mtsFunctionRead GetVelocity;
         mtsFunctionRead GetAnalogInputVolts;
         mtsFunctionRead GetAnalogInputPosSI;
-        mtsFunctionRead GetMotorCurrent;
+        mtsFunctionRead GetMotorRequestedCurrent;
+        mtsFunctionRead GetMotorFeedbackCurrent;
         mtsFunctionRead GetMotorCurrentMax;
         mtsFunctionRead GetJointType;
         mtsFunctionRead GetPowerStatus;

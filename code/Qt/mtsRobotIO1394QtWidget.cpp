@@ -38,7 +38,7 @@ CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtWidget, mtsComponent, mtsC
 
 mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators):
     mtsComponent(componentName),
-    DirectControl(true),
+    DirectControl(false),
     TimerPeriodInMilliseconds(50),
     NumberOfActuators(numberOfActuators)
 {
@@ -291,7 +291,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
         Robot.GetAnalogInputVolts(PotentiometersVolts);
         Robot.GetAnalogInputPosSI(PotentiometersPosition);
         PotentiometersPosition.Multiply((cmn180_PI));
-        Robot.GetMotorCurrent(MotorFeedbackCurrent);
+        Robot.GetMotorFeedbackCurrent(MotorFeedbackCurrent);
         Actuators.GetAmpEnable(AmpEnable);
         Actuators.GetAmpStatus(AmpStatus);
         Robot.GetPowerStatus(PowerStatus);
@@ -311,6 +311,15 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
     CMN_LOG_CLASS_RUN_VERBOSE << (osaGetTime() - StartTime) << std::endl;
 
     DummyValueWhenNotConnected += 0.1;
+
+    // display requested current when we are not trying to set it using GUI
+    if (flag && !DirectControl) {
+        vctDoubleVec requestedCurrent(NumberOfActuators);
+        Robot.GetMotorRequestedCurrent(requestedCurrent);
+        requestedCurrent.Multiply(1000.0); // got A, need mA for display
+        QVWCurrentSpinBoxWidget->SetValue(requestedCurrent);
+        QVWCurrentSliderWidget->SetValue(requestedCurrent);
+    }
 
     QVRJointPositionWidget->SetValue(JointPosition);
     QVRActuatorPositionWidget->SetValue(ActuatorPosition);
@@ -353,7 +362,8 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("GetVelocity", Robot.GetVelocity);
         robotInterface->AddFunction("GetAnalogInputVolts", Robot.GetAnalogInputVolts);
         robotInterface->AddFunction("GetAnalogInputPosSI", Robot.GetAnalogInputPosSI);
-        robotInterface->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorCurrent);
+        robotInterface->AddFunction("GetMotorRequestedCurrent", Robot.GetMotorRequestedCurrent);
+        robotInterface->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorFeedbackCurrent);
         robotInterface->AddFunction("GetMotorCurrentMax", Robot.GetMotorCurrentMax);
         robotInterface->AddFunction("GetJointType", Robot.GetJointType);
         robotInterface->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
@@ -559,10 +569,8 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     connect(QCBEnableAmps, SIGNAL(toggled(bool)), this, SLOT(SlotEnableAmps(bool)));
     connect(QCBEnableAll, SIGNAL(toggled(bool)), this, SLOT(SlotEnableAll(bool)));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)), this, SLOT(SlotEnableDirectControl(bool)));
-    QCBEnableDirectControl->setChecked(DirectControl); // trigger right after this connected
     connect(QPBResetCurrentAll, SIGNAL(clicked()), this, SLOT(SlotResetCurrentAll()));
     connect(QPBBiasCurrentAll, SIGNAL(clicked()), this, SLOT(SlotBiasCurrentAll()));
-
     connect(QPBResetEncAll, SIGNAL(clicked()), this, SLOT(SlotResetEncodersAll()));
     connect(QPBBiasEncAll, SIGNAL(clicked()), this, SLOT(SlotBiasEncodersAll()));
     connect(QSBWatchdogPeriod, SIGNAL(valueChanged(double)),
@@ -577,6 +585,8 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     // set initial value
     QCBEnableAmps->setChecked(false);
     QCBEnableAll->setChecked(false);
+    QCBEnableDirectControl->setChecked(DirectControl);
+    SlotEnableDirectControl(DirectControl);
 }
 
 

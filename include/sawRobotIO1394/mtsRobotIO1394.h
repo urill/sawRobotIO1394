@@ -80,6 +80,8 @@ protected:
 
     void PreRead(void);
     void PostRead(void);
+    void PreWrite(void);
+    void PostWrite(void);
 
     ////////////// Private Class Methods /////////////////////////////
 private:

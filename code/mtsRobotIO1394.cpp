@@ -218,9 +218,9 @@ void mtsRobotIO1394::Startup(void)
 
 void mtsRobotIO1394::PreRead(void)
 {
-    const robots_iterator robots_end = Robots_.end();
+    const robots_iterator robotsEnd = Robots_.end();
     for (robots_iterator robot = Robots_.begin();
-         robot != robots_end;
+         robot != robotsEnd;
          ++robot) {
         (*robot)->StartReadStateTable();
     }
@@ -229,9 +229,9 @@ void mtsRobotIO1394::PreRead(void)
 void mtsRobotIO1394::PostRead(void)
 {
     // Trigger robot events
-    const robots_iterator robots_end = Robots_.end();
+    const robots_iterator robotsEnd = Robots_.end();
     for (robots_iterator robot = Robots_.begin();
-         robot != robots_end;
+         robot != robotsEnd;
          ++robot) {
         (*robot)->CheckState();
         (*robot)->AdvanceReadStateTable();
@@ -242,6 +242,27 @@ void mtsRobotIO1394::PostRead(void)
          digital_input != digital_inputs_end;
          ++digital_input) {
         (*digital_input)->CheckState();
+    }
+}
+
+void mtsRobotIO1394::PreWrite(void)
+{
+    const robots_iterator robotsEnd = Robots_.end();
+    for (robots_iterator robot = Robots_.begin();
+         robot != robotsEnd;
+         ++robot) {
+        (*robot)->StartWriteStateTable();
+    }
+}
+
+void mtsRobotIO1394::PostWrite(void)
+{
+    // Trigger robot events
+    const robots_iterator robotsEnd = Robots_.end();
+    for (robots_iterator robot = Robots_.begin();
+         robot != robotsEnd;
+         ++robot) {
+        (*robot)->AdvanceWriteStateTable();
     }
 }
 
@@ -259,7 +280,9 @@ void mtsRobotIO1394::Run(void)
     this->ProcessQueuedCommands();
 
     // Write to all boards
+    this->PreWrite();
     Port_->Write();
+    this->PostWrite();
 }
 
 void mtsRobotIO1394::Cleanup(void)

@@ -68,13 +68,14 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     StateTableRead_->AddData(PotBits_, "AnalogInRaw");
     StateTableRead_->AddData(PotVoltage_, "AnalogInVolts");
     StateTableRead_->AddData(PotPosition_, "AnalogInPosSI");
-    StateTableRead_->AddData(ActuatorCurrentBitsCommand_, "MotorControlCurrentRaw");
-    StateTableRead_->AddData(ActuatorCurrentCommand_, "MotorControlCurrent");
     StateTableRead_->AddData(ActuatorCurrentBitsFeedback_, "MotorFeedbackCurrentRaw");
     StateTableRead_->AddData(ActuatorCurrentFeedback_, "MotorFeedbackCurrent");
 
     StateTableRead_->AddData(PositionJointGet_, "PositionJointGet");
     StateTableRead_->AddData(PositionActuatorGet_, "PositionActuatorGet");
+
+    StateTableWrite_->AddData(ActuatorCurrentBitsCommand_, "MotorControlCurrentRaw");
+    StateTableWrite_->AddData(ActuatorCurrentCommand_, "MotorControlCurrent");
 
     stateTableRead = StateTableRead_;
     stateTableWrite = StateTableWrite_;
@@ -85,9 +86,16 @@ void mtsRobot1394::StartReadStateTable(void) {
     StateTableRead_->Start();
 }
 
-
 void mtsRobot1394::AdvanceReadStateTable(void) {
     StateTableRead_->Advance();
+}
+
+void mtsRobot1394::StartWriteStateTable(void) {
+    StateTableWrite_->Start();
+}
+
+void mtsRobot1394::AdvanceWriteStateTable(void) {
+    StateTableWrite_->Advance();
 }
 
 void mtsRobot1394::GetNumberOfActuators(int & numberOfActuators) const {
@@ -175,6 +183,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetMotorFeedbackCurrentRaw");
     robotInterface->AddCommandReadState(*StateTableRead_, ActuatorCurrentFeedback_,
                                         "GetMotorFeedbackCurrent");
+
+    robotInterface->AddCommandReadState(*StateTableWrite_, ActuatorCurrentCommand_,
+                                        "GetMotorRequestedCurrent");
 
     robotInterface->AddCommandWrite(&mtsRobot1394::SetTorqueJoint, this,
                                     "SetTorqueJoint", TorqueJoint_);
