@@ -74,7 +74,6 @@ void mtsRobotIO1394QtWidget::Init(void)
 
     StartTime = osaGetTime();
 
-    setupMenu();
     SetupCisstInterface();
     setupUi();
 
@@ -118,7 +117,9 @@ void mtsRobotIO1394QtWidget::Startup(void)
                 cmnThrow("mtsRobotIO1394QtWidget: Unknown joint type");
         }
     }
-    show();
+    if (!parent()) {
+        show();
+    }
 }
 
 void mtsRobotIO1394QtWidget::Cleanup(void)
@@ -335,16 +336,6 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
 }
 
 ////------------ Private Methods ----------------
-
-void mtsRobotIO1394QtWidget::setupMenu()
-{
-    QMenu * fileMenu = this->menuBar()->addMenu("&File");
-
-    fileMenu->addAction("E&xit", this, SLOT(close()),
-                        QKeySequence(Qt::ALT + Qt::Key_F4));
-
-}
-
 void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
 {
     // Required Interface
@@ -558,9 +549,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     mainLayout->addLayout(commandLayout);
     mainLayout->addLayout(gridLayout);
 
-    QFrame * mainFrame = new QFrame;
-    mainFrame->setLayout(mainLayout);
-    setCentralWidget(mainFrame);
+    setLayout(mainLayout);
 
     setWindowTitle(QString(this->GetName().c_str()));
     resize(sizeHint());

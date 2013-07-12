@@ -35,7 +35,7 @@ http://www.cisst.org/cisst/license.txt.
   \todo maybe rename this class to mtsRobotIO1394{Robot,DigitalInputs,Log}QtWidget and create using mtsRobotIO1394FactoryQtWidget
   \todo cisst Qt convention is now to start with the Qt prefix, i.e. mtsQtWidgetRobotIO1394 ...
   */
-class mtsRobotIO1394QtWidget: public QMainWindow, public mtsComponent
+class mtsRobotIO1394QtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
@@ -69,7 +69,6 @@ private slots:
     void timerEvent(QTimerEvent * event);
 
 private:
-    void setupMenu(void);
     void SetupCisstInterface(void);
     void setupUi(void);
 

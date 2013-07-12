@@ -43,10 +43,8 @@ mtsRobotIO1394QtWidgetFactory::mtsRobotIO1394QtWidgetFactory(const std::string &
     if (RobotConfigureInterface) {
         RobotConfigureInterface->AddFunction("GetRobotNames", Configuration.GetRobotNames);
         RobotConfigureInterface->AddFunction("GetNumActuators", Configuration.GetNumbersOfActuators);
-
         RobotConfigureInterface->AddFunction("GetNumRobots", Configuration.GetNumberOfRobots);
         RobotConfigureInterface->AddFunction("GetNumDigitalInputs", Configuration.GetNumberOfDigitalInputs);
-
         RobotConfigureInterface->AddFunction("GetDigitalInputNames", Configuration.GetDigitalInputNames);
         RobotConfigureInterface->AddFunction("GetName", Configuration.GetName);
     }
@@ -57,7 +55,13 @@ void mtsRobotIO1394QtWidgetFactory::Configure(const std::string &) {
 }
 
 void mtsRobotIO1394QtWidgetFactory::Startup(void) {
-        this->BuildWidgets();
+    this->BuildWidgets();
+}
+
+const mtsRobotIO1394QtWidgetFactory::WidgetListType &
+mtsRobotIO1394QtWidgetFactory::Widgets(void) const
+{
+    return this->Widgets_;
 }
 
 void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
@@ -107,6 +111,7 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
 
         mtsRobotIO1394QtWidget * robotWidget =
                 new mtsRobotIO1394QtWidget(newComponentName, NumberOfActuatorsPerRobot[i]);
+        Widgets_.push_back(robotWidget);
         robotWidget->Configure();
         componentManager->AddComponent(robotWidget);
         componentManager->Connect(newComponentName, "Robot", NameOfRobotIO1394, tmpRobotName);

@@ -44,7 +44,12 @@ public:
     void Configure(const std::string & filename = "");
     void Startup(void);
 
+    typedef std::list<mtsRobotIO1394QtWidget *> WidgetListType;
+    const WidgetListType & Widgets(void) const;
+
 protected:
+    WidgetListType Widgets_;
+
     void BuildWidgets(void);
     bool BuildWidgetsCalled;
     mtsInterfaceRequired * RobotConfigureInterface;
