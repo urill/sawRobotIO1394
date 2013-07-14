@@ -244,6 +244,7 @@ void osaRobot1394::ConvertState(void)
     EncoderBitsToPosition(EncoderPositionBits_, EncoderPosition_);
     JointPosition_ = Configuration_.ActuatorToJointPosition * EncoderPosition_;
 
+    // Use vel estimation from FPGA
     EncoderBitsToVelocity(EncoderVelocityBits_, EncoderVelocity_);
     JointVelocity_ = Configuration_.ActuatorToJointPosition * EncoderVelocity_;
 
@@ -607,21 +608,28 @@ void osaRobot1394::EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & dt)
         dt[i] = static_cast<double>(bits[i]) * BitsToDTimeScales_[i] + BitsToDTimeOffsets_[i];
     }
 }
-void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const {
-
-#if 0
-    // ZC: velocity computed using FPGA encoder
-    // NOTE: BitsToVecocityScales, BitsToVelocityOffsets = 0
-    for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
-        vel[i] = static_cast<double>(bits[i]) * BitsToVecocityScales_[i] + BitsToVelocityOffsets_[i];
-    }
-#endif
-
-    // ZC: use timestamp from FPGA to compute velocity
-    // inaccurate if vel is small
-    // TODO: test using PID
-    for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
-        vel[i] = (EncoderPosition_[i] - EncoderPositionPrev_[i]) / TimeStamp_[i];
+void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const
+{
+    const int method = 1;
+    switch(method){
+    case 1:
+        // estimation in FPGA
+        // NOTE: BitsToVecocityScales, BitsToVelocityOffsets = 0
+        for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
+            vel[i] = BitsToDPositionScales_[i] / static_cast<double>(bits[i]);
+            if (vel[i] < 0.01){
+                vel[i] = 0.0;
+            }
+        }
+        break;
+    case 2:
+        // diff averaged pot
+        break;
+    case 3:
+        // savitzky-golay filtering
+        break;
+    default:
+        std::cerr << "Unknown conversion methods chosen" << std::endl;
     }
 }
 void osaRobot1394::ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const {

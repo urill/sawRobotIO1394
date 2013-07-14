@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstParameterTypes/prmJointType.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
+#include <cisstParameterTypes/prmVelocityJointGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
 #include <sawRobotIO1394/osaRobot1394.h>
@@ -82,6 +83,7 @@ namespace sawRobotIO1394 {
         prmForceTorqueJointSet TorqueJoint_;
         prmPositionJointGet PositionJointGet_;
         prmPositionJointGet PositionActuatorGet_;
+        prmVelocityJointGet VelocityJointGet_;
 
         // Functions for events
         struct {

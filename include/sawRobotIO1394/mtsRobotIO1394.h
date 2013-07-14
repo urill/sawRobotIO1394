@@ -73,7 +73,6 @@ public:
 protected:
     void GetNumberOfBoards(int & placeHolder) const;
     void GetNumberOfRobots(int & placeHolder) const;
-
     void GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const;
 
     void PreRead(void);

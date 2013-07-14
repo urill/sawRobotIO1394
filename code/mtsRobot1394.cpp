@@ -73,6 +73,7 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
 
     StateTableRead_->AddData(PositionJointGet_, "PositionJointGet");
     StateTableRead_->AddData(PositionActuatorGet_, "PositionActuatorGet");
+    StateTableRead_->AddData(VelocityJointGet_, "VelocityJointGet");
 
     StateTableWrite_->AddData(ActuatorCurrentBitsCommand_, "MotorControlCurrentRaw");
     StateTableWrite_->AddData(ActuatorCurrentCommand_, "MotorControlCurrent");
@@ -168,9 +169,12 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetPositionJoint"); // prmPositionJointGet
 
     robotInterface->AddCommandReadState(*StateTableRead_, EncoderVelocityBits_,
-                                        "GetVelocityRaw");
+                                        "GetVelocityRaw"); // vector[int]
     robotInterface->AddCommandReadState(*StateTableRead_, EncoderVelocity_,
-                                        "GetVelocity");
+                                        "GetVelocity"); // vector[double]
+
+    robotInterface->AddCommandReadState(*StateTableRead_, this->VelocityJointGet_,
+                                        "GetVelocityJoint"); // prmVelocityJointGet
 
     robotInterface->AddCommandReadState(*StateTableRead_, PotBits_,
                                         "GetAnalogInputRaw");
@@ -267,6 +271,7 @@ void mtsRobot1394::CheckState(void)
 {
     PositionJointGet_.Position().ForceAssign(JointPosition_);
     PositionActuatorGet_.Position().ForceAssign(EncoderPosition_);
+    VelocityJointGet_.Velocity().ForceAssign(JointVelocity_);
 
     if (PreviousPowerStatus_ != PowerStatus_) {
         EventTriggers.PowerStatus(PowerStatus_);

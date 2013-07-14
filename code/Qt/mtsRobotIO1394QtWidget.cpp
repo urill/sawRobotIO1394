@@ -289,6 +289,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
         ActuatorPosition.Assign(ActuatorPositionGet.Position()); // vct
         ActuatorPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
         Robot.GetVelocity(ActuatorVelocity);
+        ActuatorVelocity.ElementwiseMultiply(UnitFactor); // to degrees or mm
         Robot.GetAnalogInputVolts(PotentiometersVolts);
         Robot.GetAnalogInputPosSI(PotentiometersPosition);
         PotentiometersPosition.Multiply((cmn180_PI));
