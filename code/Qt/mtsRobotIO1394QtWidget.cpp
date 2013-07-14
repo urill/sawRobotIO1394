@@ -323,6 +323,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
         QVWCurrentSliderWidget->SetValue(requestedCurrent);
     }
 
+    QMIntervalStatistics->SetValue(IntervalStatistics);
     QVRJointPositionWidget->SetValue(JointPosition);
     QVRActuatorPositionWidget->SetValue(ActuatorPosition);
     QVRActuatorVelocityWidget->SetValue(ActuatorVelocity);
@@ -470,12 +471,26 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     currentFrame->setLayout(currentLayout);
     currentFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
+    // Timing
+    QVBoxLayout * timingLayout = new QVBoxLayout;
+    QFrame * timingFrame = new QFrame;
+    QLabel * timingTitle = new QLabel("Timing");
+    timingTitle->setFont(font);
+    timingTitle->setAlignment(Qt::AlignCenter);
+    timingLayout->addWidget(timingTitle);
+    QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
+    timingLayout->addWidget(QMIntervalStatistics);
+    timingLayout->addStretch(1);
+    timingFrame->setLayout(timingLayout);
+    timingFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+
     // Commands layout
     QHBoxLayout * commandLayout = new QHBoxLayout;
     commandLayout->addWidget(powerFrame);
     commandLayout->addWidget(watchdogFrame);
     commandLayout->addWidget(encoderFrame);
     commandLayout->addWidget(currentFrame);
+    commandLayout->addWidget(timingFrame);
 
     // Feedbacks Label
     QGridLayout * gridLayout = new QGridLayout;

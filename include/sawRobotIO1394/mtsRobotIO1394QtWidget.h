@@ -24,8 +24,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommonXML.h>
 #include <cisstOSAbstraction/osaTimeServer.h>
 #include <cisstVector/vctQtWidgetDynamicVector.h>
+#include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
 #include <cisstMultiTask/mtsComponent.h>
-#include <cisstMultiTask/mtsIntervalStatistics.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
 
 #include <QtCore>
@@ -160,6 +160,9 @@ private:
     QPushButton * QPBBiasEncAll;
     QDoubleSpinBox * QSBWatchdogPeriod;
     QCheckBox * QCBEnableDirectControl;
+
+    // GUI: timing
+    mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
     vctQtWidgetDynamicVectorBoolWrite * QVWCurrentEnableEachWidget;
     vctQtWidgetDynamicVectorBoolRead * QVRAmpStatusEachWidget;
