@@ -406,11 +406,12 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     powerLayout->addWidget(QCBEnableAll);
     QCBEnableAmps = new QCheckBox("Enable boards");
     powerLayout->addWidget(QCBEnableAmps);
-    powerLayout->addStretch(1);
+    powerLayout->addSpacing(5);
     QPBAmpStatusButton = new QPushButton("Actutators ON");
     powerLayout->addWidget(QPBAmpStatusButton);
     QPBPowerStatusButton = new QPushButton("Boards ON");
     powerLayout->addWidget(QPBPowerStatusButton);
+    powerLayout->addStretch();
     powerFrame->setLayout(powerLayout);
     powerFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
@@ -433,11 +434,12 @@ void mtsRobotIO1394QtWidget::setupUi(void)
         watchdogSetLayout->addWidget(QSBWatchdogPeriod);
     }
     watchdogLayout->addLayout(watchdogSetLayout);
-    watchdogLayout->addStretch(1);
+    watchdogLayout->addSpacing(5);
     QPBSafetyRelayButton = new QPushButton("Safety relay ON");
     watchdogLayout->addWidget(QPBSafetyRelayButton);
     QPBWatchdogButton = new QPushButton("Watchdog OFF");
     watchdogLayout->addWidget(QPBWatchdogButton);
+    watchdogLayout->addStretch();
     watchdogFrame->setLayout(watchdogLayout);
     watchdogFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
@@ -452,7 +454,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     encoderLayout->addWidget(QPBResetEncAll);
     QPBBiasEncAll = new QPushButton("Bias from potentiometers");
     encoderLayout->addWidget(QPBBiasEncAll);
-    encoderLayout->addStretch(1);
+    encoderLayout->addStretch();
     encoderFrame->setLayout(encoderLayout);
     encoderFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
@@ -467,7 +469,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     currentLayout->addWidget(QCBEnableDirectControl);
     QPBBiasCurrentAll = new QPushButton("Bias from feedback");
     currentLayout->addWidget(QPBBiasCurrentAll);
-    currentLayout->addStretch(1);
+    currentLayout->addStretch();
     currentFrame->setLayout(currentLayout);
     currentFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
@@ -480,7 +482,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     timingLayout->addWidget(timingTitle);
     QMIntervalStatistics = new mtsQtWidgetIntervalStatistics();
     timingLayout->addWidget(QMIntervalStatistics);
-    timingLayout->addStretch(1);
+    timingLayout->addStretch();
     timingFrame->setLayout(timingLayout);
     timingFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
@@ -564,6 +566,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     QVBoxLayout * mainLayout = new QVBoxLayout;
     mainLayout->addLayout(commandLayout);
     mainLayout->addLayout(gridLayout);
+    mainLayout->addStretch();
 
     setLayout(mainLayout);
 
