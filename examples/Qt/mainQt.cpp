@@ -26,6 +26,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 
+//#define WITH_ROS
 #ifdef WITH_ROS
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
@@ -89,16 +90,20 @@ int main(int argc, char ** argv)
 
 #ifdef WITH_ROS
     // ros wrapper
-    mtsROSBridge robotBridge("RobotBridge", 20 * cmn_ms);
-    robotBridge.AddTopicFromReadFunction<prmPositionJointGet, sensor_msgs::JointState>(
+    mtsROSBridge robotBridge("RobotBridge", 1 * cmn_ms);
+    robotBridge.AddPublisherFromReadCommand<prmPositionJointGet, sensor_msgs::JointState>(
                 robotName, "GetPositionJoint", "/" + robotName + "/joint_position");
-    robotBridge.AddTopicFromReadFunction<vctDoubleVec, sawROS::vctDoubleVec>(
+    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>(
                 robotName, "GetVelocity", "/" + robotName + "/joint_velocity");
-    componentManager->AddComponent(&robotBridge);
 
+    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>(
+                robotName, "GetAnalogInputPosSI", "/" + robotName + "/pot_position");
+    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>(
+                robotName, "GetAnalogInputVelSI", "/" + robotName + "/pot_velocity");
+
+    componentManager->AddComponent(&robotBridge);
     componentManager->Connect(robotBridge.GetName(), robotName,
                               "robot", robotName);
-
 #endif
 
     // create the components

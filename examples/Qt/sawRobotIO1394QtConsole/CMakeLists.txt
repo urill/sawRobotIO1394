@@ -36,11 +36,19 @@ set (REQUIRED_CISST_LIBRARIES
   cisstVectorQt
   cisstOSAbstraction
   cisstMultiTask
+  cisstMultiTaskQt
   cisstParameterTypes
   cisstQt)
 
 # find cisst and make sure the required libraries have been compiled
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
+
+set(MATLAB_LIBRARY_DIR "/usr/local/MATLAB/R2013a/bin/glnxa64")
+set(MATLAB_LIBRARIES
+  ${MATLAB_LIBRARY_DIR}/libeng.so
+  ${MATLAB_LIBRARY_DIR}/libmx.so
+  ${MATLAB_LIBRARY_DIR}/libmex.so
+  )
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -61,7 +69,8 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # link against non cisst libraries and cisst components
     target_link_libraries (sawRobotIO1394QtConsole
-                           ${sawRobotIO1394_LIBRARIES})
+                           ${sawRobotIO1394_LIBRARIES}
+                           ${MATLAB_LIBRARIES})
 
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawRobotIO1394QtConsole ${REQUIRED_CISST_LIBRARIES})
