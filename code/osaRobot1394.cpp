@@ -22,8 +22,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/osaRobot1394.h>
 
+#ifndef SAW_ROBOT_IO_1394_WO_CISST
 #include <cisstCommon/cmnUnits.h>
 #include <cisstOSAbstraction/osaSleep.h>
+#endif
 
 #include <AmpIO.h>
 
@@ -586,7 +588,8 @@ void osaRobot1394::GetActuatorCurrentCommandLimits(vctDoubleVec & limits) const
     limits = ActuatorCurrentCommandLimits_;
 }
 
-#ifndef SAW_ROBOT_IO_1394_WO_CISST
+
+
 
 void osaRobot1394::EncoderPositionToBits(const vctDoubleVec & pos, vctIntVec & bits) const {
     for (size_t i = 0; i < bits.size() && i < pos.size(); i++) {
@@ -633,7 +636,7 @@ void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & 
     }
 }
 void osaRobot1394::ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const {
-    currents = currents.ElementwiseProductOf(efforts, EffortToCurrentScales_);
+    currents.ElementwiseProductOf(efforts, EffortToCurrentScales_);
 }
 void osaRobot1394::ActuatorCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const {
     for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
@@ -646,7 +649,7 @@ void osaRobot1394::ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & 
     }
 }
 void osaRobot1394::ActuatorCurrentToEffort(const vctDoubleVec & currents, vctDoubleVec & efforts) const {
-    efforts = efforts.ElementwiseProductOf(currents, EffortToCurrentScales_);
+    efforts.ElementwiseProductOf(currents, EffortToCurrentScales_);
 }
 
 void osaRobot1394::PotBitsToVoltage(const vctIntVec & bits, vctDoubleVec & voltages) const {
@@ -658,43 +661,3 @@ void osaRobot1394::PotVoltageToPosition(const vctDoubleVec & voltages, vctDouble
     pos.ElementwiseProductOf(voltages, VoltageToPositionScales_);
     pos.SumOf(pos, VoltageToPositionOffsets_);
 }
-
-#else // ifndef SAW_ROBOT_IO_1394_WO_CISST
-
-void osaIO1394::encoder_pos_to_bits(const vctDoubleVec & pos, vctIntVec & bits) const {
-    bits = (pos - bits_to_pos_offsets_).cwiseQuotient(bits_to_pos_ratios_).cast<int>();
-}
-void osaIO1394::encoder_bits_to_pos(const vctIntVec & bits, vctDoubleVec & pos) const {
-    pos = bits.cast<double>().cwiseProduct(bits_to_pos_ratios_) + bits_to_pos_offsets_;
-}
-void osaIO1394::encoder_bits_to_dpos(const vctIntVec & bits, vctDoubleVec & dpos) const {
-    dpos = bits.cast<double>().cwiseProduct(bits_to_dpos_ratios_) + bits_to_dpos_offsets_;
-}
-void osaIO1394::encoder_bits_to_dt(const vctIntVec & bits, vctDoubleVec & dt) const {
-    dt = bits.cast<double>().cwiseProduct(bits_to_dt_ratios_) + bits_to_dt_offsets_;
-}
-void osaIO1394::encoder_bits_to_vel(const vctIntVec & bits, vctDoubleVec & vel) const {
-    vel = bits.cast<double>().cwiseProduct(bits_to_volts_ratios_) + bits_to_vel_offsets_;
-}
-
-void osaIO1394::actuator_bits_to_amps(const vctIntVec & bits, vctDoubleVec & currents) const {
-    currents = bits.cast<double>().cwiseProduct(bits_to_amps_ratios_) + bits_to_amps_offsets_;
-}
-void osaIO1394::actuator_amps_to_bits(const vctDoubleVec & currents, vctIntVec & bits) const {
-    bits = (currents.cwiseProduct(amps_to_bits_ratios_) + amps_to_bits_offsets_).cast<uint32_t>();
-}
-void osaIO1394::actuator_efforts_to_amps(const vctDoubleVec & efforts, vctDoubleVec & currents) const {
-    currents = efforts.cwiseProduct(efforts_to_amps_ratios_);
-}
-void osaIO1394::actuator_amps_to_efforts(const vctDoubleVec & currents, vctDoubleVec & efforts) const {
-    efforts = currents.cwiseQuotient(efforts_to_amps_ratios_);
-}
-
-void osaIO1394::pot_bits_to_volts(const vctIntVec & bits, vctDoubleVec & voltages) const {
-    voltages = bits.cast<double>().cwiseProduct(bits_to_volts_ratios_) + bits_to_volts_offsets_;
-}
-void osaIO1394::pot_volts_to_pos(const vctDoubleVec & voltages, vctDoubleVec & pos) const {
-    pos = voltages.cwiseProduct(volts_to_pos_ratios_) + volts_to_pos_offsets_;
-}
-
-#endif // ifndef SAW_ROBOT_IO_1394_WO_CISST

@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <vector>
+
+// NOTE: We are augmenting the Eigen::Matrix class with the contents of
+// sawRobotIO1394/cisstVectorEigenAddons.h
 #include <Eigen/Dense>
 
 //! Vector Typedefs

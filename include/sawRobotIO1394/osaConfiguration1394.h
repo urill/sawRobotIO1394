@@ -28,6 +28,7 @@ http://www.cisst.org/cisst/license.txt.
 #else // ifndef SAW_ROBOT_IO_1394_WO_CISST
 #include <sawRobotIO1394/EigenWrapper.h>
 #include <sawRobotIO1394/MinimalPrm.h>
+#include <sawRobotIO1394/MinimalCmn.h>
 #endif // ifndef SAW_ROBOT_IO_1394_WO_CISST
 
 #include <stdexcept>
