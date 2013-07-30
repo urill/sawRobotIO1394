@@ -49,7 +49,7 @@ namespace sawRobotIO1394 {
         //@}
 
         mtsDigitalInput1394(const cmnGenericObject & owner,
-                              const osaDigitalInput1394Configuration & config);
+                            const osaDigitalInput1394Configuration & config);
 
         void SetupStateTable(mtsStateTable & stateTable);
         void SetupProvidedInterface(mtsInterfaceProvided * interfaceProvided, mtsStateTable & stateTable);
