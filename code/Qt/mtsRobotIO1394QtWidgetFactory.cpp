@@ -79,7 +79,7 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
 
     size_t i = 0;
 
-    std::string qtSuffix = "QtWidget";
+    std::string suffix = " IO";
     std::string actuatorInterfaceSuffix = "Actuators";
     std::string newComponentName;
     std::string newInterfaceActuatorName;
@@ -104,7 +104,7 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
 
     for (i = 0; i < NumberOfRobots; i++) {
         tmpRobotName = RobotNames[i];
-        newComponentName = tmpRobotName.append(qtSuffix);
+        newComponentName = tmpRobotName.append(suffix);
         tmpRobotName = RobotNames[i];
         newInterfaceActuatorName = tmpRobotName.append(actuatorInterfaceSuffix);
         tmpRobotName = RobotNames[i];
