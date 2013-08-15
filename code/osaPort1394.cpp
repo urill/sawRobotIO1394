@@ -62,14 +62,14 @@ void osaPort1394::Configure(const osaPort1394Configuration & config)
 void osaPort1394::AddRobot(osaRobot1394 * robot)
 {
     if (robot == 0) {
-        cmnThrow(osaRuntimeError1394("Robot pointer is null."));
+        cmnThrow(osaRuntimeError1394("osaPort1394::AddRobot: Robot pointer is null."));
     }
 
     const osaRobot1394Configuration & config = robot->GetConfiguration();
 
     // Check to make sure this robot isn't already added
     if (RobotsByName_.count(config.Name) > 0) {
-        cmnThrow(osaRuntimeError1394("Robot name is not unique."));
+        cmnThrow(osaRuntimeError1394(robot->Name() + ": robot name is not unique."));
     }
 
     // Construct a vector of boards relevant to this robot
@@ -120,14 +120,14 @@ const osaRobot1394 * osaPort1394::Robot(const int i) const
 void osaPort1394::AddDigitalInput(osaDigitalInput1394 * digitalInput)
 {
     if (digitalInput == 0) {
-        cmnThrow(osaRuntimeError1394("Digital input pointer is null."));
+        cmnThrow(osaRuntimeError1394("osaPort1394::AddDigitalInput: digital input pointer is null."));
     }
 
     const osaDigitalInput1394Configuration & config = digitalInput->Configuration();
 
     // Check to make sure this digital_input isn't already added
     if (DigitalInputsByName_.count(config.Name) > 0) {
-        cmnThrow(osaRuntimeError1394("Digital input name is not unique."));
+        cmnThrow(osaRuntimeError1394(digitalInput->Name() + ": digital input name is not unique."));
     }
 
     // Construct a vector of boards relevant to this digital_input

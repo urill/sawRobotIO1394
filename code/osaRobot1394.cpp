@@ -169,7 +169,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
 void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & boards)
 {
     if (boards.size() != NumberOfActuators_) {
-        cmnThrow(osaRuntimeError1394("Number of boards different than the number of actuators."));
+        cmnThrow(osaRuntimeError1394(this->Name() + ": number of boards different than the number of actuators."));
     }
 
     for (size_t i = 0; i < NumberOfActuators_; i++) {
@@ -185,7 +185,7 @@ void osaRobot1394::PollValidity(void)
 {
     // Make sure the boards have been configured
     if (NumberOfActuators_ != ActuatorInfo_.size()) {
-        cmnThrow(osaRuntimeError1394("Number of boards different than the number of actuators."));
+        cmnThrow(osaRuntimeError1394(this->Name() + ": number of boards different than the number of actuators."));
     }
 
     // Store previous state
@@ -207,7 +207,7 @@ void osaRobot1394::PollValidity(void)
     }
 
     if (!Valid_) {
-        cmnThrow(osaRuntimeError1394("Boards invalid."));
+        cmnThrow(osaRuntimeError1394(this->Name() + ": boards invalid."));
     }
 }
 
@@ -292,7 +292,7 @@ void osaRobot1394::CheckState(void)
 
     if (CurrentSafetyViolationsCounter_ > CurrentSafetyViolationsMaximum_) {
         this->DisablePower();
-        cmnThrow(osaRuntimeError1394("Too many consecutive current safety violations.  power has been disabled."));
+        cmnThrow(osaRuntimeError1394(this->Name() + ": too many consecutive current safety violations.  power has been disabled."));
     }
 
     // check safety amp disable
@@ -301,7 +301,7 @@ void osaRobot1394::CheckState(void)
          ++board) {
         AmpIO_UInt32 safetyAmpDisable = board->second->GetSafetyAmpDisable();
         if (safetyAmpDisable) {
-            cmnThrow(osaRuntimeError1394("Hardware current safety ampdisable tripped." + TimeStamp_.ToString()));
+            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety ampdisable tripped." + TimeStamp_.ToString()));
         }
     }
 }
