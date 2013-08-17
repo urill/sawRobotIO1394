@@ -47,8 +47,7 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
     CurrentSafetyViolationsCounter_(0),
     CurrentSafetyViolationsMaximum_(max_consecutive_current_safety_violations),
     CalibrateCurrentBufferSize_(actuator_current_buffer_size),
-    CalibrateCurrentBufferIndex_(0),
-    CalibrateCurrentCommandBuffers_(NumberOfActuators_)
+    CalibrateCurrentBufferIndex_(0)
 {
     this->Configure(config);
 }
@@ -63,6 +62,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     NumberOfActuators_ = config.NumberOfActuators;
     NumberOfJoints_ = config.NumberOfJoints;
     PotType_ = config.PotLocation;
+    CalibrateCurrentCommandBuffers_.resize(NumberOfActuators_);
 
     // Low-level API
     ActuatorInfo_.resize(NumberOfActuators_);
