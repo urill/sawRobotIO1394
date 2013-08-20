@@ -466,6 +466,11 @@ void osaRobot1394::SetActuatorCurrent(const vctDoubleVec & currents)
 
 void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 {
+    // If we are currently calibrating current, don't apply anything
+    if (CalibrateCurrentCommandOffsetRequested_) {
+        return;
+    }
+
     for (size_t i=0; i<NumberOfActuators_; i++) {
         ActuatorInfo_[i].board->SetMotorCurrent(ActuatorInfo_[i].axis, bits[i]);
     }
@@ -476,6 +481,7 @@ void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 
 void osaRobot1394::CalibrateCurrentCommandOffsetsRequest(const int & numberOfSamples)
 {
+    SetActuatorCurrent(vctDoubleVec(NumberOfActuators(), 0.0));
     CalibrateCurrentBufferIndex_ = 0;
     CalibrateCurrentCommandBuffers_.resize(numberOfSamples);
     CalibrateCurrentFeedbackBuffers_.resize(numberOfSamples);
@@ -490,7 +496,7 @@ void osaRobot1394::CalibrateCurrentCommandOffsets(void)
         current_feedback_sums(NumberOfActuators_),
         current_biases(NumberOfActuators_);
 
-    // Copute current bias for each actuator
+    // Compute current bias for each actuator
     for (size_t sample=0; sample < CalibrateCurrentBufferSize_; sample++) {
         current_command_sums = current_command_sums + CalibrateCurrentCommandBuffers_[sample];
         current_feedback_sums = current_feedback_sums + CalibrateCurrentFeedbackBuffers_[sample];
