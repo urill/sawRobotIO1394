@@ -118,6 +118,5 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
         componentManager->Connect(newComponentName, "RobotActuators", NameOfRobotIO1394, newInterfaceActuatorName);
 
         robotWidget->Create();
-        robotWidget->Start();
     }
 }
