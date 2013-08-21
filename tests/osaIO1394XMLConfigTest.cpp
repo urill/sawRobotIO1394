@@ -33,8 +33,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstParameterTypes/prmPositionJointGet.h>
 #include <cisstParameterTypes/prmForceTorqueJointSet.h>
 
-#include <sawRobotIO1394/osaRobotIO1394.h>
-#include <sawRobotIO1394/osaIO1394XMLConfig.h>
+#include <sawRobotIO1394/osaRobot1394.h>
+#include <sawRobotIO1394/osaXML1394.h>
 
 using namespace sawRobotIO1394;
 
@@ -80,20 +80,20 @@ void osaIO1394XMLConfigTest::TestConfigure(void)
 
     CPPUNIT_ASSERT(xml_path.length() > 0);
 
-    osaIO1394::Configuration config;
-    osaIO1394XMLConfig::ConfigurePort(xml_path, config);
+    sawRobotIO1394::osaPort1394Configuration config;
+    sawRobotIO1394::osaXML1394ConfigurePort(xml_path, config);
 
     CPPUNIT_ASSERT(config.Robots.size() == 1);
     CPPUNIT_ASSERT(config.DigitalInputs.size() == 12);
 
-    osaIO1394::RobotConfiguration & robot = config.Robots[0];
+    sawRobotIO1394::osaRobot1394Configuration & robot = config.Robots[0];
 
     CPPUNIT_ASSERT(robot.Name == "Robot");
     CPPUNIT_ASSERT(robot.Actuators.size() == 4);
     CPPUNIT_ASSERT(robot.NumberOfActuators == 4);
     CPPUNIT_ASSERT(robot.NumberOfJoints == 4);
     CPPUNIT_ASSERT(robot.HasActuatorToJointCoupling == true);
-    CPPUNIT_ASSERT(robot.PotLocation == osaIO1394::POTENTIOMETER_ON_ACTUATORS);
+    CPPUNIT_ASSERT(robot.PotLocation == sawRobotIO1394::POTENTIOMETER_ON_ACTUATORS);
 
     CPPUNIT_ASSERT(robot.ActuatorToJointPosition.rows() == 4);
     CPPUNIT_ASSERT(robot.JointToActuatorPosition.rows() == 4);
