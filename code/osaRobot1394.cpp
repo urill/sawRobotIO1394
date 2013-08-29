@@ -42,6 +42,7 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
     PowerStatus_(false),
     PreviousPowerStatus_(false),
     WatchdogStatus_(false),
+    PreviousWatchdogStatus_(false),
     SafetyRelay_(false),
     CalibrateCurrentCommandOffsetRequested_(false),
     CurrentSafetyViolationsCounter_(0),
@@ -190,6 +191,7 @@ void osaRobot1394::PollValidity(void)
 
     // Store previous state
     PreviousPowerStatus_ = PowerStatus_;
+    PreviousWatchdogStatus_ = WatchdogStatus_;
 
     // Initialize flags
     Valid_ = true;
@@ -207,7 +209,16 @@ void osaRobot1394::PollValidity(void)
     }
 
     if (!Valid_) {
-        cmnThrow(osaRuntimeError1394(this->Name() + ": boards invalid."));
+        std::stringstream message;
+        message << this->Name() << ": read error on board(s) ";
+        for (unique_board_iterator board = UniqueBoards_.begin();
+             board != UniqueBoards_.end();
+             ++board) {
+            if (!board->second->ValidRead()) {
+                message << board->second->GetBoardId() << " ";
+            }
+        }
+        cmnThrow(osaRuntimeError1394(message.str()));
     }
 }
 
@@ -292,7 +303,7 @@ void osaRobot1394::CheckState(void)
 
     if (CurrentSafetyViolationsCounter_ > CurrentSafetyViolationsMaximum_) {
         this->DisablePower();
-        cmnThrow(osaRuntimeError1394(this->Name() + ": too many consecutive current safety violations.  power has been disabled."));
+        cmnThrow(osaRuntimeError1394(this->Name() + ": too many consecutive current safety violations.  Power has been disabled."));
     }
 
     // check safety amp disable

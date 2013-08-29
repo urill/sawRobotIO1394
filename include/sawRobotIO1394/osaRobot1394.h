@@ -210,10 +210,11 @@ namespace sawRobotIO1394 {
 
         //! State Members
         bool
-        Valid_,
+            Valid_,
             PowerStatus_,
             PreviousPowerStatus_,
-            WatchdogStatus_;
+            WatchdogStatus_,
+            PreviousWatchdogStatus_;
 
         unsigned short SafetyRelay_;
 
