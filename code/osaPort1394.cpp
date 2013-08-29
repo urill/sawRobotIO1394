@@ -205,11 +205,7 @@ void osaPort1394::Read(void)
         (*robot)->ConvertState();
 
         // Perform post conversion checks and computations
-        try{
-            (*robot)->CheckState();
-        }catch (std::exception& e){
-            std::cerr << e.what() << std::endl;
-        }
+        (*robot)->CheckState();
     }
 
     // Poll the state for each digital input
