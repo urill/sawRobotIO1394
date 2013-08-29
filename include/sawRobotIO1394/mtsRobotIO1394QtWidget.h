@@ -163,7 +163,6 @@ private:
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
     vctQtWidgetDynamicVectorBoolWrite * QVWCurrentEnableEachWidget;
-    vctQtWidgetDynamicVectorBoolRead * QVRAmpStatusEachWidget;
     vctQtWidgetDynamicVectorDoubleWrite * QVWCurrentSpinBoxWidget;
     vctQtWidgetDynamicVectorDoubleWrite * QVWCurrentSliderWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRJointPositionWidget;

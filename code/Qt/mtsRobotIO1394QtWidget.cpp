@@ -277,7 +277,7 @@ void mtsRobotIO1394QtWidget::SlotWatchdogPeriod(double period_ms)
     }
 }
 
-void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
+void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
     ProcessQueuedEvents();
 
@@ -512,16 +512,10 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     vctBoolVec defaultEnable(NumberOfActuators, false);
     vctDoubleVec defaultCurrent(NumberOfActuators, 0.0);
 
-    gridLayout->addWidget(new QLabel("Axis power requested"), row, 0);
+    gridLayout->addWidget(new QLabel("Actuator power"), row, 0);
     QVWCurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
     QVWCurrentEnableEachWidget->SetValue(defaultEnable);
     gridLayout->addWidget(QVWCurrentEnableEachWidget, row, 1);
-    row++;
-
-    gridLayout->addWidget(new QLabel("Axis power status"), row, 0);
-    QVRAmpStatusEachWidget = new vctQtWidgetDynamicVectorBoolRead();
-    QVRAmpStatusEachWidget->SetValue(defaultEnable);
-    gridLayout->addWidget(QVRAmpStatusEachWidget, row, 1);
     row++;
 
     gridLayout->addWidget(new QLabel("Desired current (mA)"), row, 0);
@@ -613,7 +607,7 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
 {
     // amplifier status
     bool ampStatusGood = AmpStatus.All();
-    QVRAmpStatusEachWidget->SetValue(AmpStatus);
+    QVWCurrentEnableEachWidget->SetValue(AmpStatus);
     if (ampStatusGood) {
         QLAmpStatus->setText("Actuators ON");
         QLAmpStatus->setStyleSheet("QPLabel { background-color: green }");
@@ -630,6 +624,14 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
         QLPowerStatus->setText("Boards OFF");
         QLPowerStatus->setStyleSheet("QLabel { background-color: red }");
     }
+
+    // update check box to enable/disable based on current state
+    QCBEnableAmps->blockSignals(true); {
+        QCBEnableAmps->setChecked(ampStatusGood);
+    } QCBEnableAmps->blockSignals(false);
+    QCBEnableAll->blockSignals(true); {
+        QCBEnableAll->setChecked(ampStatusGood && AmpEnable.All());
+    } QCBEnableAll->blockSignals(false);
 
     // safety Relay
     if (SafetyRelay) {
