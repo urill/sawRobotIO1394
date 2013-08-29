@@ -88,6 +88,7 @@ namespace sawRobotIO1394 {
         // Functions for events
         struct {
             mtsFunctionWrite PowerStatus;
+            mtsFunctionWrite WatchdogStatus;
         } EventTriggers;
     };
 

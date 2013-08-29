@@ -243,6 +243,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
 
     // Events
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
+    robotInterface->AddEventWrite(EventTriggers.WatchdogStatus, "WatchdogStatus", false);
 
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
@@ -275,5 +276,9 @@ void mtsRobot1394::CheckState(void)
 
     if (PreviousPowerStatus_ != PowerStatus_) {
         EventTriggers.PowerStatus(PowerStatus_);
+    }
+
+    if (PreviousWatchdogStatus_ != WatchdogStatus_) {
+        EventTriggers.WatchdogStatus(WatchdogStatus_);
     }
 }

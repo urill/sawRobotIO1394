@@ -100,7 +100,6 @@ protected:
         mtsFunctionRead GetJointType;
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
-        mtsFunctionRead GetWatchdogTimeout;
         mtsFunctionRead GetAmpTemperature;
 
         mtsFunctionWrite SetMotorCurrent;
@@ -141,7 +140,6 @@ private:
     vctBoolVec AmpStatus;
     bool PowerStatus;
     unsigned short SafetyRelay;
-    bool WatchdogTimeout;
     vctDoubleVec AmpTemperature;
 
     // Interface
@@ -176,18 +174,25 @@ private:
     vctQtWidgetDynamicVectorDoubleRead * QVRCurrentFeedbackWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRAmpTemperature;
 
-    QPushButton * QPBAmpStatusButton;
-    QPushButton * QPBPowerStatusButton;
-    QPushButton * QPBSafetyRelayButton;
-    QPushButton * QPBWatchdogButton;
+    QLabel * QLAmpStatus;
+    QLabel * QLPowerStatus;
+    QLabel * QLSafetyRelay;
+    QLabel * QLWatchdog;
+    QLabel * QLWatchdogLastTimeout;
 
     void PowerStatusEventHandler(const bool & status);
+    void WatchdogStatusEventHandler(const bool & status);
 
-    // signal and slot used by PowerStatusEventHandler
+    // signal and slot used by mts event handlers, this this component
+    // doesn't have a thread (i.e. mtsTask), events are handled in the
+    // thread that sends the event.  We then use Qt emit/slot to maintain
+    // thread safety
 signals:
     void SignalPowerStatus(bool status);
+    void SignalWatchdogStatus(bool status);
 protected slots:
     void SlotPowerStatus(bool status);
+    void SlotWatchdogStatus(bool status);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtWidget);

@@ -270,7 +270,15 @@ void mtsRobotIO1394::Run(void)
 {
     // Read from all boards
     this->PreRead();
-    Port_->Read();
+    try {
+        Port_->Read();
+    } catch (sawRobotIO1394::osaRuntimeError1394 & sawException) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: " << this->Name << ": sawRobotIO1394 exception \"" << sawException.what() << "\"" << std::endl;
+    } catch (std::exception & stdException) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: " << this->Name << ": standard exception \"" << stdException.what() << "\"" << std::endl;
+    } catch (...) {
+        CMN_LOG_CLASS_RUN_ERROR << "Run: " << this->Name << ": unknown exception" << std::endl;
+    }
     this->PostRead();
 
     // Invoke connected components (if any)

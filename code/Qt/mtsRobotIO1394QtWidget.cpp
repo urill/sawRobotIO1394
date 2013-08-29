@@ -42,7 +42,7 @@ mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName
     TimerPeriodInMilliseconds(50),
     NumberOfActuators(numberOfActuators)
 {
-    WatchdogPeriodInSeconds = 140.0 * cmn_ms;
+    WatchdogPeriodInSeconds = 300.0 * cmn_ms;
     Init();
 }
 
@@ -279,6 +279,8 @@ void mtsRobotIO1394QtWidget::SlotWatchdogPeriod(double period_ms)
 
 void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
 {
+    ProcessQueuedEvents();
+
     bool flag;
     Robot.IsValid(flag);
     if (flag) {
@@ -298,7 +300,6 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * event)
         Actuators.GetAmpStatus(AmpStatus);
         Robot.GetPowerStatus(PowerStatus);
         Robot.GetSafetyRelay(SafetyRelay);
-        Robot.GetWatchdogTimeout(WatchdogTimeout);
         Robot.GetAmpTemperature(AmpTemperature);
     } else {
         JointPosition.SetAll(DummyValueWhenNotConnected);
@@ -361,7 +362,6 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("GetJointType", Robot.GetJointType);
         robotInterface->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
         robotInterface->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
-        robotInterface->AddFunction("GetWatchdogTimeout", Robot.GetWatchdogTimeout);
         robotInterface->AddFunction("GetAmpTemperature", Robot.GetAmpTemperature);
 
         robotInterface->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
@@ -371,7 +371,9 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("BiasCurrent", Robot.BiasCurrent);
         robotInterface->AddFunction("BiasEncoder", Robot.BiasEncoder);
 
+        // make sure the events are queued
         robotInterface->AddEventHandlerWrite(&mtsRobotIO1394QtWidget::PowerStatusEventHandler, this, "PowerStatus");
+        robotInterface->AddEventHandlerWrite(&mtsRobotIO1394QtWidget::WatchdogStatusEventHandler, this, "WatchdogStatus");
     }
 
     mtsInterfaceRequired * actuatorInterface = AddInterfaceRequired("RobotActuators");
@@ -407,10 +409,12 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     QCBEnableAmps = new QCheckBox("Enable boards");
     powerLayout->addWidget(QCBEnableAmps);
     powerLayout->addSpacing(5);
-    QPBAmpStatusButton = new QPushButton("Actutators ON");
-    powerLayout->addWidget(QPBAmpStatusButton);
-    QPBPowerStatusButton = new QPushButton("Boards ON");
-    powerLayout->addWidget(QPBPowerStatusButton);
+    QLAmpStatus = new QLabel("Actuators ON");
+    QLAmpStatus->setAlignment(Qt::AlignCenter);
+    powerLayout->addWidget(QLAmpStatus);
+    QLPowerStatus = new QLabel("Boards ON");
+    QLPowerStatus->setAlignment(Qt::AlignCenter);
+    powerLayout->addWidget(QLPowerStatus);
     powerLayout->addStretch();
     powerFrame->setLayout(powerLayout);
     powerFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -435,10 +439,16 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     }
     watchdogLayout->addLayout(watchdogSetLayout);
     watchdogLayout->addSpacing(5);
-    QPBSafetyRelayButton = new QPushButton("Safety relay ON");
-    watchdogLayout->addWidget(QPBSafetyRelayButton);
-    QPBWatchdogButton = new QPushButton("Watchdog OFF");
-    watchdogLayout->addWidget(QPBWatchdogButton);
+    QLSafetyRelay = new QLabel("Safety relay ON");
+    QLSafetyRelay->setAlignment(Qt::AlignCenter);
+    watchdogLayout->addWidget(QLSafetyRelay);
+    QLWatchdog = new QLabel("Watchdog Timeout FALSE");
+    QLWatchdog->setAlignment(Qt::AlignCenter);
+    QLWatchdog->setStyleSheet("QLabel { background-color: green }");
+    watchdogLayout->addWidget(QLWatchdog);
+    QLWatchdogLastTimeout = new QLabel("Last timeout: n/a");
+    QLWatchdogLastTimeout->setAlignment(Qt::AlignCenter);
+    watchdogLayout->addWidget(QLWatchdogLastTimeout);
     watchdogLayout->addStretch();
     watchdogFrame->setLayout(watchdogLayout);
     watchdogFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -589,6 +599,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // connect cisstMultiTask events
     connect(this, SIGNAL(SignalPowerStatus(bool)), this, SLOT(SlotPowerStatus(bool)));
+    connect(this, SIGNAL(SignalWatchdogStatus(bool)), this, SLOT(SlotWatchdogStatus(bool)));
 
     // set initial value
     QCBEnableAmps->setChecked(false);
@@ -604,54 +615,57 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
     bool ampStatusGood = AmpStatus.All();
     QVRAmpStatusEachWidget->SetValue(AmpStatus);
     if (ampStatusGood) {
-        QPBAmpStatusButton->setText("Actuators ON");
-        QPBAmpStatusButton->setStyleSheet("QPushButton { background-color: green }");
+        QLAmpStatus->setText("Actuators ON");
+        QLAmpStatus->setStyleSheet("QPLabel { background-color: green }");
     } else {
-        QPBAmpStatusButton->setText("Actuators OFF");
-        QPBAmpStatusButton->setStyleSheet("QPushButton { background-color: red }");
+        QLAmpStatus->setText("Actuators OFF");
+        QLAmpStatus->setStyleSheet("QLabel { background-color: red }");
     }
 
     // power status
     if (PowerStatus) {
-        QPBPowerStatusButton->setText("Boards ON");
-        QPBPowerStatusButton->setStyleSheet("QPushButton { background-color: green }");
+        QLPowerStatus->setText("Boards ON");
+        QLPowerStatus->setStyleSheet("QLabel { background-color: green }");
     } else {
-        QPBPowerStatusButton->setText("Boards OFF");
-        QPBPowerStatusButton->setStyleSheet("QPushButton { background-color: red }");
+        QLPowerStatus->setText("Boards OFF");
+        QLPowerStatus->setStyleSheet("QLabel { background-color: red }");
     }
 
     // safety Relay
     if (SafetyRelay) {
-        QPBSafetyRelayButton->setText("Safety Relay ON");
-        QPBSafetyRelayButton->setStyleSheet("QPushButton { background-color: green }");
+        QLSafetyRelay->setText("Safety Relay ON");
+        QLSafetyRelay->setStyleSheet("QLabel { background-color: green }");
     } else {
-        QPBSafetyRelayButton->setText("Safety Relay OFF");
-        QPBSafetyRelayButton->setStyleSheet("QPushButton { background-color: red }");
-    }
-
-    // watchdog timeout
-    if (WatchdogTimeout) {
-        QPBWatchdogButton->setText("Watchdog Timeout TRUE");
-        QPBWatchdogButton->setStyleSheet("QPushButton { background-color: red }");
-    } else {
-        QPBWatchdogButton->setText("Watchdog Timeout FALSE");
-        QPBWatchdogButton->setStyleSheet("QPushButton { background-color: green }");
+        QLSafetyRelay->setText("Safety Relay OFF");
+        QLSafetyRelay->setStyleSheet("QLabel { background-color: red }");
     }
 }
 
-
 void mtsRobotIO1394QtWidget::PowerStatusEventHandler(const bool & status)
 {
-    if (status == false) {
-        // event handler is running in caller's thread since "this" is an mtsComponent
-        // we should emit a signal and Qt should handle this in a thread safe way
-        emit SignalPowerStatus(status);
-    }
+    emit SignalPowerStatus(status);
 }
 
 void mtsRobotIO1394QtWidget::SlotPowerStatus(bool status)
 {
     if (status == false) {
         QCBEnableAll->setChecked(false);
+    }
+}
+
+void mtsRobotIO1394QtWidget::WatchdogStatusEventHandler(const bool & status)
+{
+    emit SignalWatchdogStatus(status);
+}
+
+void mtsRobotIO1394QtWidget::SlotWatchdogStatus(bool status)
+{
+    if (status) {
+        QLWatchdog->setText("Watchdog Timeout TRUE");
+        QLWatchdog->setStyleSheet("QLabel { background-color: red }");
+        QLWatchdogLastTimeout->setText(QString("Last timeout: " + QTime::currentTime().toString("hh:mm:ss")));
+    } else {
+        QLWatchdog->setText("Watchdog Timeout FALSE");
+        QLWatchdog->setStyleSheet("QLabel { background-color: green }");
     }
 }
