@@ -215,7 +215,7 @@ void osaRobot1394::PollValidity(void)
              board != UniqueBoards_.end();
              ++board) {
             if (!board->second->ValidRead()) {
-                message << board->second->GetBoardId() << " ";
+                message << static_cast<int>(board->second->GetBoardId()) << " ";
             }
         }
         cmnThrow(osaRuntimeError1394(message.str()));
