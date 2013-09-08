@@ -502,10 +502,9 @@ void osaRobot1394::CalibrateCurrentCommandOffsetsRequest(const int & numberOfSam
 
 void osaRobot1394::CalibrateCurrentCommandOffsets(void)
 {
-    vctDoubleVec
-        current_command_sums(NumberOfActuators_),
-        current_feedback_sums(NumberOfActuators_),
-        current_biases(NumberOfActuators_);
+    vctDoubleVec current_command_sums(NumberOfActuators_);
+    vctDoubleVec current_feedback_sums(NumberOfActuators_);
+    vctDoubleVec current_biases(NumberOfActuators_);
 
     // Compute current bias for each actuator
     for (size_t sample=0; sample < CalibrateCurrentBufferSize_; sample++) {
