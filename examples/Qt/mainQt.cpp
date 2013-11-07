@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 // cisst/saw
 #include <cisstCommon/cmnPath.h>
 #include <cisstCommon/cmnCommandLineOptions.h>
+#include <cisstMultiTask/mtsQtWidgetComponent.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 #include <sawRobotIO1394/mtsRobotIO1394QtWidgetFactory.h>
 
@@ -105,6 +106,12 @@ int main(int argc, char ** argv)
     componentManager->Connect(robotBridge.GetName(), robotName,
                               "robot", robotName);
 #endif
+
+    mtsQtWidgetComponent * componentWidget = new mtsQtWidgetComponent("QtWidgetComponent");
+    componentWidget->CreateWidgetsForComponent(*robot);
+    QMainWindow win;
+    win.setCentralWidget(componentWidget);
+    win.show();
 
     // create the components
     componentManager->CreateAllAndWait(2.0 * cmn_s);
