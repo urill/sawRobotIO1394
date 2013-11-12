@@ -21,11 +21,8 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsRobotIO1394QtManager_h
 #define _mtsRobotIO1394QtManager_h
 
-#include <cisstCommonXML.h>
-#include <cisstOSAbstraction/osaTimeServer.h>
-#include <cisstVector/vctQtWidgetDynamicVector.h>
 #include <cisstMultiTask/mtsComponent.h>
-#include <cisstMultiTask/mtsIntervalStatistics.h>
+#include <cisstParameterTypes/prmQtWidgetEventButtonsComponent.h>
 #include <sawRobotIO1394/mtsRobotIO1394.h>
 
 #include <QtCore>
@@ -47,8 +44,13 @@ public:
     typedef std::list<mtsRobotIO1394QtWidget *> WidgetListType;
     const WidgetListType & Widgets(void) const;
 
+    inline prmQtWidgetEventButtonsComponent * ButtonsWidget(void) {
+        return mButtonsWidget;
+    }
+
 protected:
-    WidgetListType Widgets_;
+    WidgetListType mWidgets;
+    prmQtWidgetEventButtonsComponent * mButtonsWidget;
 
     void BuildWidgets(void);
     bool BuildWidgetsCalled;

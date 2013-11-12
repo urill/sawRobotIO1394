@@ -60,7 +60,6 @@ int main(int argc, char ** argv)
                               "robot name",
                               cmnCommandLineOptions::OPTIONAL, &robotName);
 
-
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -106,12 +105,6 @@ int main(int argc, char ** argv)
     componentManager->Connect(robotBridge.GetName(), robotName,
                               "robot", robotName);
 #endif
-
-    mtsQtWidgetComponent * componentWidget = new mtsQtWidgetComponent("QtWidgetComponent");
-    componentWidget->CreateWidgetsForComponent(*robot);
-    QMainWindow win;
-    win.setCentralWidget(componentWidget);
-    win.show();
 
     // create the components
     componentManager->CreateAllAndWait(2.0 * cmn_s);

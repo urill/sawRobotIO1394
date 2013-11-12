@@ -61,7 +61,7 @@ void mtsRobotIO1394QtWidgetFactory::Startup(void) {
 const mtsRobotIO1394QtWidgetFactory::WidgetListType &
 mtsRobotIO1394QtWidgetFactory::Widgets(void) const
 {
-    return this->Widgets_;
+    return this->mWidgets;
 }
 
 void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
@@ -77,8 +77,6 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
         return;
     }
 
-    size_t i = 0;
-
     std::string suffix = " IO";
     std::string actuatorInterfaceSuffix = "Actuators";
     std::string newComponentName;
@@ -86,14 +84,14 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
 
     std::string tmpRobotName;
 
+    // robots, one component per robot with 2 interfaces to be connected
     Configuration.GetName(NameOfRobotIO1394);
     Configuration.GetNumberOfRobots(NumberOfRobots);
 
     if (NumberOfRobots > 0) {
         RobotNames.resize(NumberOfRobots);
         NumberOfActuatorsPerRobot.resize(NumberOfRobots);
-    }
-    else {
+    } else {
         CMN_LOG_CLASS_INIT_ERROR << "BuildWidgets: no robot found" << std::endl;
     }
 
@@ -102,7 +100,7 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
     Configuration.GetRobotNames(RobotNames);
     Configuration.GetNumbersOfActuators(NumberOfActuatorsPerRobot);
 
-    for (i = 0; i < NumberOfRobots; i++) {
+    for (int i = 0; i < NumberOfRobots; ++i) {
         tmpRobotName = RobotNames[i];
         newComponentName = tmpRobotName.append(suffix);
         tmpRobotName = RobotNames[i];
@@ -111,12 +109,39 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
 
         mtsRobotIO1394QtWidget * robotWidget =
                 new mtsRobotIO1394QtWidget(newComponentName, NumberOfActuatorsPerRobot[i]);
-        Widgets_.push_back(robotWidget);
+        mWidgets.push_back(robotWidget);
         robotWidget->Configure();
         componentManager->AddComponent(robotWidget);
         componentManager->Connect(newComponentName, "Robot", NameOfRobotIO1394, tmpRobotName);
         componentManager->Connect(newComponentName, "RobotActuators", NameOfRobotIO1394, newInterfaceActuatorName);
 
         robotWidget->Create();
+    }
+
+    // digital inputs, one component with multiple required interfaces
+    Configuration.GetNumberOfDigitalInputs(NumberOfDigitalInputs);
+
+    if (NumberOfDigitalInputs > 0) {
+        DigitalInputNames.resize(NumberOfDigitalInputs);
+        Configuration.GetDigitalInputNames(DigitalInputNames);
+
+        mButtonsWidget = new prmQtWidgetEventButtonsComponent("Digital inputs");
+        // each board has 4 digital inputs
+        mButtonsWidget->SetNumberOfColumns(4);
+
+        // add all the interfaces
+        for (int i = 0; i < NumberOfDigitalInputs; ++i) {
+            mButtonsWidget->AddEventButton(DigitalInputNames[i]);
+        }
+
+        componentManager->AddComponent(mButtonsWidget);
+
+        // connect all the interfaces
+        for (int i = 0; i < NumberOfDigitalInputs; ++i) {
+            componentManager->Connect(mButtonsWidget->GetName(), DigitalInputNames[i],
+                                      NameOfRobotIO1394, DigitalInputNames[i]);
+        }
+    } else {
+        CMN_LOG_CLASS_INIT_ERROR << "BuildWidgets: no digital input found" << std::endl;
     }
 }
