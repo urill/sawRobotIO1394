@@ -347,13 +347,22 @@ namespace sawRobotIO1394 {
             digital_input.TriggerWhenReleased = true;
         }
         else if (trigger_modes != "none") {
-            //Should not come here during init.
-            CMN_LOG_RUN_ERROR << "Unacceptable Trigger argument: " <<trigger_modes << "." <<std::endl;
-            CMN_LOG_RUN_ERROR << "Trigger argument should be one of these: [all,press,release,none]." << std::endl;
+            // Should not come here during init.
+            CMN_LOG_RUN_ERROR << "Unacceptable Trigger argument: " << trigger_modes << "." << std::endl
+                              << "Trigger argument should be one of these: [all,press,release,none]." << std::endl;
             return false;
         }
 
+        double debounce = 0.0;
+        sprintf(path, "DigitalIn[%i]/@Debounce", tagIndex);
+        xmlConfig.GetXMLValue(context, path, debounce, 0.0);
+        if (debounce < 0.0) {
+            debounce = 0.0;
+            CMN_LOG_RUN_ERROR << "Configuration for " << path << " failed, you can't have a negative debounce value. Stopping config." << std::endl;
+            return false;
+        }
+        digital_input.DebounceThreshold = debounce;
+
         return true;
     }
-
 }

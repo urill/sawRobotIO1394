@@ -28,7 +28,8 @@ using namespace sawRobotIO1394;
 osaDigitalInput1394::osaDigitalInput1394(const osaDigitalInput1394Configuration & config):
     DigitalInputBits_(0x0),
     Value_(false),
-    PreviousValue_(false)
+    PreviousValue_(false),
+    DebounceCounter_(-1)
 {
     this->Configure(config);
 }
@@ -43,6 +44,7 @@ void osaDigitalInput1394::Configure(const osaDigitalInput1394Configuration & con
     PressedValue_ = config.PressedValue;
     TriggerPress_ = config.TriggerWhenPressed;
     TriggerRelease_ = config.TriggerWhenReleased;
+    DebounceThreshold_ = config.DebounceThreshold;
 
     // Set the value to un-pressed
     Value_ = !PressedValue_;
@@ -66,7 +68,33 @@ void osaDigitalInput1394::PollState(void)
     DigitalInputBits_ =  Board_->GetDigitalInput();
 
     // If the masked bit is low, set the value to the pressed value
-    Value_ = (DigitalInputBits_ & BitMask_) ? (!PressedValue_) : (PressedValue_);
+    bool value = (DigitalInputBits_ & BitMask_) ? (!PressedValue_) : (PressedValue_);
+
+    // No debounce needed
+    if (DebounceThreshold_ == 0.0) {
+        Value_ = value;
+        return;
+    }
+
+    // Debounce - start if we find one new different value
+    if (DebounceCounter_ == -1.0) {
+        if (value != PreviousValue_) {
+            DebounceCounter_ = 0.0;
+            TransitionValue_ = value;
+        }
+    // count consecutive equal values
+    } else {
+        if (DebounceCounter_ < DebounceThreshold_) {
+            if (value == TransitionValue_) {
+                DebounceCounter_ += Board_->GetTimestamp() / (49.125 * 1000.0 * 1000.0); // clock is 49.125 MHz
+            } else {
+                DebounceCounter_ = -1.0;
+            }
+        } else {
+            Value_ = value;
+            DebounceCounter_ = -1.0;
+        }
+    }
 }
 
 osaDigitalInput1394Configuration osaDigitalInput1394::Configuration(void) const {

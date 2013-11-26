@@ -51,11 +51,14 @@ namespace sawRobotIO1394 {
         bool PressedValue_;          // Boolean Flag for Active High(true)/Active Low(false)
         bool TriggerPress_;          // Boolean Flag for Press Trigger Setting
         bool TriggerRelease_;        // Boolean Flag for Release Trigger Setting
+        double DebounceThreshold_;   // 0, no debounce required otherwise time in seconds
 
         // State data
         AmpIO_UInt32 DigitalInputBits_; // BitMask for this input. From DigitalInput Stream.
         bool Value_;                    // Current read value
+        bool TransitionValue_;          // For debouncing
         bool PreviousValue_;            // Saved value from the previous read
+        double DebounceCounter_;        // time in seconds with constant value
     };
 
 }

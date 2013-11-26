@@ -117,6 +117,7 @@ namespace sawRobotIO1394 {
         bool TriggerWhenPressed;
         bool TriggerWhenReleased;
         bool PressedValue;
+        double DebounceThreshold;
     };
 
     struct osaPort1394Configuration {
