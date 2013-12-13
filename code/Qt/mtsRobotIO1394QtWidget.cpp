@@ -36,10 +36,10 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtWidget, mtsComponent, mtsComponentConstructorNameAndUInt)
 
 
-mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators):
+mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators, double periodInSeconds):
     mtsComponent(componentName),
     DirectControl(false),
-    TimerPeriodInMilliseconds(50),
+    TimerPeriodInMilliseconds(periodInSeconds * 1000), // Qt timers are in milliseconds
     NumberOfActuators(numberOfActuators)
 {
     WatchdogPeriodInSeconds = 300.0 * cmn_ms;
@@ -281,60 +281,61 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
     ProcessQueuedEvents();
 
-    bool flag;
-    Robot.IsValid(flag);
-    if (flag) {
-        Robot.GetPeriodStatistics(IntervalStatistics);
-        Robot.GetPosition(JointPosition); // vct
-        JointPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
-        Actuators.GetPositionActuator(ActuatorPositionGet); // prm
-        ActuatorPosition.Assign(ActuatorPositionGet.Position()); // vct
-        ActuatorPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
-        Robot.GetVelocity(ActuatorVelocity);
-        ActuatorVelocity.ElementwiseMultiply(UnitFactor); // to degrees or mm
-        Robot.GetAnalogInputVolts(PotentiometersVolts);
-        Robot.GetAnalogInputPosSI(PotentiometersPosition);
-        PotentiometersPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
-        Robot.GetMotorFeedbackCurrent(MotorFeedbackCurrent);
-        Actuators.GetAmpEnable(AmpEnable);
-        Actuators.GetAmpStatus(AmpStatus);
-        Robot.GetPowerStatus(PowerStatus);
-        Robot.GetSafetyRelay(SafetyRelay);
-        Robot.GetAmpTemperature(AmpTemperature);
-    } else {
-        JointPosition.SetAll(DummyValueWhenNotConnected);
-        ActuatorPosition.SetAll(DummyValueWhenNotConnected);
-        ActuatorVelocity.SetAll(DummyValueWhenNotConnected);
-        PotentiometersVolts.SetAll(DummyValueWhenNotConnected);
-        PotentiometersPosition.SetAll(DummyValueWhenNotConnected);
-        MotorFeedbackCurrent.SetAll(DummyValueWhenNotConnected);
-        AmpTemperature.SetAll(DummyValueWhenNotConnected);
+    // make sure we should update the display
+    if (!this->isHidden()) {
+
+        bool flag;
+        Robot.IsValid(flag);
+        if (flag) {
+            Robot.GetPeriodStatistics(IntervalStatistics);
+            Robot.GetPosition(JointPosition); // vct
+            JointPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
+            Actuators.GetPositionActuator(ActuatorPositionGet); // prm
+            ActuatorPosition.Assign(ActuatorPositionGet.Position()); // vct
+            ActuatorPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
+            Robot.GetVelocity(ActuatorVelocity);
+            ActuatorVelocity.ElementwiseMultiply(UnitFactor); // to degrees or mm
+            Robot.GetAnalogInputVolts(PotentiometersVolts);
+            Robot.GetAnalogInputPosSI(PotentiometersPosition);
+            PotentiometersPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
+            Robot.GetMotorFeedbackCurrent(MotorFeedbackCurrent);
+            Actuators.GetAmpEnable(AmpEnable);
+            Actuators.GetAmpStatus(AmpStatus);
+            Robot.GetPowerStatus(PowerStatus);
+            Robot.GetSafetyRelay(SafetyRelay);
+            Robot.GetAmpTemperature(AmpTemperature);
+        } else {
+            JointPosition.SetAll(DummyValueWhenNotConnected);
+            ActuatorPosition.SetAll(DummyValueWhenNotConnected);
+            ActuatorVelocity.SetAll(DummyValueWhenNotConnected);
+            PotentiometersVolts.SetAll(DummyValueWhenNotConnected);
+            PotentiometersPosition.SetAll(DummyValueWhenNotConnected);
+            MotorFeedbackCurrent.SetAll(DummyValueWhenNotConnected);
+            AmpTemperature.SetAll(DummyValueWhenNotConnected);
+        }
+
+        DummyValueWhenNotConnected += 0.1;
+
+        // display requested current when we are not trying to set it using GUI
+        if (flag && !DirectControl) {
+            vctDoubleVec requestedCurrent(NumberOfActuators);
+            Robot.GetMotorRequestedCurrent(requestedCurrent);
+            requestedCurrent.Multiply(1000.0); // got A, need mA for display
+            QVWCurrentSpinBoxWidget->SetValue(requestedCurrent);
+            QVWCurrentSliderWidget->SetValue(requestedCurrent);
+        }
+
+        QMIntervalStatistics->SetValue(IntervalStatistics);
+        QVRJointPositionWidget->SetValue(JointPosition);
+        QVRActuatorPositionWidget->SetValue(ActuatorPosition);
+        QVRActuatorVelocityWidget->SetValue(ActuatorVelocity);
+        QVRPotVoltsWidget->SetValue(PotentiometersVolts);
+        QVRPotPositionWidget->SetValue(PotentiometersPosition);
+        QVRCurrentFeedbackWidget->SetValue(MotorFeedbackCurrent * 1000.0);
+        QVRAmpTemperature->SetValue(AmpTemperature);
+
+        UpdateRobotInfo();
     }
-
-    CMN_LOG_CLASS_RUN_VERBOSE << (osaGetTime() - StartTime) << std::endl;
-
-    DummyValueWhenNotConnected += 0.1;
-
-    // display requested current when we are not trying to set it using GUI
-    if (flag && !DirectControl) {
-        vctDoubleVec requestedCurrent(NumberOfActuators);
-        Robot.GetMotorRequestedCurrent(requestedCurrent);
-        requestedCurrent.Multiply(1000.0); // got A, need mA for display
-        QVWCurrentSpinBoxWidget->SetValue(requestedCurrent);
-        QVWCurrentSliderWidget->SetValue(requestedCurrent);
-    }
-
-    QMIntervalStatistics->SetValue(IntervalStatistics);
-    QVRJointPositionWidget->SetValue(JointPosition);
-    QVRActuatorPositionWidget->SetValue(ActuatorPosition);
-    QVRActuatorVelocityWidget->SetValue(ActuatorVelocity);
-    QVRPotVoltsWidget->SetValue(PotentiometersVolts);
-    QVRPotPositionWidget->SetValue(PotentiometersPosition);
-    QVRCurrentFeedbackWidget->SetValue(MotorFeedbackCurrent * 1000.0);
-    QVRAmpTemperature->SetValue(AmpTemperature);
-
-    UpdateRobotInfo();
-
     Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
 }
 

@@ -41,7 +41,7 @@ class mtsRobotIO1394QtWidget: public QWidget, public mtsComponent
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators);
+    mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators, double periodInSeconds = 50.0 * cmn_ms);
     mtsRobotIO1394QtWidget(const mtsComponentConstructorNameAndUInt &arg);
     inline ~mtsRobotIO1394QtWidget(void) {}
 
