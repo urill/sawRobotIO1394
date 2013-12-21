@@ -566,6 +566,14 @@ bool osaRobot1394::WatchdogStatus(void) const {
     return WatchdogStatus_;
 }
 
+const vctBoolVec & osaRobot1394::ActuatorPowerStatus(void) const {
+    return ActuatorPowerStatus_;
+}
+
+const vctDoubleVec & osaRobot1394::ActuatorCurrentFeedback(void) const {
+    return ActuatorCurrentFeedback_;
+}
+
 osaRobot1394Configuration osaRobot1394::GetConfiguration(void) const {
     return Configuration_;
 }

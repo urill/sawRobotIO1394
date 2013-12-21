@@ -13,3 +13,6 @@
 
 # Qt based example, CMake will look for cisstQt
 add_subdirectory (Qt)
+
+# utility to calibrate current 0 based on current feedback
+add_subdirectory (current-calibration)
