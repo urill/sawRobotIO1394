@@ -33,8 +33,6 @@ http://www.cisst.org/cisst/license.txt.
 
 using namespace sawRobotIO1394;
 const double WatchdogPeriod = 100.0 * cmn_ms;
-size_t NumberOfActuators;
-vctDoubleVec Zeros;
 
 int main(int argc, char * argv[])
 {
@@ -68,14 +66,14 @@ int main(int argc, char * argv[])
               << " - you have no other device connected to the firewire chain." << std::endl
               << " - you have no other program trying to communicate with the controller." << std::endl
               << std::endl
-              << "Press any key to get started." << std::endl;
+              << "Press any key to start." << std::endl;
     cmnGetChar();
 
     std::cout << "Loading config file ..." << std::endl;
     osaPort1394Configuration config;
     osaXML1394ConfigurePort(configFile, config);
 
-    std::cerr << "Creating robot ..." << std::endl;
+    std::cout << "Creating robot ..." << std::endl;
     if (config.Robots.size() == 0) {
         std::cerr << "Error: the config file doesn't define a robot." << std::endl;
         return -1;
@@ -85,10 +83,12 @@ int main(int argc, char * argv[])
         return -1;
     }
     osaRobot1394 * robot = new osaRobot1394(config.Robots[0]);
-    NumberOfActuators = robot->NumberOfActuators();
-    Zeros.SetSize(NumberOfActuators);
+    size_t numberOfActuators = robot->NumberOfActuators();
+    vctDoubleVec zeros;
+    zeros.SetSize(numberOfActuators);
+    zeros.SetAll(0.0);
 
-    std::cerr << "Creating port ..." << std::endl;
+    std::cout << "Creating port ..." << std::endl;
     osaPort1394 * port = new osaPort1394(portNumber);
     port->AddRobot(robot);
 
@@ -98,13 +98,13 @@ int main(int argc, char * argv[])
 
     std::cout << "Enabling power ..." << std::endl;
     robot->SetWatchdogPeriod(300.0 * cmn_ms);
-    robot->SetJointEffort(Zeros);
+    robot->SetJointEffort(zeros);
     robot->EnablePower();
     port->Write();
 
     // wait a bit to make sure current stabilizes, 500 * 10 ms = 5 seconds
     for (size_t i = 0; i < 500; ++i) {
-        robot->SetJointEffort(Zeros);
+        robot->SetJointEffort(zeros);
         osaSleep(10.0 * cmn_ms);
         port->Write();
     }
@@ -128,12 +128,12 @@ int main(int argc, char * argv[])
     std::vector<vctDoubleVec> samples;
     samples.resize(totalSamples);
     vctDoubleVec sumSamples, averageAllSamples;
-    sumSamples.SetSize(NumberOfActuators);
-    averageAllSamples.SetSize(NumberOfActuators);
+    sumSamples.SetSize(numberOfActuators);
+    averageAllSamples.SetSize(numberOfActuators);
     sumSamples.SetAll(0.0);
     for (size_t index = 0; index < totalSamples; ++index) {
         // write to make sure watchdog is not tripped
-        robot->SetJointEffort(Zeros);
+        robot->SetJointEffort(zeros);
         port->Write();
         port->Read();
         samples[index].ForceAssign(robot->ActuatorCurrentFeedback());
@@ -145,8 +145,8 @@ int main(int argc, char * argv[])
     averageAllSamples.Divide(totalSamples);
 
     // compute standard deviation
-    vctDoubleVec sumDifferencesSquared(NumberOfActuators);
-    vctDoubleVec difference(NumberOfActuators);
+    vctDoubleVec sumDifferencesSquared(numberOfActuators);
+    vctDoubleVec difference(numberOfActuators);
     for (size_t index = 0; index < totalSamples; ++index) {
         difference.DifferenceOf(samples[index], averageAllSamples);
         sumDifferencesSquared.AddElementwiseProductOf(difference, difference);
@@ -158,12 +158,12 @@ int main(int argc, char * argv[])
     }
 
     // eliminate outliers
-    vctDoubleVec lower(NumberOfActuators);
+    vctDoubleVec lower(numberOfActuators);
     lower.DifferenceOf(averageAllSamples, stdDeviation);
-    vctDoubleVec upper(NumberOfActuators);
+    vctDoubleVec upper(numberOfActuators);
     upper.SumOf(averageAllSamples, stdDeviation);
     size_t validSamples = 0;
-    vctDoubleVec averageValidSamples(NumberOfActuators);
+    vctDoubleVec averageValidSamples(numberOfActuators);
     sumSamples.SetAll(0.0);
     for (size_t index = 0; index < totalSamples; ++index) {
         if (samples[index].ElementwiseLesserOrEqual(upper).All()
@@ -190,9 +190,9 @@ int main(int argc, char * argv[])
         cmnXMLPath xmlConfig;
         xmlConfig.SetInputSource(configFile);
         // query previous current offset and scales
-        vctDoubleVec previousOffsets(NumberOfActuators, 0.0);
-        vctDoubleVec previousScales(NumberOfActuators, 0.0);
-        for (size_t index = 0; index < NumberOfActuators; ++index) {
+        vctDoubleVec previousOffsets(numberOfActuators, 0.0);
+        vctDoubleVec previousScales(numberOfActuators, 0.0);
+        for (size_t index = 0; index < numberOfActuators; ++index) {
             char path[64];
             const char * context = "Config";
             sprintf(path, "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Offset", static_cast<int>(index + 1));
@@ -201,21 +201,21 @@ int main(int argc, char * argv[])
             xmlConfig.GetXMLValue(context, path, previousScales[index]);
         }
         // compute new offsets
-        vctDoubleVec newOffsets(NumberOfActuators);
+        vctDoubleVec newOffsets(numberOfActuators);
         newOffsets.Assign(averageValidSamples);
         newOffsets.Divide(-1000.0); // convert back to Amps and negate
         newOffsets.ElementwiseMultiply(previousScales);
         newOffsets.Add(previousOffsets);
 
         // ask one last confirmation from user
-        std::cout << "Status: current offsets in XML configuration file: " << previousOffsets << std::endl;
-        std::cout << "Status: new current offsets:                       " << newOffsets << std::endl
+        std::cout << "Status: current offsets in XML configuration file: " << previousOffsets << std::endl
+                  << "Status: new current offsets:                       " << newOffsets << std::endl
                   << std::endl
                   << "Do you want to save these values? [S/s]" << std::endl;
         key = cmnGetChar();
         if ((key == 's') || (key == 'S')) {
             vctIntVec newOffsetsInt(newOffsets);
-            for (size_t index = 0; index < NumberOfActuators; ++index) {
+            for (size_t index = 0; index < numberOfActuators; ++index) {
                 char path[64];
                 const char * context = "Config";
                 sprintf(path, "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Offset", static_cast<int>(index + 1));

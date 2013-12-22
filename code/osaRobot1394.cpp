@@ -574,6 +574,10 @@ const vctDoubleVec & osaRobot1394::ActuatorCurrentFeedback(void) const {
     return ActuatorCurrentFeedback_;
 }
 
+const vctDoubleVec & osaRobot1394::PotPosition(void) const {
+    return PotPosition_;
+}
+
 osaRobot1394Configuration osaRobot1394::GetConfiguration(void) const {
     return Configuration_;
 }
