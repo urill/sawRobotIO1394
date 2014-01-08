@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen
   Created on: 2012-07-20
 
-  (C) Copyright 2012-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2012-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -59,7 +59,6 @@ private slots:
     void SlotEnableDirectControl(bool toggle);
     void SlotEnable(void);
     void SlotResetCurrentAll(void);
-    void SlotBiasCurrentAll(void);
     void SlotMotorCurrentValueChanged();
     void SlotSliderMotorCurrentValueChanged(void);
     void SlotResetEncodersAll(void);
@@ -106,7 +105,6 @@ protected:
         mtsFunctionWrite SetEncoderPosition;
         mtsFunctionWrite SetWatchdogPeriod;
 
-        mtsFunctionWrite BiasCurrent;
         mtsFunctionVoid BiasEncoder;
     } Robot;
 
@@ -151,7 +149,6 @@ private:
     QCheckBox * QCBEnableAmps;
     QCheckBox * QCBEnableAll;
     QPushButton * QPBResetCurrentAll;
-    QPushButton * QPBBiasCurrentAll;
 
     // GUI: Feedbacks
     QPushButton * QPBResetEncAll;

@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -56,8 +56,7 @@ namespace sawRobotIO1394 {
         /** \name Lifecycle
          *\{**/
         osaRobot1394(const osaRobot1394Configuration & config,
-                     const size_t max_consecutive_current_safety_violations = 100,
-                     const size_t actuator_current_buffer_size = 1000);
+                     const size_t max_consecutive_current_safety_violations = 100);
 
         void Configure(const osaRobot1394Configuration & config);
 
@@ -133,10 +132,7 @@ namespace sawRobotIO1394 {
 
         /** \name Bias Calibration Functions
          *\{**/
-        void CalibrateCurrentCommandOffsetsRequest(const int & numberOfSamples);
-        void CalibrateCurrentCommandOffsets(void);
         void CalibrateEncoderOffsetsFromPots(void);
-
         /**}**/
 
         /** \name Conversion Functions
@@ -254,19 +250,9 @@ namespace sawRobotIO1394 {
             ActuatorEffortFeedback_,
             Temperature_;
 
-        //! Actuator current measurement structures
-        bool CalibrateCurrentCommandOffsetRequested_;
-
         size_t
             CurrentSafetyViolationsCounter_,
-            CurrentSafetyViolationsMaximum_,
-            CalibrateCurrentBufferSize_,
-            CalibrateCurrentBufferIndex_;
-
-        //! Buffers used to accumulate current requested and feedback to calibrate requested current offsets
-        std::vector<vctDoubleVec>
-            CalibrateCurrentCommandBuffers_,
-            CalibrateCurrentFeedbackBuffers_;
+            CurrentSafetyViolationsMaximum_;
     };
 
 } // namespace sawRobotIO1394

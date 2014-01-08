@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -27,7 +27,7 @@ using namespace sawRobotIO1394;
 
 mtsRobot1394::mtsRobot1394(const cmnGenericObject & owner,
                            const osaRobot1394Configuration & config):
-    osaRobot1394(config, 100, 1000),
+    osaRobot1394(config, 100),
     OwnerServices(owner.Services()),
     StateTableRead_(0),
     StateTableWrite_(0)
@@ -45,7 +45,8 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
                                     mtsStateTable * & stateTableWrite)
 {
     if (StateTableRead_ || StateTableWrite_) {
-        CMN_LOG_CLASS_INIT_ERROR << "SetupStateTables: state tables have already been created" << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "SetupStateTables: state tables have already been created for robot: "
+                                 << this->Name() << std::endl;
         return false;
     }
 
@@ -233,9 +234,6 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetAmpStatus"); // vector[bool]
     robotInterface->AddCommandReadState(*StateTableRead_, PositionActuatorGet_,
                                         "GetPositionActuator"); // prmPositionJointGet
-
-    robotInterface->AddCommandWrite(&osaRobot1394::CalibrateCurrentCommandOffsetsRequest,
-                                    thisBase, "BiasCurrent");
     robotInterface->AddCommandVoid(&osaRobot1394::CalibrateEncoderOffsetsFromPots,
                                    thisBase, "BiasEncoder");
     robotInterface->AddCommandWrite(&mtsRobot1394::ResetSingleEncoder, this,
@@ -266,6 +264,17 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                                "DriveAmpsToBits", ActuatorCurrentFeedback_, ActuatorCurrentBitsFeedback_);
     actuatorInterface->AddCommandQualifiedRead(&osaRobot1394::PotVoltageToPosition, thisBase,
                                                "AnalogInVoltsToPosSI", PotVoltage_, PotPosition_);
+}
+
+bool mtsRobot1394::CheckConfiguration(void)
+{
+    if ((NumberOfActuators() > 2)
+        && CurrentToBitsOffsets_.Equal(CurrentToBitsOffsets_[0])) {
+        CMN_LOG_CLASS_INIT_ERROR << "CheckConfiguration: all currents to bits offsets are equal, please calibrate the current offsets for arm: "
+                                 << this->Name() << std::endl;
+        return false;
+    }
+    return true;
 }
 
 void mtsRobot1394::CheckState(void)

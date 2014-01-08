@@ -66,6 +66,7 @@ namespace sawRobotIO1394 {
         void AdvanceReadStateTable(void);
         void StartWriteStateTable(void);
         void AdvanceWriteStateTable(void);
+        bool CheckConfiguration(void);
         void CheckState(void);
 
         // Wrapper of osa methods to match command signatures

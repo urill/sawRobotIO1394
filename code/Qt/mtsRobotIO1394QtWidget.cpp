@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen
   Created on: 2013-02-16
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -189,7 +189,6 @@ void mtsRobotIO1394QtWidget::SlotEnableDirectControl(bool toggle)
     QVWCurrentSpinBoxWidget->setEnabled(toggle);
     QVWCurrentSliderWidget->setEnabled(toggle);
     QPBResetCurrentAll->setEnabled(toggle);
-    QPBBiasCurrentAll->setEnabled(toggle);
     // set all current to 0
     SlotResetCurrentAll();
 }
@@ -203,14 +202,6 @@ void mtsRobotIO1394QtWidget::SlotResetCurrentAll(void)
     // update GUI
     QVWCurrentSpinBoxWidget->SetValue(cmdCurA);
     QVWCurrentSliderWidget->SetValue(cmdCurA);
-}
-
-void mtsRobotIO1394QtWidget::SlotBiasCurrentAll(void)
-{
-    mtsExecutionResult result = Robot.BiasCurrent(mtsInt(1000)); // use a 1000 samples to average current feedback
-    if (!result.IsOK()) {
-        CMN_LOG_CLASS_RUN_WARNING << "slot_qpbBiasCurrentAll: command failed \"" << result << "\"" << std::endl;
-    }
 }
 
 void mtsRobotIO1394QtWidget::SlotEnable(void)
@@ -369,7 +360,6 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
         robotInterface->AddFunction("SetWatchdogPeriod", Robot.SetWatchdogPeriod);
 
-        robotInterface->AddFunction("BiasCurrent", Robot.BiasCurrent);
         robotInterface->AddFunction("BiasEncoder", Robot.BiasEncoder);
 
         // make sure the events are queued
@@ -478,8 +468,6 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     currentLayout->addWidget(currentTitle);
     QCBEnableDirectControl = new QCheckBox("Direct control");
     currentLayout->addWidget(QCBEnableDirectControl);
-    QPBBiasCurrentAll = new QPushButton("Bias from feedback");
-    currentLayout->addWidget(QPBBiasCurrentAll);
     currentLayout->addStretch();
     currentFrame->setLayout(currentLayout);
     currentFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -583,7 +571,6 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     connect(QCBEnableAll, SIGNAL(toggled(bool)), this, SLOT(SlotEnableAll(bool)));
     connect(QCBEnableDirectControl, SIGNAL(toggled(bool)), this, SLOT(SlotEnableDirectControl(bool)));
     connect(QPBResetCurrentAll, SIGNAL(clicked()), this, SLOT(SlotResetCurrentAll()));
-    connect(QPBBiasCurrentAll, SIGNAL(clicked()), this, SLOT(SlotBiasCurrentAll()));
     connect(QPBResetEncAll, SIGNAL(clicked()), this, SLOT(SlotResetEncodersAll()));
     connect(QPBBiasEncAll, SIGNAL(clicked()), this, SLOT(SlotBiasEncodersAll()));
     connect(QSBWatchdogPeriod, SIGNAL(valueChanged(double)),

@@ -122,6 +122,13 @@ void mtsRobotIO1394::Configure(const std::string & filename)
          ++it) {
         // Create a new robot
         mtsRobot1394 * robot = new mtsRobot1394(*this, *it);
+        // Check the configuration
+        if (!robot->CheckConfiguration()) {
+            CMN_LOG_CLASS_INIT_ERROR << "Configure: error in configuration file \""
+                                     << filename << "\" for robot \""
+                                     << robot->Name() << "\"" << std::endl;
+            abort();
+        }
         // Set up the cisstMultiTask interfaces
         if (!this->SetupRobot(robot)) {
             delete robot;

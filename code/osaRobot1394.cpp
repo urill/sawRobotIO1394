@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -32,8 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 using namespace sawRobotIO1394;
 
 osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
-                           const size_t max_consecutive_current_safety_violations,
-                           const size_t actuator_current_buffer_size):
+                           const size_t max_consecutive_current_safety_violations):
     // IO Structures
     ActuatorInfo_(),
     UniqueBoards_(),
@@ -44,11 +43,8 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
     WatchdogStatus_(false),
     PreviousWatchdogStatus_(false),
     SafetyRelay_(false),
-    CalibrateCurrentCommandOffsetRequested_(false),
     CurrentSafetyViolationsCounter_(0),
-    CurrentSafetyViolationsMaximum_(max_consecutive_current_safety_violations),
-    CalibrateCurrentBufferSize_(actuator_current_buffer_size),
-    CalibrateCurrentBufferIndex_(0)
+    CurrentSafetyViolationsMaximum_(max_consecutive_current_safety_violations)
 {
     this->Configure(config);
 }
@@ -63,7 +59,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     NumberOfActuators_ = config.NumberOfActuators;
     NumberOfJoints_ = config.NumberOfJoints;
     PotType_ = config.PotLocation;
-    CalibrateCurrentCommandBuffers_.resize(NumberOfActuators_);
 
     // Low-level API
     ActuatorInfo_.resize(NumberOfActuators_);
@@ -273,20 +268,6 @@ void osaRobot1394::CheckState(void)
     // Save EncoderPositionPrev
     EncoderPositionPrev_.Assign(EncoderPosition_);
 
-    // Store currents for biasing and re-bias if appropriate
-    if (CalibrateCurrentCommandOffsetRequested_
-        && (CalibrateCurrentBufferIndex_ < CalibrateCurrentBufferSize_)) {
-        CalibrateCurrentCommandBuffers_[CalibrateCurrentBufferIndex_] = ActuatorCurrentCommand_;
-        CalibrateCurrentFeedbackBuffers_[CalibrateCurrentBufferIndex_] = ActuatorCurrentFeedback_;
-        CalibrateCurrentBufferIndex_++;
-
-        // Only re-bias when we have collected enough samples
-        if (CalibrateCurrentBufferIndex_ == CalibrateCurrentBufferSize_) {
-            CalibrateCurrentCommandOffsets();
-            CalibrateCurrentCommandOffsetRequested_ = false;
-        }
-    }
-
     // Perform safety checks
     bool current_safety_violation = false;
     for (size_t i = 0; i < NumberOfActuators_; i++) {
@@ -477,50 +458,12 @@ void osaRobot1394::SetActuatorCurrent(const vctDoubleVec & currents)
 
 void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 {
-    // If we are currently calibrating current, don't apply anything
-    if (CalibrateCurrentCommandOffsetRequested_) {
-        return;
-    }
-
     for (size_t i=0; i<NumberOfActuators_; i++) {
         ActuatorInfo_[i].board->SetMotorCurrent(ActuatorInfo_[i].axis, bits[i]);
     }
 
     // Store commanded bits
     ActuatorCurrentBitsCommand_ = bits;
-}
-
-void osaRobot1394::CalibrateCurrentCommandOffsetsRequest(const int & numberOfSamples)
-{
-    SetActuatorCurrent(vctDoubleVec(NumberOfActuators(), 0.0));
-    CalibrateCurrentBufferIndex_ = 0;
-    CalibrateCurrentCommandBuffers_.resize(numberOfSamples);
-    CalibrateCurrentFeedbackBuffers_.resize(numberOfSamples);
-    CalibrateCurrentBufferSize_ = numberOfSamples;
-    CalibrateCurrentCommandOffsetRequested_ = true;
-}
-
-void osaRobot1394::CalibrateCurrentCommandOffsets(void)
-{
-    vctDoubleVec current_command_sums(NumberOfActuators_);
-    vctDoubleVec current_feedback_sums(NumberOfActuators_);
-    vctDoubleVec current_biases(NumberOfActuators_);
-
-    // Compute current bias for each actuator
-    for (size_t sample=0; sample < CalibrateCurrentBufferSize_; sample++) {
-        current_command_sums = current_command_sums + CalibrateCurrentCommandBuffers_[sample];
-        current_feedback_sums = current_feedback_sums + CalibrateCurrentFeedbackBuffers_[sample];
-    }
-
-    current_biases = (current_command_sums - current_feedback_sums) /
-        static_cast<double>(CalibrateCurrentBufferSize_);
-
-    // Store current bias
-    current_biases.ElementwiseMultiply(CurrentToBitsScales_);
-    CurrentToBitsOffsets_ = CurrentToBitsOffsets_ + current_biases;
-
-    // Send the latest current command to the actuators to apply the bias
-    this->SetActuatorCurrent(ActuatorCurrentCommand_);
 }
 
 void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)

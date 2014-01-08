@@ -7,7 +7,7 @@
   Author(s):  Jonathan Bohren
   Created on: 2013-06-29
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -169,6 +169,23 @@ namespace sawRobotIO1394 {
 
             // Add the actuator
             robot.Actuators.push_back(actuator);
+        }
+
+        // verify that all amps offsets are different from each other
+        if (robot.Actuators.size() > 2) {
+            bool allEqual = true;
+            const double defaultOffset = robot.Actuators[0].Drive.CurrentToBitsOffset;
+            for (size_t index = 1;
+                 index < robot.Actuators.size();
+                 ++index) {
+                if (robot.Actuators[index].Drive.CurrentToBitsOffset != defaultOffset) {
+                    allEqual = false;
+                }
+            }
+            if (allEqual) {
+                CMN_LOG_INIT_ERROR << "All offsets equal, it is very unlikely that the current calibration has been performed for this arm:"
+                                   << "  " << robot.Name << std::endl;
+            }
         }
 
         // look for potentiometers position, if any
