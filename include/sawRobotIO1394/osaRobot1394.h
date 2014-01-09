@@ -116,6 +116,9 @@ namespace sawRobotIO1394 {
         const vctBoolVec & ActuatorPowerStatus(void) const;
         const vctDoubleVec & ActuatorCurrentFeedback(void) const;
         const vctDoubleVec & PotPosition(void) const;
+        const vctDoubleVec & TimeStamp(void) const;
+        const vctDoubleVec & EncoderPosition(void) const;
+        const vctDoubleVec & EncoderVelocity(void) const;
         /**}**/
 
         /** \name Parameter Accessors

@@ -1,7 +1,7 @@
 #
 # $Id$
 #
-# (C) Copyright 2012-2013 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2012-2014 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -16,3 +16,6 @@ add_subdirectory (Qt)
 
 # utility to calibrate current 0 based on current feedback
 add_subdirectory (current-calibration)
+
+# utility to plot velocities
+add_subdirectory (data-plot)

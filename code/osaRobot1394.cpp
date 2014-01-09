@@ -521,6 +521,18 @@ const vctDoubleVec & osaRobot1394::PotPosition(void) const {
     return PotPosition_;
 }
 
+const vctDoubleVec & osaRobot1394::TimeStamp(void) const {
+    return TimeStamp_;
+}
+
+const vctDoubleVec & osaRobot1394::EncoderPosition(void) const {
+    return EncoderPosition_;
+}
+
+const vctDoubleVec & osaRobot1394::EncoderVelocity(void) const {
+    return EncoderVelocity_;
+}
+
 osaRobot1394Configuration osaRobot1394::GetConfiguration(void) const {
     return Configuration_;
 }
