@@ -47,10 +47,11 @@ protected:
     QFrame * Frame;
     QVBoxLayout * Layout;
     vctPlot2DOpenGLQtWidget * Plot;
-    vctPlot2DBase::Scale * EncoderVelocityScale;
+    vctPlot2DBase::Scale * VelocityScale;
+    vctPlot2DBase::Signal * ZeroVelocity;
     vctPlot2DBase::Signal * EncoderDtSignal;
     vctPlot2DBase::Signal * EncoderDxSignal;
-    vctPlot2DBase::Scale * PotVelocityScale;
+    vctPlot2DBase::Signal * EncoderDxFilteredSignal;
     vctPlot2DBase::Signal * PotDxSignal;
 
     sawRobotIO1394::osaPort1394 * Port;
@@ -58,11 +59,15 @@ protected:
 
     double ElapsedTime;
     int ActuatorIndex;
-    vctDoubleVec PreviousTimeStamp;
     vctDoubleVec PreviousEncoderPosition;
     vctDoubleVec EncoderDx;
     vctDoubleVec PreviousPotPosition;
     vctDoubleVec PotDx;
+
+    size_t FilterSize;
+    vctDoubleVec SavitzkyGolayCoeff;
+    vctDoubleVec History;
+    vctDoubleVec FilterElementwiseProduct;
 
 protected slots:
     //    void DoubleTextValueChangedSlot(void);

@@ -603,7 +603,7 @@ void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & 
         // NOTE: BitsToVecocityScales, BitsToVelocityOffsets = 0
         for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
             vel[i] = BitsToDPositionScales_[i] / static_cast<double>(bits[i]);
-            if (vel[i] < 0.01){
+            if ((vel[i] < 0.001) && vel[i] > -0.001) {
                 vel[i] = 0.0;
             }
         }
