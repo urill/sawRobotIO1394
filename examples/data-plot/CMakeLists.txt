@@ -1,7 +1,7 @@
 #
 # $Id$
 #
-# (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -38,19 +38,19 @@ if (cisst_FOUND_AS_REQUIRED)
     qt4_wrap_cpp (QT_WRAPPED_CPP
                   plotObject.h)
 
-    add_executable (sawRobotIO1394DataPlot
+    add_executable (sawRobotIO1394QtDataPlot
                     main.cpp
                     plotObject.h
                     plotObject.cpp
                     ${QT_WRAPPED_CPP})
-    set_property (TARGET sawRobotIO1394DataPlot PROPERTY FOLDER "sawRobotIO1394")
+    set_property (TARGET sawRobotIO1394QtDataPlot PROPERTY FOLDER "sawRobotIO1394")
 
     # link against non cisst libraries and cisst components
-    target_link_libraries (sawRobotIO1394DataPlot
+    target_link_libraries (sawRobotIO1394QtDataPlot
                            ${sawRobotIO1394_LIBRARIES})
 
     # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries (sawRobotIO1394DataPlot ${REQUIRED_CISST_LIBRARIES})
+    cisst_target_link_libraries (sawRobotIO1394QtDataPlot ${REQUIRED_CISST_LIBRARIES})
 
   endif (sawRobotIO1394_FOUND)
 
