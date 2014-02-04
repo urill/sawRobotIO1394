@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -43,15 +43,15 @@ protected:
 
     std::ostream * MessageStream;             // Stream provided to the low level boards for messages, redirected to cmnLogger
 
-    sawRobotIO1394::osaPort1394 * Port_;
+    sawRobotIO1394::osaPort1394 * mPort;
 
     typedef std::vector<sawRobotIO1394::mtsRobot1394*> RobotsType;
     typedef RobotsType::iterator robots_iterator;
-    RobotsType Robots_;
+    RobotsType mRobots;
 
     typedef std::vector<sawRobotIO1394::mtsDigitalInput1394*> DigitalInputsType;
     typedef DigitalInputsType::iterator digital_inputs_iterator;
-    DigitalInputsType DigitalInputs_;
+    DigitalInputsType mDigitalInputs;
 
     ///////////// Public Class Methods ///////////////////////////
 public:

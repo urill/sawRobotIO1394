@@ -7,7 +7,7 @@
  Author(s):  Zihan Chen, Peter Kazanzides
  Created on: 2012-07-31
 
- (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+ (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
  --- begin cisst license - do not edit ---
 
@@ -57,7 +57,7 @@ mtsRobotIO1394::mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg):
 mtsRobotIO1394::~mtsRobotIO1394()
 {
     // delete port and message stream
-    delete Port_;
+    delete mPort;
     delete MessageStream;
 }
 
@@ -66,7 +66,7 @@ void mtsRobotIO1394::Init(int port_num)
     // construct port
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     try {
-        Port_ = new sawRobotIO1394::osaPort1394(port_num, *MessageStream);
+        mPort = new sawRobotIO1394::osaPort1394(port_num, *MessageStream);
     } catch (std::runtime_error &err) {
         CMN_LOG_CLASS_INIT_ERROR << err.what();
         abort();
@@ -92,7 +92,7 @@ void mtsRobotIO1394::Init(int port_num)
     // All previous interfaces are ready. Good start. Let's make a new provided interface.
     mtsInterfaceProvided * configurationInterface   = this->AddInterfaceProvided("Configuration");
     if (configurationInterface) {
-        configurationInterface->AddCommandRead(&osaPort1394::GetRobotNames, Port_,
+        configurationInterface->AddCommandRead(&osaPort1394::GetRobotNames, mPort,
                                                "GetRobotNames");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfActuatorPerRobot, this,
                                                "GetNumActuators");
@@ -100,7 +100,7 @@ void mtsRobotIO1394::Init(int port_num)
                                                "GetNumRobots");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfDigitalInputs, this,
                                                "GetNumDigitalInputs");
-        configurationInterface->AddCommandRead(&osaPort1394::GetDigitalInputNames, Port_,
+        configurationInterface->AddCommandRead(&osaPort1394::GetDigitalInputNames, mPort,
                                                "GetDigitalInputNames");
         configurationInterface->AddCommandRead<mtsComponent>(&mtsComponent::GetName, this,
                                                              "GetName");
@@ -133,7 +133,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         if (!this->SetupRobot(robot)) {
             delete robot;
         } else {
-            Robots_.push_back(robot);
+            mRobots.push_back(robot);
         }
     }
 
@@ -147,7 +147,7 @@ void mtsRobotIO1394::Configure(const std::string & filename)
         if (!this->SetupDigitalInput(digital_input)) {
             delete digital_input;
         } else {
-            DigitalInputs_.push_back(digital_input);
+            mDigitalInputs.push_back(digital_input);
         }
     }
 }
@@ -191,7 +191,7 @@ bool mtsRobotIO1394::SetupRobot(mtsRobot1394 * robot)
 
     // Add the robot to the port
     try {
-        Port_->AddRobot(robot);
+        mPort->AddRobot(robot);
     } catch (osaRuntimeError1394 & err) {
         CMN_LOG_CLASS_INIT_ERROR << "SetupRobot: unable to add the robot to the port: " << err.what() << std::endl;
         return false;
@@ -210,7 +210,7 @@ bool mtsRobotIO1394::SetupDigitalInput(mtsDigitalInput1394 * digitalInput)
 
     // Add the digital input to the port
     try {
-        Port_->AddDigitalInput(digitalInput);
+        mPort->AddDigitalInput(digitalInput);
     } catch (osaRuntimeError1394 & err) {
         CMN_LOG_CLASS_INIT_ERROR << "SetupDigitalInput: unable to add the robot to the port: " << err.what() << std::endl;
         return false;
@@ -225,8 +225,8 @@ void mtsRobotIO1394::Startup(void)
 
 void mtsRobotIO1394::PreRead(void)
 {
-    const robots_iterator robotsEnd = Robots_.end();
-    for (robots_iterator robot = Robots_.begin();
+    const robots_iterator robotsEnd = mRobots.end();
+    for (robots_iterator robot = mRobots.begin();
          robot != robotsEnd;
          ++robot) {
         (*robot)->StartReadStateTable();
@@ -236,16 +236,16 @@ void mtsRobotIO1394::PreRead(void)
 void mtsRobotIO1394::PostRead(void)
 {
     // Trigger robot events
-    const robots_iterator robotsEnd = Robots_.end();
-    for (robots_iterator robot = Robots_.begin();
+    const robots_iterator robotsEnd = mRobots.end();
+    for (robots_iterator robot = mRobots.begin();
          robot != robotsEnd;
          ++robot) {
         (*robot)->CheckState();
         (*robot)->AdvanceReadStateTable();
     }
     // Trigger digital input events
-    const digital_inputs_iterator digital_inputs_end = DigitalInputs_.end();
-    for (digital_inputs_iterator digital_input = DigitalInputs_.begin();
+    const digital_inputs_iterator digital_inputs_end = mDigitalInputs.end();
+    for (digital_inputs_iterator digital_input = mDigitalInputs.begin();
          digital_input != digital_inputs_end;
          ++digital_input) {
         (*digital_input)->CheckState();
@@ -254,8 +254,8 @@ void mtsRobotIO1394::PostRead(void)
 
 void mtsRobotIO1394::PreWrite(void)
 {
-    const robots_iterator robotsEnd = Robots_.end();
-    for (robots_iterator robot = Robots_.begin();
+    const robots_iterator robotsEnd = mRobots.end();
+    for (robots_iterator robot = mRobots.begin();
          robot != robotsEnd;
          ++robot) {
         (*robot)->StartWriteStateTable();
@@ -265,8 +265,8 @@ void mtsRobotIO1394::PreWrite(void)
 void mtsRobotIO1394::PostWrite(void)
 {
     // Trigger robot events
-    const robots_iterator robotsEnd = Robots_.end();
-    for (robots_iterator robot = Robots_.begin();
+    const robots_iterator robotsEnd = mRobots.end();
+    for (robots_iterator robot = mRobots.begin();
          robot != robotsEnd;
          ++robot) {
         (*robot)->AdvanceWriteStateTable();
@@ -278,7 +278,7 @@ void mtsRobotIO1394::Run(void)
     // Read from all boards
     this->PreRead();
     try {
-        Port_->Read();
+        mPort->Read();
     } catch (sawRobotIO1394::osaRuntimeError1394 & sawException) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: " << this->Name << ": sawRobotIO1394 exception \"" << sawException.what() << "\"" << std::endl;
     } catch (std::exception & stdException) {
@@ -296,42 +296,42 @@ void mtsRobotIO1394::Run(void)
 
     // Write to all boards
     this->PreWrite();
-    Port_->Write();
+    mPort->Write();
     this->PostWrite();
 }
 
 void mtsRobotIO1394::Cleanup(void)
 {
-    for (size_t i = 0; i < Robots_.size(); i++) {
-        if (Robots_[i]->Valid()) {
-            Robots_[i]->DisablePower();
+    for (size_t i = 0; i < mRobots.size(); i++) {
+        if (mRobots[i]->Valid()) {
+            mRobots[i]->DisablePower();
         }
     }
     // Write to all boards
-    Port_->Write();
+    mPort->Write();
 }
 
 void mtsRobotIO1394::GetNumberOfDigitalInputs(int & placeHolder) const
 {
-    placeHolder = Port_->NumberOfDigitalInputs();
+    placeHolder = mPort->NumberOfDigitalInputs();
 }
 
 void mtsRobotIO1394::GetNumberOfBoards(int & placeHolder) const
 {
-    placeHolder = Port_->NumberOfBoards();
+    placeHolder = mPort->NumberOfBoards();
 }
 
 void mtsRobotIO1394::GetNumberOfRobots(int & placeHolder) const
 {
-    placeHolder = Port_->NumberOfRobots();
+    placeHolder = mPort->NumberOfRobots();
 }
 
 void mtsRobotIO1394::GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const
 {
-    size_t num_robots = Port_->NumberOfRobots();
+    size_t num_robots = mPort->NumberOfRobots();
     placeHolder.resize(num_robots);
 
     for (size_t i = 0; i < num_robots; i++) {
-        placeHolder[i] = Port_->Robot(i)->NumberOfActuators();
+        placeHolder[i] = mPort->Robot(i)->NumberOfActuators();
     }
 }

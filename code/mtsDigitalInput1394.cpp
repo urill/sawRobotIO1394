@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -36,12 +36,12 @@ mtsDigitalInput1394::mtsDigitalInput1394(const cmnGenericObject & owner,
 
 void mtsDigitalInput1394::SetupStateTable(mtsStateTable & stateTable)
 {
-    stateTable.AddData(Value_, Name_ + "Value");
+    stateTable.AddData(mValue, mName + "Value");
 }
 
 void mtsDigitalInput1394::SetupProvidedInterface(mtsInterfaceProvided * prov, mtsStateTable & stateTable)
 {
-    prov->AddCommandReadState(stateTable, this->Value_, "GetButton");
+    prov->AddCommandReadState(stateTable, this->mValue, "GetButton");
     prov->AddEventWrite(this->Button, "Button", prmEventButton());
 }
 
@@ -54,16 +54,16 @@ void mtsDigitalInput1394::CheckState(void)
     // Send appropriate events if the value changed in the last update
 
     // Check if value has changed
-    if (Value_ != PreviousValue_) {
+    if (mValue != mPreviousValue) {
         // Check if the value is equal to the value when the digital input is considered pressed
-        if (Value_ == PressedValue_) {
+        if (mValue == mPressedValue) {
             // Emit a press event
-            if (TriggerPress_) {
+            if (mTriggerPress) {
                 Button(pressed);
             }
         } else {
             // Emit a release event
-            if (TriggerRelease_) {
+            if (mTriggerRelease) {
                 Button(released);
             }
         }

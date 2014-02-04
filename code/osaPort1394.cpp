@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -30,10 +30,10 @@ using namespace sawRobotIO1394;
 osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
 {
     // Construct handle to firewire port
-    Port_ = new FirewirePort(portNumber, messageStream);
+    mPort = new FirewirePort(portNumber, messageStream);
 
     // Check number of port users
-    if (Port_->NumberOfUsers() > 1) {
+    if (mPort->NumberOfUsers() > 1) {
         std::ostringstream oss;
         oss << "osaIO1394Port: Found more than one user on firewire port: " << portNumber;
         cmnThrow(osaRuntimeError1394(oss.str()));
@@ -68,7 +68,7 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
     const osaRobot1394Configuration & config = robot->GetConfiguration();
 
     // Check to make sure this robot isn't already added
-    if (RobotsByName_.count(config.Name) > 0) {
+    if (mRobotsByName.count(config.Name) > 0) {
         cmnThrow(osaRuntimeError1394(robot->Name() + ": robot name is not unique."));
     }
 
@@ -79,13 +79,13 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
         int board_id = config.Actuators[i].BoardID;
 
         // If the board hasn't been created, construct it and add it to the port
-        if (Boards_.count(board_id) == 0) {
-            Boards_[board_id] = new AmpIO(board_id);
-            Port_->AddBoard(Boards_[board_id]);
+        if (mBoards.count(board_id) == 0) {
+            mBoards[board_id] = new AmpIO(board_id);
+            mPort->AddBoard(mBoards[board_id]);
         }
 
         // Add the board to the list of boards relevant to this robot
-        robot_boards[i].board = Boards_[board_id];
+        robot_boards[i].board = mBoards[board_id];
         robot_boards[i].axis = config.Actuators[i].AxisID;
     }
 
@@ -93,28 +93,28 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
     robot->SetBoards(robot_boards);
 
     // Store the robot by name
-    Robots_.push_back(robot);
-    RobotsByName_[config.Name] = robot;
+    mRobots.push_back(robot);
+    mRobotsByName[config.Name] = robot;
 }
 
 osaRobot1394 * osaPort1394::Robot(const std::string & name)
 {
-    return RobotsByName_.at(name);
+    return mRobotsByName.at(name);
 }
 
 const osaRobot1394 * osaPort1394::Robot(const std::string & name) const
 {
-    return RobotsByName_.at(name);
+    return mRobotsByName.at(name);
 }
 
 osaRobot1394 * osaPort1394::Robot(const int i)
 {
-    return Robots_[i];
+    return mRobots[i];
 }
 
 const osaRobot1394 * osaPort1394::Robot(const int i) const
 {
-    return Robots_[i];
+    return mRobots[i];
 }
 
 void osaPort1394::AddDigitalInput(osaDigitalInput1394 * digitalInput)
@@ -126,7 +126,7 @@ void osaPort1394::AddDigitalInput(osaDigitalInput1394 * digitalInput)
     const osaDigitalInput1394Configuration & config = digitalInput->Configuration();
 
     // Check to make sure this digital_input isn't already added
-    if (DigitalInputsByName_.count(config.Name) > 0) {
+    if (mDigitalInputsByName.count(config.Name) > 0) {
         cmnThrow(osaRuntimeError1394(digitalInput->Name() + ": digital input name is not unique."));
     }
 
@@ -134,66 +134,66 @@ void osaPort1394::AddDigitalInput(osaDigitalInput1394 * digitalInput)
     int boardID = config.BoardID;
 
     // If the board hasn't been created, construct it and add it to the port
-    if (Boards_.count(boardID) == 0) {
-        Boards_[boardID] = new AmpIO(boardID);
-        Port_->AddBoard(Boards_[boardID]);
+    if (mBoards.count(boardID) == 0) {
+        mBoards[boardID] = new AmpIO(boardID);
+        mPort->AddBoard(mBoards[boardID]);
     }
 
     // Assign the board to the digital input
-    digitalInput->SetBoard(Boards_[boardID]);
+    digitalInput->SetBoard(mBoards[boardID]);
 
     // Store the digital_input by name
-    DigitalInputs_.push_back(digitalInput);
-    DigitalInputsByName_[config.Name] = digitalInput;
+    mDigitalInputs.push_back(digitalInput);
+    mDigitalInputsByName[config.Name] = digitalInput;
 }
 
 osaPort1394::~osaPort1394()
 {
     // Delete robots before deleting boards
-    for (robot_iterator robot = Robots_.begin();
-         robot != Robots_.end();
+    for (robot_iterator robot = mRobots.begin();
+         robot != mRobots.end();
          ++robot) {
         if (*robot != 0) {
             delete *robot;
         }
     }
-    Robots_.clear();
+    mRobots.clear();
 
     // Delete digital inputs before deleting boards
-    for (digital_input_iterator digitalInput = DigitalInputs_.begin();
-         digitalInput != DigitalInputs_.end();
+    for (digital_input_iterator digitalInput = mDigitalInputs.begin();
+         digitalInput != mDigitalInputs.end();
          ++digitalInput) {
         if (*digitalInput != 0) {
             delete *digitalInput;
         }
     }
-    DigitalInputs_.clear();
+    mDigitalInputs.clear();
 
     // Delete board structures
-    for (board_iterator board = Boards_.begin();
-         board != Boards_.end();
+    for (board_iterator board = mBoards.begin();
+         board != mBoards.end();
          ++board) {
         if (board->second != 0) {
-            Port_->RemoveBoard(board->first);
+            mPort->RemoveBoard(board->first);
             delete board->second;
         }
     }
-    Boards_.clear();
+    mBoards.clear();
 
     // Delete firewire port
-    if (Port_ != 0) {
-        delete Port_;
+    if (mPort != 0) {
+        delete mPort;
     }
 }
 
 void osaPort1394::Read(void)
 {
     // Read from all boards on the port
-    Port_->ReadAllBoards();
+    mPort->ReadAllBoards();
 
     // Poll the state for each robot
-    for (robot_iterator robot = Robots_.begin();
-         robot != Robots_.end();
+    for (robot_iterator robot = mRobots.begin();
+         robot != mRobots.end();
          ++robot) {
         // Poll the board validity
         (*robot)->PollValidity();
@@ -209,8 +209,8 @@ void osaPort1394::Read(void)
     }
 
     // Poll the state for each digital input
-    for (digital_input_iterator digitalInput = DigitalInputs_.begin();
-         digitalInput != DigitalInputs_.end();
+    for (digital_input_iterator digitalInput = mDigitalInputs.begin();
+         digitalInput != mDigitalInputs.end();
          ++digitalInput) {
         // Poll this robot's state
         (*digitalInput)->PollState();
@@ -220,26 +220,26 @@ void osaPort1394::Read(void)
 void osaPort1394::Write(void)
 {
     // Write to all boards
-    Port_->WriteAllBoards();
+    mPort->WriteAllBoards();
 }
 
 int osaPort1394::NumberOfBoards(void) const {
-    return Boards_.size();
+    return mBoards.size();
 }
 
 int osaPort1394::NumberOfRobots(void) const {
-    return Robots_.size();
+    return mRobots.size();
 }
 
 int osaPort1394::NumberOfDigitalInputs(void) const {
-    return DigitalInputs_.size();
+    return mDigitalInputs.size();
 }
 
 void osaPort1394::GetRobotNames(std::vector<std::string> & names) const
 {
     names.clear();
-    for (robot_const_iterator robot = Robots_.begin();
-         robot != Robots_.end();
+    for (robot_const_iterator robot = mRobots.begin();
+         robot != mRobots.end();
          ++robot) {
         names.push_back((*robot)->Name());
     }
@@ -248,8 +248,8 @@ void osaPort1394::GetRobotNames(std::vector<std::string> & names) const
 void osaPort1394::GetDigitalInputNames(std::vector<std::string> & names) const
 {
     names.clear();
-    for (digital_input_const_iterator digitalInput = DigitalInputs_.begin();
-         digitalInput != DigitalInputs_.end();
+    for (digital_input_const_iterator digitalInput = mDigitalInputs.begin();
+         digitalInput != mDigitalInputs.end();
          ++digitalInput) {
         names.push_back((*digitalInput)->Name());
     }

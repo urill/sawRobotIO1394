@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -42,23 +42,23 @@ namespace sawRobotIO1394 {
         bool PreviousValue(void) const;
 
     protected:
-        AmpIO * Board_;              // Board Assignment
+        AmpIO * mBoard;              // Board Assignment
 
-        osaDigitalInput1394Configuration Configuration_;
-        std::string Name_;
-        int BitID_;                  // Board assigned bitID for this Digital Input
-        AmpIO_UInt32 BitMask_;       // BitMask for this input. From DigitalInput Stream.
-        bool PressedValue_;          // Boolean Flag for Active High(true)/Active Low(false)
-        bool TriggerPress_;          // Boolean Flag for Press Trigger Setting
-        bool TriggerRelease_;        // Boolean Flag for Release Trigger Setting
-        double DebounceThreshold_;   // 0, no debounce required otherwise time in seconds
+        osaDigitalInput1394Configuration mConfiguration;
+        std::string mName;
+        int mBitID;                  // Board assigned bitID for this Digital Input
+        AmpIO_UInt32 mBitMask;       // BitMask for this input. From DigitalInput Stream.
+        bool mPressedValue;          // Boolean Flag for Active High(true)/Active Low(false)
+        bool mTriggerPress;          // Boolean Flag for Press Trigger Setting
+        bool mTriggerRelease;        // Boolean Flag for Release Trigger Setting
+        double mDebounceThreshold;   // 0, no debounce required otherwise time in seconds
 
         // State data
-        AmpIO_UInt32 DigitalInputBits_; // BitMask for this input. From DigitalInput Stream.
-        bool Value_;                    // Current read value
-        bool TransitionValue_;          // For debouncing
-        bool PreviousValue_;            // Saved value from the previous read
-        double DebounceCounter_;        // time in seconds with constant value
+        AmpIO_UInt32 mDigitalInputBits; // BitMask for this input. From DigitalInput Stream.
+        bool mValue;                    // Current read value
+        bool mTransitionValue;          // For debouncing
+        bool mPreviousValue;            // Saved value from the previous read
+        double mDebounceCounter;        // time in seconds with constant value
     };
 
 }

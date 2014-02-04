@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,10 +26,10 @@ http://www.cisst.org/cisst/license.txt.
 using namespace sawRobotIO1394;
 
 osaDigitalInput1394::osaDigitalInput1394(const osaDigitalInput1394Configuration & config):
-    DigitalInputBits_(0x0),
-    Value_(false),
-    PreviousValue_(false),
-    DebounceCounter_(-1)
+    mDigitalInputBits(0x0),
+    mValue(false),
+    mPreviousValue(false),
+    mDebounceCounter(-1)
 {
     this->Configure(config);
 }
@@ -37,18 +37,18 @@ osaDigitalInput1394::osaDigitalInput1394(const osaDigitalInput1394Configuration 
 void osaDigitalInput1394::Configure(const osaDigitalInput1394Configuration & config)
 {
     // Store configuration
-    Configuration_ = config;
-    Name_ = config.Name;
-    BitID_ = config.BitID;
-    BitMask_ = 0x1 << BitID_;
-    PressedValue_ = config.PressedValue;
-    TriggerPress_ = config.TriggerWhenPressed;
-    TriggerRelease_ = config.TriggerWhenReleased;
-    DebounceThreshold_ = config.DebounceThreshold;
+    mConfiguration = config;
+    mName = config.Name;
+    mBitID = config.BitID;
+    mBitMask = 0x1 << mBitID;
+    mPressedValue = config.PressedValue;
+    mTriggerPress = config.TriggerWhenPressed;
+    mTriggerRelease = config.TriggerWhenReleased;
+    mDebounceThreshold = config.DebounceThreshold;
 
     // Set the value to un-pressed
-    Value_ = !PressedValue_;
-    PreviousValue_ = Value_;
+    mValue = !mPressedValue;
+    mPreviousValue = mValue;
 }
 
 void osaDigitalInput1394::SetBoard(AmpIO * board)
@@ -56,59 +56,59 @@ void osaDigitalInput1394::SetBoard(AmpIO * board)
     if (board == 0) {
         cmnThrow(osaRuntimeError1394(this->Name() + ": invalid board pointer."));
     }
-    Board_ = board;
+    mBoard = board;
 }
 
 void osaDigitalInput1394::PollState(void)
 {
     // Store previous value
-    PreviousValue_ = Value_;
+    mPreviousValue = mValue;
 
     // Get the new value
-    DigitalInputBits_ =  Board_->GetDigitalInput();
+    mDigitalInputBits =  mBoard->GetDigitalInput();
 
     // If the masked bit is low, set the value to the pressed value
-    bool value = (DigitalInputBits_ & BitMask_) ? (!PressedValue_) : (PressedValue_);
+    bool value = (mDigitalInputBits & mBitMask) ? (!mPressedValue) : (mPressedValue);
 
     // No debounce needed
-    if (DebounceThreshold_ == 0.0) {
-        Value_ = value;
+    if (mDebounceThreshold == 0.0) {
+        mValue = value;
         return;
     }
 
     // Debounce - start if we find one new different value
-    if (DebounceCounter_ == -1.0) {
-        if (value != PreviousValue_) {
-            DebounceCounter_ = 0.0;
-            TransitionValue_ = value;
+    if (mDebounceCounter == -1.0) {
+        if (value != mPreviousValue) {
+            mDebounceCounter = 0.0;
+            mTransitionValue = value;
         }
     // count consecutive equal values
     } else {
-        if (DebounceCounter_ < DebounceThreshold_) {
-            if (value == TransitionValue_) {
-                DebounceCounter_ += Board_->GetTimestamp() / (49.125 * 1000.0 * 1000.0); // clock is 49.125 MHz
+        if (mDebounceCounter < mDebounceThreshold) {
+            if (value == mTransitionValue) {
+                mDebounceCounter += mBoard->GetTimestamp() / (49.125 * 1000.0 * 1000.0); // clock is 49.125 MHz
             } else {
-                DebounceCounter_ = -1.0;
+                mDebounceCounter = -1.0;
             }
         } else {
-            Value_ = value;
-            DebounceCounter_ = -1.0;
+            mValue = value;
+            mDebounceCounter = -1.0;
         }
     }
 }
 
 osaDigitalInput1394Configuration osaDigitalInput1394::Configuration(void) const {
-    return Configuration_;
+    return mConfiguration;
 }
 
 std::string osaDigitalInput1394::Name(void) const {
-    return Name_;
+    return mName;
 }
 
 bool osaDigitalInput1394::Value(void) const {
-    return Value_;
+    return mValue;
 }
 
 bool osaDigitalInput1394::PreviousValue(void) const {
-    return PreviousValue_;
+    return mPreviousValue;
 }

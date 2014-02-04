@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -90,20 +90,20 @@ namespace sawRobotIO1394 {
     protected:
 
         //! Board Objects
-        FirewirePort * Port_;
+        FirewirePort * mPort;
 
-        std::map<int, AmpIO*> Boards_;
+        std::map<int, AmpIO*> mBoards;
         typedef std::map<int, AmpIO*>::iterator board_iterator;
         typedef std::map<int, AmpIO*>::const_iterator board_const_iterator;
 
         //! Robot Objects
-        std::vector<osaRobot1394*> Robots_;
-        std::map<std::string, osaRobot1394*> RobotsByName_;
+        std::vector<osaRobot1394*> mRobots;
+        std::map<std::string, osaRobot1394*> mRobotsByName;
         typedef std::vector<osaRobot1394*>::iterator robot_iterator;
         typedef std::vector<osaRobot1394*>::const_iterator robot_const_iterator;
 
-        std::vector<osaDigitalInput1394*> DigitalInputs_;
-        std::map<std::string, osaDigitalInput1394*> DigitalInputsByName_;
+        std::vector<osaDigitalInput1394*> mDigitalInputs;
+        std::map<std::string, osaDigitalInput1394*> mDigitalInputsByName;
         typedef std::vector<osaDigitalInput1394*>::iterator digital_input_iterator;
         typedef std::vector<osaDigitalInput1394*>::const_iterator digital_input_const_iterator;
     };

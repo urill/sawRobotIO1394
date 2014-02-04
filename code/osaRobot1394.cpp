@@ -34,17 +34,17 @@ using namespace sawRobotIO1394;
 osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
                            const size_t max_consecutive_current_safety_violations):
     // IO Structures
-    ActuatorInfo_(),
-    UniqueBoards_(),
+    mActuatorInfo(),
+    mUniqueBoards(),
     // State Initialization
-    Valid_(false),
-    PowerStatus_(false),
-    PreviousPowerStatus_(false),
-    WatchdogStatus_(false),
-    PreviousWatchdogStatus_(false),
-    SafetyRelay_(false),
-    CurrentSafetyViolationsCounter_(0),
-    CurrentSafetyViolationsMaximum_(max_consecutive_current_safety_violations)
+    mValid(false),
+    mPowerStatus(false),
+    mPreviousPowerStatus(false),
+    mWatchdogStatus(false),
+    mPreviousWatchdogStatus(false),
+    mSafetyRelay(false),
+    mCurrentSafetyViolationsCounter(0),
+    mCurrentSafetyViolationsMaximum(max_consecutive_current_safety_violations)
 {
     this->Configure(config);
 }
@@ -52,70 +52,70 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
 void osaRobot1394::Configure(const osaRobot1394Configuration & config)
 {
     // Store the configuration
-    Configuration_ = config;
+    mConfiguration = config;
 
     //  info
-    Name_ = config.Name;
-    NumberOfActuators_ = config.NumberOfActuators;
-    NumberOfJoints_ = config.NumberOfJoints;
-    PotType_ = config.PotLocation;
+    mName = config.Name;
+    mNumberOfActuators = config.NumberOfActuators;
+    mNumberOfJoints = config.NumberOfJoints;
+    mPotType = config.PotLocation;
 
     // Low-level API
-    ActuatorInfo_.resize(NumberOfActuators_);
+    mActuatorInfo.resize(mNumberOfActuators);
 
     // Initialize state vectors to the appropriate sizes
-    ActuatorPowerStatus_.resize(NumberOfActuators_);
-    ActuatorPowerEnabled_.resize(NumberOfActuators_);
-    DigitalInputs_.resize(NumberOfActuators_);
-    PotBits_.resize(NumberOfActuators_);
-    EncoderPositionBits_.resize(NumberOfActuators_);
-    EncoderVelocityBits_.resize(NumberOfActuators_);
-    ActuatorCurrentBitsCommand_.resize(NumberOfActuators_);
-    ActuatorCurrentBitsFeedback_.resize(NumberOfActuators_);
-    TimeStamp_.resize(NumberOfActuators_);
-    PotVoltage_.resize(NumberOfActuators_);
-    PotPosition_.resize(NumberOfActuators_);
-    EncoderPosition_.resize(NumberOfActuators_);
-    EncoderPositionPrev_.resize(NumberOfActuators_);
-    EncoderVelocity_.resize(NumberOfActuators_);
-    JointPosition_.resize(NumberOfJoints_);
-    JointVelocity_.resize(NumberOfJoints_);
-    ActuatorCurrentCommand_.resize(NumberOfActuators_);
-    ActuatorEffortCommand_.resize(NumberOfActuators_);
-    ActuatorCurrentFeedback_.resize(NumberOfActuators_);
-    ActuatorEffortFeedback_.resize(NumberOfActuators_);
+    mActuatorPowerStatus.resize(mNumberOfActuators);
+    mActuatorPowerEnabled.resize(mNumberOfActuators);
+    mDigitalInputs.resize(mNumberOfActuators);
+    mPotBits.resize(mNumberOfActuators);
+    mEncoderPositionBits.resize(mNumberOfActuators);
+    mEncoderVelocityBits.resize(mNumberOfActuators);
+    mActuatorCurrentBitsCommand.resize(mNumberOfActuators);
+    mActuatorCurrentBitsFeedback.resize(mNumberOfActuators);
+    mTimeStamp.resize(mNumberOfActuators);
+    mPotVoltage.resize(mNumberOfActuators);
+    mPotPosition.resize(mNumberOfActuators);
+    mEncoderPosition.resize(mNumberOfActuators);
+    mEncoderPositionPrev.resize(mNumberOfActuators);
+    mEncoderVelocity.resize(mNumberOfActuators);
+    mJointPosition.resize(mNumberOfJoints);
+    mJointVelocity.resize(mNumberOfJoints);
+    mActuatorCurrentCommand.resize(mNumberOfActuators);
+    mActuatorEffortCommand.resize(mNumberOfActuators);
+    mActuatorCurrentFeedback.resize(mNumberOfActuators);
+    mActuatorEffortFeedback.resize(mNumberOfActuators);
 
     // Initialize property vectors to the appropriate sizes
-    JointType_.resize(NumberOfJoints_);
+    mJointType.resize(mNumberOfJoints);
 
-    EffortToCurrentScales_.resize(NumberOfActuators_);
-    CurrentToBitsScales_.resize(NumberOfActuators_);
-    CurrentToBitsOffsets_.resize(NumberOfActuators_);
-    BitsToCurrentScales_.resize(NumberOfActuators_);
-    BitsToCurrentOffsets_.resize(NumberOfActuators_);
-    ActuatorEffortCommandLimits_.resize(NumberOfActuators_);
-    ActuatorCurrentCommandLimits_.resize(NumberOfActuators_);
-    ActuatorCurrentFeedbackLimits_.resize(NumberOfActuators_);
+    mEffortToCurrentScales.resize(mNumberOfActuators);
+    mCurrentToBitsScales.resize(mNumberOfActuators);
+    mCurrentToBitsOffsets.resize(mNumberOfActuators);
+    mBitsToCurrentScales.resize(mNumberOfActuators);
+    mBitsToCurrentOffsets.resize(mNumberOfActuators);
+    mActuatorEffortCommandLimits.resize(mNumberOfActuators);
+    mActuatorCurrentCommandLimits.resize(mNumberOfActuators);
+    mActuatorCurrentFeedbackLimits.resize(mNumberOfActuators);
 
-    BitsToPositionScales_.resize(NumberOfActuators_);
-    BitsToPositionOffsets_.resize(NumberOfActuators_);
-    BitsToDPositionScales_.resize(NumberOfActuators_);
-    BitsToDPositionOffsets_.resize(NumberOfActuators_);
-    BitsToDTimeScales_.resize(NumberOfActuators_);
-    BitsToDTimeOffsets_.resize(NumberOfActuators_);
-    BitsToVecocityScales_.resize(NumberOfActuators_);
-    BitsToVelocityOffsets_.resize(NumberOfActuators_);
+    mBitsToPositionScales.resize(mNumberOfActuators);
+    mBitsToPositionOffsets.resize(mNumberOfActuators);
+    mBitsToDPositionScales.resize(mNumberOfActuators);
+    mBitsToDPositionOffsets.resize(mNumberOfActuators);
+    mBitsToDTimeScales.resize(mNumberOfActuators);
+    mBitsToDTimeOffsets.resize(mNumberOfActuators);
+    mBitsToVecocityScales.resize(mNumberOfActuators);
+    mBitsToVelocityOffsets.resize(mNumberOfActuators);
 
-    BitsToVoltageScales_.resize(NumberOfActuators_);
-    BitsToVoltageOffsets_.resize(NumberOfActuators_);
-    VoltageToPositionScales_.resize(NumberOfActuators_);
-    VoltageToPositionOffsets_.resize(NumberOfActuators_);
-    CountsPerTurn_.resize(NumberOfActuators_);
+    mBitsToVoltageScales.resize(mNumberOfActuators);
+    mBitsToVoltageOffsets.resize(mNumberOfActuators);
+    mVoltageToPositionScales.resize(mNumberOfActuators);
+    mVoltageToPositionOffsets.resize(mNumberOfActuators);
+    mCountsPerTurn.resize(mNumberOfActuators);
 
-    Temperature_.resize(NumberOfActuators_);
+    mTemperature.resize(mNumberOfActuators);
 
     // Construct property vectors
-    for (size_t i = 0; i < NumberOfActuators_; i++) {
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
 
         // Local references to the config properties
         const osaActuator1394Configuration & actuator = config.Actuators[i];
@@ -123,91 +123,91 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
         const osaEncoder1394Configuration & encoder = actuator.Encoder;
         const osaPot1394Configuration & pot = actuator.Pot;
 
-        JointType_[i] = actuator.JointType;
+        mJointType[i] = actuator.JointType;
 
-        EffortToCurrentScales_[i]         = drive.EffortToCurrentScale;
-        CurrentToBitsScales_[i]            = drive.CurrentToBitsScale;
-        CurrentToBitsOffsets_[i]           = drive.CurrentToBitsOffset;
-        BitsToCurrentScales_[i]            = drive.BitsToCurrentScale;
-        BitsToCurrentOffsets_[i]           = drive.BitsToCurrentOffset;
-        ActuatorEffortCommandLimits_[i] = drive.ActuatorEffortCommandLimit;
-        ActuatorCurrentCommandLimits_[i]   = drive.ActuatorCurrentCommandLimit;
+        mEffortToCurrentScales[i]         = drive.EffortToCurrentScale;
+        mCurrentToBitsScales[i]           = drive.CurrentToBitsScale;
+        mCurrentToBitsOffsets[i]          = drive.CurrentToBitsOffset;
+        mBitsToCurrentScales[i]           = drive.BitsToCurrentScale;
+        mBitsToCurrentOffsets[i]          = drive.BitsToCurrentOffset;
+        mActuatorEffortCommandLimits[i]   = drive.ActuatorEffortCommandLimit;
+        mActuatorCurrentCommandLimits[i]  = drive.ActuatorCurrentCommandLimit;
         // 120% of command curret is in the acceptable range
         // Add 50 mA for non motorized actuators due to a2d noise
-        ActuatorCurrentFeedbackLimits_[i]  = 1.2 * ActuatorCurrentCommandLimits_[i] + (50.0 / 1000.0);
+        mActuatorCurrentFeedbackLimits[i] = 1.2 * mActuatorCurrentCommandLimits[i] + (50.0 / 1000.0);
 
-        BitsToPositionScales_[i]   = encoder.BitsToPositionScale;
-        BitsToPositionOffsets_[i]  = encoder.BitsToPositionOffset;
-        BitsToDPositionScales_[i]  = encoder.BitsToDPositionScale;
-        BitsToDPositionOffsets_[i] = encoder.BitsToDPositionOffset;
-        BitsToDTimeScales_[i]    = encoder.BitsToDTimeScale;
-        BitsToDTimeOffsets_[i]   = encoder.BitsToDTimeOffset;
-        BitsToVecocityScales_[i]   = encoder.BitsToVelocityScale;
-        BitsToVelocityOffsets_[i]  = encoder.BitsToVelocityOffset;
-        CountsPerTurn_[i]      = encoder.CountsPerTurn;
+        mBitsToPositionScales[i]   = encoder.BitsToPositionScale;
+        mBitsToPositionOffsets[i]  = encoder.BitsToPositionOffset;
+        mBitsToDPositionScales[i]  = encoder.BitsToDPositionScale;
+        mBitsToDPositionOffsets[i] = encoder.BitsToDPositionOffset;
+        mBitsToDTimeScales[i]      = encoder.BitsToDTimeScale;
+        mBitsToDTimeOffsets[i]     = encoder.BitsToDTimeOffset;
+        mBitsToVecocityScales[i]   = encoder.BitsToVelocityScale;
+        mBitsToVelocityOffsets[i]  = encoder.BitsToVelocityOffset;
+        mCountsPerTurn[i]          = encoder.CountsPerTurn;
 
-        BitsToVoltageScales_[i]  = pot.BitsToVoltageScale;
-        BitsToVoltageOffsets_[i] = pot.BitsToVoltageOffset;
-        VoltageToPositionScales_[i]   = pot.VoltageToPositionScale;
-        VoltageToPositionOffsets_[i]  = pot.VoltageToPositionOffset;
+        mBitsToVoltageScales[i]      = pot.BitsToVoltageScale;
+        mBitsToVoltageOffsets[i]     = pot.BitsToVoltageOffset;
+        mVoltageToPositionScales[i]  = pot.VoltageToPositionScale;
+        mVoltageToPositionOffsets[i] = pot.VoltageToPositionOffset;
 
         // Initialize state vectors
-        EncoderPosition_[i] = 0.0;
-        EncoderPositionPrev_[i] = 0.0;
-        ActuatorCurrentCommand_[i] = 0.0;
-        ActuatorCurrentFeedback_[i] = 0.0;
+        mEncoderPosition[i] = 0.0;
+        mEncoderPositionPrev[i] = 0.0;
+        mActuatorCurrentCommand[i] = 0.0;
+        mActuatorCurrentFeedback[i] = 0.0;
     }
 
     // Compute effort command limits
-    JointEffortCommandLimits_ = Configuration_.ActuatorToJointEffort * ActuatorEffortCommandLimits_;
+    mJointEffortCommandLimits = mConfiguration.ActuatorToJointEffort * mActuatorEffortCommandLimits;
 }
 
 void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & boards)
 {
-    if (boards.size() != NumberOfActuators_) {
+    if (boards.size() != mNumberOfActuators) {
         cmnThrow(osaRuntimeError1394(this->Name() + ": number of boards different than the number of actuators."));
     }
 
-    for (size_t i = 0; i < NumberOfActuators_; i++) {
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
         // Store this board
-        ActuatorInfo_[i].board = boards[i].board;
-        ActuatorInfo_[i].axis = boards[i].axis;
+        mActuatorInfo[i].board = boards[i].board;
+        mActuatorInfo[i].axis = boards[i].axis;
         // Construct a list of unique boards
-        UniqueBoards_[boards[i].board->GetBoardId()] = boards[i].board;
+        mUniqueBoards[boards[i].board->GetBoardId()] = boards[i].board;
     }
 }
 
 void osaRobot1394::PollValidity(void)
 {
     // Make sure the boards have been configured
-    if (NumberOfActuators_ != ActuatorInfo_.size()) {
+    if (mNumberOfActuators != mActuatorInfo.size()) {
         cmnThrow(osaRuntimeError1394(this->Name() + ": number of boards different than the number of actuators."));
     }
 
     // Store previous state
-    PreviousPowerStatus_ = PowerStatus_;
-    PreviousWatchdogStatus_ = WatchdogStatus_;
+    mPreviousPowerStatus = mPowerStatus;
+    mPreviousWatchdogStatus = mWatchdogStatus;
 
     // Initialize flags
-    Valid_ = true;
-    PowerStatus_ = true;
-    SafetyRelay_ = true;
-    WatchdogStatus_ = true;
+    mValid = true;
+    mPowerStatus = true;
+    mSafetyRelay = true;
+    mWatchdogStatus = true;
 
-    for (unique_board_iterator board = UniqueBoards_.begin();
-         board != UniqueBoards_.end();
+    for (unique_board_iterator board = mUniqueBoards.begin();
+         board != mUniqueBoards.end();
          ++board) {
-        Valid_ &= board->second->ValidRead();
-        PowerStatus_ &= board->second->GetPowerStatus();
-        SafetyRelay_ &= board->second->GetSafetyRelayStatus();
-        WatchdogStatus_ &= board->second->GetWatchdogTimeoutStatus();
+        mValid &= board->second->ValidRead();
+        mPowerStatus &= board->second->GetPowerStatus();
+        mSafetyRelay &= board->second->GetSafetyRelayStatus();
+        mWatchdogStatus &= board->second->GetWatchdogTimeoutStatus();
     }
 
-    if (!Valid_) {
+    if (!mValid) {
         std::stringstream message;
         message << this->Name() << ": read error on board(s) ";
-        for (unique_board_iterator board = UniqueBoards_.begin();
-             board != UniqueBoards_.end();
+        for (unique_board_iterator board = mUniqueBoards.begin();
+             board != mUniqueBoards.end();
              ++board) {
             if (!board->second->ValidRead()) {
                 message << static_cast<int>(board->second->GetBoardId()) << " ";
@@ -220,80 +220,80 @@ void osaRobot1394::PollValidity(void)
 void osaRobot1394::PollState(void)
 {
     // Poll data
-    for (size_t i = 0; i < NumberOfActuators_; i++) {
-        AmpIO * board = ActuatorInfo_[i].board;
-        int axis = ActuatorInfo_[i].axis;
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        AmpIO * board = mActuatorInfo[i].board;
+        int axis = mActuatorInfo[i].axis;
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
 
-        TimeStamp_[i] = board->GetTimestamp() * 1.0 / 49125000.0;
-        DigitalInputs_[i] = board->GetDigitalInput();
+        mTimeStamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+        mDigitalInputs[i] = board->GetDigitalInput();
 
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
-        EncoderPositionBits_[i] = ((int)(board->GetEncoderPosition(axis) << 8)) >> 8;
+        mEncoderPositionBits[i] = ((int)(board->GetEncoderPosition(axis) << 8)) >> 8;
         // convert from 16 bits signed stored in 32 unsigned to 32 signed
-        EncoderVelocityBits_[i] = ((int)(board->GetEncoderVelocity(axis) << 16)) >> 16;
+        mEncoderVelocityBits[i] = ((int)(board->GetEncoderVelocity(axis) << 16)) >> 16;
 
-        PotBits_[i] = board->GetAnalogInput(axis);
+        mPotBits[i] = board->GetAnalogInput(axis);
 
-        ActuatorCurrentBitsFeedback_[i] = board->GetMotorCurrent(axis);
-        ActuatorPowerEnabled_[i] = board->GetAmpEnable(axis);
-        ActuatorPowerStatus_[i] = board->GetAmpStatus(axis);
+        mActuatorCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
+        mActuatorPowerEnabled[i] = board->GetAmpEnable(axis);
+        mActuatorPowerStatus[i] = board->GetAmpStatus(axis);
 
         // first temperature corresponds to first 2 actuators, second to last 2
         // board reports temperature in celsius * 2
-        Temperature_[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
+        mTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
     }
 }
 
 void osaRobot1394::ConvertState(void)
 {
     // Perform read conversions
-    EncoderBitsToPosition(EncoderPositionBits_, EncoderPosition_);
-    JointPosition_ = Configuration_.ActuatorToJointPosition * EncoderPosition_;
+    EncoderBitsToPosition(mEncoderPositionBits, mEncoderPosition);
+    mJointPosition = mConfiguration.ActuatorToJointPosition * mEncoderPosition;
 
     // Use vel estimation from FPGA
-    EncoderBitsToVelocity(EncoderVelocityBits_, EncoderVelocity_);
-    JointVelocity_ = Configuration_.ActuatorToJointPosition * EncoderVelocity_;
+    EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);
+    mJointVelocity = mConfiguration.ActuatorToJointPosition * mEncoderVelocity;
 
-    ActuatorBitsToCurrent(ActuatorCurrentBitsFeedback_, ActuatorCurrentFeedback_);
-    ActuatorCurrentToEffort(ActuatorCurrentFeedback_, ActuatorEffortFeedback_);
+    ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
+    ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
 
-    PotBitsToVoltage(PotBits_, PotVoltage_);
-    PotVoltageToPosition(PotVoltage_, PotPosition_);
+    PotBitsToVoltage(mPotBits, mPotVoltage);
+    PotVoltageToPosition(mPotVoltage, mPotPosition);
 }
 
 void osaRobot1394::CheckState(void)
 {
     // Save EncoderPositionPrev
-    EncoderPositionPrev_.Assign(EncoderPosition_);
+    mEncoderPositionPrev.Assign(mEncoderPosition);
 
     // Perform safety checks
     bool current_safety_violation = false;
-    for (size_t i = 0; i < NumberOfActuators_; i++) {
-        if (fabs(ActuatorCurrentFeedback_[i]) >= ActuatorCurrentFeedbackLimits_[i]) {
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        if (fabs(mActuatorCurrentFeedback[i]) >= mActuatorCurrentFeedbackLimits[i]) {
             current_safety_violation = true;
         }
     }
 
     if (current_safety_violation) {
-        CurrentSafetyViolationsCounter_++;
+        mCurrentSafetyViolationsCounter++;
     } else {
-        CurrentSafetyViolationsCounter_ = 0;
+        mCurrentSafetyViolationsCounter = 0;
     }
 
-    if (CurrentSafetyViolationsCounter_ > CurrentSafetyViolationsMaximum_) {
+    if (mCurrentSafetyViolationsCounter > mCurrentSafetyViolationsMaximum) {
         this->DisablePower();
         cmnThrow(osaRuntimeError1394(this->Name() + ": too many consecutive current safety violations.  Power has been disabled."));
     }
 
     // check safety amp disable
-    for (unique_board_iterator board = UniqueBoards_.begin();
-         board != UniqueBoards_.end();
+    for (unique_board_iterator board = mUniqueBoards.begin();
+         board != mUniqueBoards.end();
          ++board) {
         AmpIO_UInt32 safetyAmpDisable = board->second->GetSafetyAmpDisable();
         if (safetyAmpDisable) {
-            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety ampdisable tripped." + TimeStamp_.ToString()));
+            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety ampdisable tripped." + mTimeStamp.ToString()));
         }
     }
 }
@@ -307,8 +307,8 @@ void osaRobot1394::EnablePower(void)
 
 void osaRobot1394::EnableBoardsPower(void)
 {
-    for (unique_board_iterator board = UniqueBoards_.begin();
-         board != UniqueBoards_.end();
+    for (unique_board_iterator board = mUniqueBoards.begin();
+         board != mUniqueBoards.end();
          ++board) {
         board->second->WriteSafetyRelay(true);
         board->second->WritePowerEnable(true);
@@ -319,8 +319,8 @@ void osaRobot1394::DisablePower(void)
 {
     // write to boards directly
     // disable all axes
-    for (unique_board_iterator board = UniqueBoards_.begin();
-         board != UniqueBoards_.end();
+    for (unique_board_iterator board = mUniqueBoards.begin();
+         board != mUniqueBoards.end();
          ++board) {
         board->second->WriteAmpEnable(0x0f, 0x00);
     }
@@ -331,8 +331,8 @@ void osaRobot1394::DisablePower(void)
 
 void osaRobot1394::DisableBoardPower(void)
 {
-    for (unique_board_iterator board = UniqueBoards_.begin();
-         board != UniqueBoards_.end();
+    for (unique_board_iterator board = mUniqueBoards.begin();
+         board != mUniqueBoards.end();
          ++board) {
         board->second->WritePowerEnable(false);
         board->second->WriteSafetyRelay(false);
@@ -341,8 +341,8 @@ void osaRobot1394::DisableBoardPower(void)
 
 void osaRobot1394::SetSafetyRelay(const bool & enabled)
 {
-    for (unique_board_iterator board = UniqueBoards_.begin();
-         board != UniqueBoards_.end();
+    for (unique_board_iterator board = mUniqueBoards.begin();
+         board != mUniqueBoards.end();
          ++board) {
         board->second->SetSafetyRelay(enabled);
     }
@@ -362,8 +362,8 @@ void osaRobot1394::SetWatchdogPeriod(const double & periodInSeconds)
         periodCounts = std::max(periodCounts, static_cast<uint32_t>(1));
     }
 
-    for (unique_board_iterator board = UniqueBoards_.begin();
-         board != UniqueBoards_.end();
+    for (unique_board_iterator board = mUniqueBoards.begin();
+         board != mUniqueBoards.end();
          ++board) {
         board->second->WriteWatchdogPeriod(periodCounts);
     }
@@ -371,62 +371,62 @@ void osaRobot1394::SetWatchdogPeriod(const double & periodInSeconds)
 
 void osaRobot1394::SetActuatorPower(const bool & enabled)
 {
-    for (size_t i = 0; i < NumberOfActuators_; i++) {
-        ActuatorInfo_[i].board->SetAmpEnable(ActuatorInfo_[i].axis, enabled);
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        mActuatorInfo[i].board->SetAmpEnable(mActuatorInfo[i].axis, enabled);
     }
 }
 
 void osaRobot1394::SetActuatorPower(const vctBoolVec & enabled)
 {
-    for (size_t i = 0; i < NumberOfActuators_; i++) {
-        ActuatorInfo_[i].board->SetAmpEnable(ActuatorInfo_[i].axis, enabled[i]);
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        mActuatorInfo[i].board->SetAmpEnable(mActuatorInfo[i].axis, enabled[i]);
     }
 }
 
 void osaRobot1394::SetEncoderPosition(const vctDoubleVec & pos)
 {
-    vctIntVec bits(NumberOfActuators_);
+    vctIntVec bits(mNumberOfActuators);
     this->EncoderPositionToBits(pos, bits);
     this->SetEncoderPositionBits(bits);
 }
 
 void osaRobot1394::SetEncoderPositionBits(const vctIntVec & bits)
 {
-    for (size_t i = 0; i < NumberOfActuators_; i++) {
-        ActuatorInfo_[i].board->WriteEncoderPreload(ActuatorInfo_[i].axis, bits[i]);
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        mActuatorInfo[i].board->WriteEncoderPreload(mActuatorInfo[i].axis, bits[i]);
     }
 }
 
 void osaRobot1394::SetSingleEncoderPosition(const int index, const double pos)
 {
-    SetSingleEncoderPositionBits(index, (pos - BitsToPositionOffsets_[index]) / BitsToPositionScales_[index]);
+    SetSingleEncoderPositionBits(index, (pos - mBitsToPositionOffsets[index]) / mBitsToPositionScales[index]);
 }
 
 void osaRobot1394::SetSingleEncoderPositionBits(const int index, const int bits)
 {
-    ActuatorInfo_[index].board->WriteEncoderPreload(ActuatorInfo_[index].axis, bits);
+    mActuatorInfo[index].board->WriteEncoderPreload(mActuatorInfo[index].axis, bits);
 }
 
 void osaRobot1394::ClipActuatorEffort(vctDoubleVec & efforts)
 {
-    for (size_t i=0; i<NumberOfActuators_; i++) {
-        efforts[i] = std::min(efforts[i], ActuatorEffortCommandLimits_[i]);
-        efforts[i] = std::max(efforts[i], -ActuatorEffortCommandLimits_[i]);
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        efforts[i] = std::min(efforts[i], mActuatorEffortCommandLimits[i]);
+        efforts[i] = std::max(efforts[i], -mActuatorEffortCommandLimits[i]);
     }
 }
 
 void osaRobot1394::ClipActuatorCurrent(vctDoubleVec & currents)
 {
-    for (size_t i=0; i<NumberOfActuators_; i++) {
-        currents[i] = std::min(currents[i], ActuatorCurrentCommandLimits_[i]);
-        currents[i] = std::max(currents[i], -ActuatorCurrentCommandLimits_[i]);
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        currents[i] = std::min(currents[i], mActuatorCurrentCommandLimits[i]);
+        currents[i] = std::max(currents[i], -mActuatorCurrentCommandLimits[i]);
     }
 }
 
 void osaRobot1394::SetJointEffort(const vctDoubleVec & efforts)
 {
-    vctDoubleVec actuator_efforts(NumberOfActuators_);
-    actuator_efforts = Configuration_.JointToActuatorEffort * efforts;
+    vctDoubleVec actuator_efforts(mNumberOfActuators);
+    actuator_efforts = mConfiguration.JointToActuatorEffort * efforts;
     this->SetActuatorEffort(actuator_efforts);
 }
 
@@ -434,7 +434,7 @@ void osaRobot1394::SetActuatorEffort(const vctDoubleVec & efforts)
 {
     // Convert efforts to bits and set the command
     vctDoubleVec clipped_efforts = efforts;
-    vctDoubleVec currents(NumberOfActuators_);
+    vctDoubleVec currents(mNumberOfActuators);
 
     // this->clip_actuator_efforts(clipped_efforts);
 
@@ -446,33 +446,33 @@ void osaRobot1394::SetActuatorCurrent(const vctDoubleVec & currents)
 {
     // Convert amps to bits and set the command
     vctDoubleVec clipped_amps = currents;
-    vctIntVec bits(NumberOfActuators_);
+    vctIntVec bits(mNumberOfActuators);
 
     this->ClipActuatorCurrent(clipped_amps);
     this->ActuatorCurrentToBits(clipped_amps, bits);
     this->SetActuatorCurrentBits(bits);
 
     // Store commanded amps
-    ActuatorCurrentCommand_ = clipped_amps;
+    mActuatorCurrentCommand = clipped_amps;
 }
 
 void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 {
-    for (size_t i=0; i<NumberOfActuators_; i++) {
-        ActuatorInfo_[i].board->SetMotorCurrent(ActuatorInfo_[i].axis, bits[i]);
+    for (size_t i=0; i<mNumberOfActuators; i++) {
+        mActuatorInfo[i].board->SetMotorCurrent(mActuatorInfo[i].axis, bits[i]);
     }
 
     // Store commanded bits
-    ActuatorCurrentBitsCommand_ = bits;
+    mActuatorCurrentBitsCommand = bits;
 }
 
 void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
 {
-    vctDoubleVec joint_positions(NumberOfJoints_);
-    vctDoubleVec joint_error(NumberOfJoints_);
-    vctDoubleVec actuator_error(NumberOfActuators_);
+    vctDoubleVec joint_positions(mNumberOfJoints);
+    vctDoubleVec joint_error(mNumberOfJoints);
+    vctDoubleVec actuator_error(mNumberOfActuators);
 
-    switch(PotType_) {
+    switch(mPotType) {
 
     case POTENTIOMETER_UNDEFINED:
         // TODO: Return error of some kind?
@@ -480,129 +480,130 @@ void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
         break;
 
     case POTENTIOMETER_ON_JOINTS:
-        joint_positions = Configuration_.ActuatorToJointPosition * EncoderPosition_;
-        joint_error = joint_positions - PotPosition_;
-        actuator_error = Configuration_.JointToActuatorPosition * joint_error;
-        BitsToPositionOffsets_ = BitsToPositionOffsets_ - actuator_error;
+        joint_positions = mConfiguration.ActuatorToJointPosition * mEncoderPosition;
+        joint_error = joint_positions - mPotPosition;
+        actuator_error = mConfiguration.JointToActuatorPosition * joint_error;
+        mBitsToPositionOffsets = mBitsToPositionOffsets - actuator_error;
         break;
 
     case POTENTIOMETER_ON_ACTUATORS:
-        actuator_error = EncoderPosition_ - PotPosition_;
-        BitsToPositionOffsets_ = BitsToPositionOffsets_ - actuator_error;
+        actuator_error = mEncoderPosition - mPotPosition;
+        mBitsToPositionOffsets = mBitsToPositionOffsets - actuator_error;
         break;
     };
 }
 
 bool osaRobot1394::Valid(void) const {
-    return Valid_;
+    return mValid;
 }
 
 bool osaRobot1394::PowerStatus(void) const {
-    return PowerStatus_;
+    return mPowerStatus;
 }
 
 bool osaRobot1394::SafetyRelay(void) const {
-    return SafetyRelay_;
+    return mSafetyRelay;
 }
 
 bool osaRobot1394::WatchdogStatus(void) const {
-    return WatchdogStatus_;
+    return mWatchdogStatus;
 }
 
 const vctBoolVec & osaRobot1394::ActuatorPowerStatus(void) const {
-    return ActuatorPowerStatus_;
+    return mActuatorPowerStatus;
 }
 
 const vctDoubleVec & osaRobot1394::ActuatorCurrentFeedback(void) const {
-    return ActuatorCurrentFeedback_;
+    return mActuatorCurrentFeedback;
 }
 
 const vctDoubleVec & osaRobot1394::PotPosition(void) const {
-    return PotPosition_;
+    return mPotPosition;
 }
 
 const vctDoubleVec & osaRobot1394::TimeStamp(void) const {
-    return TimeStamp_;
+    return mTimeStamp;
 }
 
 const vctDoubleVec & osaRobot1394::EncoderPosition(void) const {
-    return EncoderPosition_;
+    return mEncoderPosition;
 }
 
 const vctDoubleVec & osaRobot1394::EncoderVelocity(void) const {
-    return EncoderVelocity_;
+    return mEncoderVelocity;
 }
 
 osaRobot1394Configuration osaRobot1394::GetConfiguration(void) const {
-    return Configuration_;
+    return mConfiguration;
 }
 
 std::string osaRobot1394::Name(void) const {
-    return Name_;
+    return mName;
 }
 
 double osaRobot1394::NumberOfJoints(void) const {
-    return NumberOfJoints_;
+    return mNumberOfJoints;
 }
 
 double osaRobot1394::NumberOfActuators(void) const {
-    return NumberOfActuators_;
+    return mNumberOfActuators;
 }
 
 void osaRobot1394::GetJointTypes(prmJointTypeVec & joint_types) const
 {
-    joint_types.resize(NumberOfJoints_);
-    for (size_t i = 0; i < NumberOfJoints_; i++) {
-        joint_types[i] = JointType_[i];
+    joint_types.resize(mNumberOfJoints);
+    for (size_t i = 0; i < mNumberOfJoints; i++) {
+        joint_types[i] = mJointType[i];
     }
 }
 void osaRobot1394::GetJointEffortCommandLimits(vctDoubleVec & limits) const
 {
-    limits = JointEffortCommandLimits_;
+    limits = mJointEffortCommandLimits;
 }
 
 void osaRobot1394::GetActuatorEffortCommandLimits(vctDoubleVec & limits) const
 {
-    limits = ActuatorEffortCommandLimits_;
+    limits = mActuatorEffortCommandLimits;
 }
 
 void osaRobot1394::GetActuatorCurrentCommandLimits(vctDoubleVec & limits) const
 {
-    limits = ActuatorCurrentCommandLimits_;
+    limits = mActuatorCurrentCommandLimits;
 }
-
-
-
 
 void osaRobot1394::EncoderPositionToBits(const vctDoubleVec & pos, vctIntVec & bits) const {
     for (size_t i = 0; i < bits.size() && i < pos.size(); i++) {
-        bits[i] = static_cast<long>((pos[i] - BitsToPositionOffsets_[i]) / BitsToPositionScales_[i]);
+        bits[i] = static_cast<long>((pos[i] - mBitsToPositionOffsets[i]) / mBitsToPositionScales[i]);
     }
 }
+
 void osaRobot1394::EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & pos) const {
     for (size_t i = 0; i < bits.size() && i < pos.size(); i++) {
-        pos[i] = static_cast<double>(bits[i]) * BitsToPositionScales_[i] + BitsToPositionOffsets_[i];
+        pos[i] = static_cast<double>(bits[i]) * mBitsToPositionScales[i] + mBitsToPositionOffsets[i];
     }
 }
+
 void osaRobot1394::EncoderBitsToDPosition(const vctIntVec & bits, vctDoubleVec & dpos) const {
     for (size_t i = 0; i < bits.size() && i < dpos.size(); i++) {
-        dpos[i] = static_cast<double>(bits[i]) * BitsToDPositionScales_[i] + BitsToDPositionOffsets_[i];
+        dpos[i] = static_cast<double>(bits[i]) * mBitsToDPositionScales[i] + mBitsToDPositionOffsets[i];
     }
 }
+
 void osaRobot1394::EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & dt) const {
     for (size_t i = 0; i < bits.size() && i < dt.size(); i++) {
-        dt[i] = static_cast<double>(bits[i]) * BitsToDTimeScales_[i] + BitsToDTimeOffsets_[i];
+        dt[i] = static_cast<double>(bits[i]) * mBitsToDTimeScales[i] + mBitsToDTimeOffsets[i];
     }
 }
+
 void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const
 {
     const int method = 1;
-    switch(method){
+    switch(method) {
     case 1:
         // estimation in FPGA
         // NOTE: BitsToVecocityScales, BitsToVelocityOffsets = 0
         for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
-            vel[i] = BitsToDPositionScales_[i] / static_cast<double>(bits[i]);
+            vel[i] = mBitsToDPositionScales[i] / static_cast<double>(bits[i]);
             if ((vel[i] < 0.001) && vel[i] > -0.001) {
                 vel[i] = 0.0;
             }
@@ -618,29 +619,34 @@ void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & 
         std::cerr << "Unknown conversion methods chosen" << std::endl;
     }
 }
+
 void osaRobot1394::ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const {
-    currents.ElementwiseProductOf(efforts, EffortToCurrentScales_);
+    currents.ElementwiseProductOf(efforts, mEffortToCurrentScales);
 }
+
 void osaRobot1394::ActuatorCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const {
     for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
-        bits[i] = static_cast<long>(currents[i] * CurrentToBitsScales_[i] + CurrentToBitsOffsets_[i]);
+        bits[i] = static_cast<long>(currents[i] * mCurrentToBitsScales[i] + mCurrentToBitsOffsets[i]);
     }
 }
+
 void osaRobot1394::ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & currents) const {
     for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
-        currents[i] = static_cast<double>(bits[i]) * BitsToCurrentScales_[i] + BitsToCurrentOffsets_[i];
+        currents[i] = static_cast<double>(bits[i]) * mBitsToCurrentScales[i] + mBitsToCurrentOffsets[i];
     }
 }
+
 void osaRobot1394::ActuatorCurrentToEffort(const vctDoubleVec & currents, vctDoubleVec & efforts) const {
-    efforts.ElementwiseProductOf(currents, EffortToCurrentScales_);
+    efforts.ElementwiseProductOf(currents, mEffortToCurrentScales);
 }
 
 void osaRobot1394::PotBitsToVoltage(const vctIntVec & bits, vctDoubleVec & voltages) const {
     for (size_t i = 0; i < bits.size() && i < voltages.size(); i++) {
-        voltages[i] = static_cast<double>(bits[i]) * BitsToVoltageScales_[i] + BitsToVoltageOffsets_[i];
+        voltages[i] = static_cast<double>(bits[i]) * mBitsToVoltageScales[i] + mBitsToVoltageOffsets[i];
     }
 }
+
 void osaRobot1394::PotVoltageToPosition(const vctDoubleVec & voltages, vctDoubleVec & pos) const {
-    pos.ElementwiseProductOf(voltages, VoltageToPositionScales_);
-    pos.SumOf(pos, VoltageToPositionOffsets_);
+    pos.ElementwiseProductOf(voltages, mVoltageToPositionScales);
+    pos.SumOf(pos, mVoltageToPositionOffsets);
 }

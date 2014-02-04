@@ -166,96 +166,96 @@ namespace sawRobotIO1394 {
         void ClipActuatorCurrent(vctDoubleVec & currents);
 
         //! Board Objects
-        std::vector<osaActuatorMapping> ActuatorInfo_;
-        std::map<int, AmpIO*> UniqueBoards_;
+        std::vector<osaActuatorMapping> mActuatorInfo;
+        std::map<int, AmpIO*> mUniqueBoards;
         typedef std::map<int, AmpIO*>::iterator unique_board_iterator;
         typedef std::map<int, AmpIO*>::const_iterator unique_board_const_iterator;
 
         //! Robot Configuration
-        osaRobot1394Configuration Configuration_;
-        std::string Name_;
-        size_t NumberOfActuators_;
-        size_t NumberOfJoints_;
+        osaRobot1394Configuration mConfiguration;
+        std::string mName;
+        size_t mNumberOfActuators;
+        size_t mNumberOfJoints;
 
         //! Vectors of actuator properties
         vctIntVec
-            CountsPerTurn_;
+            mCountsPerTurn;
 
         vctDoubleVec
-            EffortToCurrentScales_,
-            CurrentToBitsScales_,
-            CurrentToBitsOffsets_,
-            BitsToCurrentScales_,
-            BitsToCurrentOffsets_,
-            BitsToPositionScales_,
-            BitsToPositionOffsets_,
-            BitsToDPositionScales_,
-            BitsToDPositionOffsets_,
-            BitsToDTimeScales_,
-            BitsToDTimeOffsets_,
-            BitsToVecocityScales_,
-            BitsToVelocityOffsets_,
-            BitsToVoltageScales_,
-            BitsToVoltageOffsets_,
-            VoltageToPositionScales_,
-            VoltageToPositionOffsets_;
+            mEffortToCurrentScales,
+            mCurrentToBitsScales,
+            mCurrentToBitsOffsets,
+            mBitsToCurrentScales,
+            mBitsToCurrentOffsets,
+            mBitsToPositionScales,
+            mBitsToPositionOffsets,
+            mBitsToDPositionScales,
+            mBitsToDPositionOffsets,
+            mBitsToDTimeScales,
+            mBitsToDTimeOffsets,
+            mBitsToVecocityScales,
+            mBitsToVelocityOffsets,
+            mBitsToVoltageScales,
+            mBitsToVoltageOffsets,
+            mVoltageToPositionScales,
+            mVoltageToPositionOffsets;
 
         vctDoubleVec
-            JointEffortCommandLimits_,
-            ActuatorEffortCommandLimits_,
-            ActuatorCurrentCommandLimits_,
-            ActuatorCurrentFeedbackLimits_;
+            mJointEffortCommandLimits,
+            mActuatorEffortCommandLimits,
+            mActuatorCurrentCommandLimits,
+            mActuatorCurrentFeedbackLimits;
 
         //! Robot type
-        prmJointTypeVec JointType_;
-        osaPot1394Location PotType_;
+        prmJointTypeVec mJointType;
+        osaPot1394Location mPotType;
 
         //! State Members
         bool
-            Valid_,
-            PowerStatus_,
-            PreviousPowerStatus_,
-            WatchdogStatus_,
-            PreviousWatchdogStatus_;
+            mValid,
+            mPowerStatus,
+            mPreviousPowerStatus,
+            mWatchdogStatus,
+            mPreviousWatchdogStatus;
 
-        unsigned short SafetyRelay_;
+        unsigned short mSafetyRelay;
 
         vctBoolVec
-            ActuatorPowerStatus_,
-            ActuatorPowerEnabled_,
-            DigitalInputs_;
+            mActuatorPowerStatus,
+            mActuatorPowerEnabled,
+            mDigitalInputs;
 
         vctIntVec
-            PotBits_,
-            EncoderPositionBits_,
-            EncoderVelocityBits_,
-            EncoderDPositionBits_,
-            EncoderDTimeBits_;
+            mPotBits,
+            mEncoderPositionBits,
+            mEncoderVelocityBits,
+            mEncoderDPositionBits,
+            mEncoderDTimeBits;
 
         vctIntVec
-            ActuatorCurrentBitsCommand_,
-            ActuatorCurrentBitsFeedback_;
+            mActuatorCurrentBitsCommand,
+            mActuatorCurrentBitsFeedback;
 
         vctDoubleVec
-            TimeStamp_,
-            PotVoltage_,
-            PotPosition_,
-            EncoderPosition_,
-            EncoderPositionPrev_,
-            EncoderVelocity_,
-            EncoderDPosition_,
-            EncoderDTime_,
-            JointPosition_,
-            JointVelocity_,
-            ActuatorCurrentCommand_,
-            ActuatorEffortCommand_,
-            ActuatorCurrentFeedback_,
-            ActuatorEffortFeedback_,
-            Temperature_;
+            mTimeStamp,
+            mPotVoltage,
+            mPotPosition,
+            mEncoderPosition,
+            mEncoderPositionPrev,
+            mEncoderVelocity,
+            mEncoderDPosition,
+            mEncoderDTime,
+            mJointPosition,
+            mJointVelocity,
+            mActuatorCurrentCommand,
+            mActuatorEffortCommand,
+            mActuatorCurrentFeedback,
+            mActuatorEffortFeedback,
+            mTemperature;
 
         size_t
-            CurrentSafetyViolationsCounter_,
-            CurrentSafetyViolationsMaximum_;
+            mCurrentSafetyViolationsCounter,
+            mCurrentSafetyViolationsMaximum;
     };
 
 } // namespace sawRobotIO1394

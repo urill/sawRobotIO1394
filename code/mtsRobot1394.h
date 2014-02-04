@@ -7,7 +7,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -78,13 +78,13 @@ namespace sawRobotIO1394 {
         void ResetSingleEncoder(const int & index);
 
     protected:
-        mtsStateTable * StateTableRead_;
-        mtsStateTable * StateTableWrite_;
+        mtsStateTable * mStateTableRead;
+        mtsStateTable * mStateTableWrite;
 
-        prmForceTorqueJointSet TorqueJoint_;
-        prmPositionJointGet PositionJointGet_;
-        prmPositionJointGet PositionActuatorGet_;
-        prmVelocityJointGet VelocityJointGet_;
+        prmForceTorqueJointSet mTorqueJoint;
+        prmPositionJointGet mPositionJointGet;
+        prmPositionJointGet mPositionActuatorGet;
+        prmVelocityJointGet mVelocityJointGet;
 
         // Functions for events
         struct {
