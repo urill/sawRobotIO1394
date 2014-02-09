@@ -327,6 +327,8 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
         UpdateRobotInfo();
     }
+
+    // ZC: FIX turn of if pid loop exists
     Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
 }
 
