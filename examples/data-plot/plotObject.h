@@ -38,39 +38,37 @@ class plotObject: public QObject
     Q_OBJECT;
 public:
     plotObject(sawRobotIO1394::osaPort1394 * port,
-               sawRobotIO1394::osaRobot1394 * robot);
+               sawRobotIO1394::osaRobot1394 * robot,
+               int actuatorIndex);
 
 private slots:
     void timerEvent(QTimerEvent * CMN_UNUSED(event));
 
 protected:
-    QFrame * Frame;
-    QVBoxLayout * Layout;
-    vctPlot2DOpenGLQtWidget * Plot;
-    vctPlot2DBase::Scale * VelocityScale;
-    vctPlot2DBase::Signal * ZeroVelocity;
-    vctPlot2DBase::Signal * EncoderDtSignal;
-    vctPlot2DBase::Signal * EncoderDxSignal;
-    vctPlot2DBase::Signal * EncoderDxFilteredSignal;
-    vctPlot2DBase::Signal * PotDxSignal;
+    QFrame * mFrame;
+    QVBoxLayout * mLayout;
+    vctPlot2DOpenGLQtWidget * mPlot;
+    vctPlot2DBase::Scale * mVelocityScale;
+    vctPlot2DBase::Signal * mZeroVelocity;
+    vctPlot2DBase::Signal * mEncoderDtSignal;
+    vctPlot2DBase::Signal * mEncoderDxSignal;
+    vctPlot2DBase::Signal * mEncoderDxFilteredSignal;
+    vctPlot2DBase::Signal * mPotDxSignal;
 
-    sawRobotIO1394::osaPort1394 * Port;
-    sawRobotIO1394::osaRobot1394 * Robot;
+    sawRobotIO1394::osaPort1394 * mPort;
+    sawRobotIO1394::osaRobot1394 * mRobot;
+    int mActuatorIndex;
 
-    double ElapsedTime;
-    int ActuatorIndex;
-    vctDoubleVec PreviousEncoderPosition;
-    vctDoubleVec EncoderDx;
-    vctDoubleVec PreviousPotPosition;
-    vctDoubleVec PotDx;
+    double mElapsedTime;
+    vctDoubleVec mPreviousEncoderPosition;
+    vctDoubleVec mEncoderDx;
+    vctDoubleVec mPreviousPotPosition;
+    vctDoubleVec mPotDx;
 
-    size_t FilterSize;
-    vctDoubleVec SavitzkyGolayCoeff;
-    vctDoubleVec History;
-    vctDoubleVec FilterElementwiseProduct;
-
-protected slots:
-    //    void DoubleTextValueChangedSlot(void);
+    size_t mFilterSize;
+    vctDoubleVec mSavitzkyGolayCoeff;
+    vctDoubleVec mHistory;
+    vctDoubleVec mFilterElementwiseProduct;
 };
 
 #endif // _plotObject_h

@@ -22,99 +22,100 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstNumerical/nmrSavitzkyGolay.h>
 
 plotObject::plotObject(sawRobotIO1394::osaPort1394 * port,
-                       sawRobotIO1394::osaRobot1394 * robot):
-    Port(port),
-    Robot(robot),
-    ElapsedTime(0.0),
-    ActuatorIndex(5),
-    FilterSize(15)
+                       sawRobotIO1394::osaRobot1394 * robot,
+                       int actuatorIndex):
+    mPort(port),
+    mRobot(robot),
+    mActuatorIndex(actuatorIndex),
+    mElapsedTime(0.0),
+    mFilterSize(6)
 {
-    SavitzkyGolayCoeff = nmrSavitzkyGolay(2, // 4 degrees polynomial
+    mSavitzkyGolayCoeff = nmrSavitzkyGolay(2, // 4 degrees polynomial
                                           0, // no derivative
-                                          FilterSize - 1, // nb left samples
+                                          mFilterSize - 1, // nb left samples
                                           0 // nb right samples
                                           );
 
-    History.SetSize(FilterSize);
-    History.SetAll(0.0);
-    FilterElementwiseProduct.SetSize(FilterSize);
+    mHistory.SetSize(mFilterSize);
+    mHistory.SetAll(0.0);
+    mFilterElementwiseProduct.SetSize(mFilterSize);
 
-    Frame = new QFrame();
-    Layout = new QVBoxLayout();
+    mFrame = new QFrame();
+    mLayout = new QVBoxLayout();
 
-    Plot = new vctPlot2DOpenGLQtWidget();
-    Layout->addWidget(Plot);
+    mPlot = new vctPlot2DOpenGLQtWidget();
+    mLayout->addWidget(mPlot);
 
-    VelocityScale = Plot->AddScale("encoder-velocities");
+    mVelocityScale = mPlot->AddScale("encoder-velocities");
 
-    EncoderDtSignal = VelocityScale->AddSignal("encoder-dt");
-    EncoderDtSignal->SetColor(vct3(1.0, 0.0, 0.0));
+    mEncoderDtSignal = mVelocityScale->AddSignal("encoder-dt");
+    mEncoderDtSignal->SetColor(vct3(1.0, 0.0, 0.0));
     std::cout << "red:   encoder-dt" << std::endl;
 
-    EncoderDxSignal = VelocityScale->AddSignal("encoder-dx");
-    EncoderDxSignal->SetColor(vct3(0.0, 1.0, 0.0));
+    mEncoderDxSignal = mVelocityScale->AddSignal("encoder-dx");
+    mEncoderDxSignal->SetColor(vct3(0.0, 1.0, 0.0));
     std::cout << "green: encoder-dx" << std::endl;
 
-    EncoderDxFilteredSignal = VelocityScale->AddSignal("encoder-dx-filtered");
-    EncoderDxFilteredSignal->SetColor(vct3(7.0, 7.0, 0.0));
-    std::cout << "dark green: encoder-dx-filtered" << std::endl;
+    mEncoderDxFilteredSignal = mVelocityScale->AddSignal("encoder-dx-filtered");
+    mEncoderDxFilteredSignal->SetColor(vct3(7.0, 7.0, 0.0));
+    std::cout << "yellow: encoder-dx-filtered" << std::endl;
 
-    PotDxSignal = VelocityScale->AddSignal("pot-dx");
-    PotDxSignal->SetColor(vct3(1.0, 1.0, 1.0));
+    mPotDxSignal = mVelocityScale->AddSignal("pot-dx");
+    mPotDxSignal->SetColor(vct3(1.0, 1.0, 1.0));
     std::cout << "white: pot-dx" << std::endl;
 
-    ZeroVelocity = VelocityScale->AddSignal("zero");
-    ZeroVelocity->SetColor(vct3(0.2, 0.2, 0.2));
+    mZeroVelocity = mVelocityScale->AddSignal("zero");
+    mZeroVelocity->SetColor(vct3(0.2, 0.2, 0.2));
     std::cout << "gray:  zero" << std::endl;
 
-    Frame->setLayout(Layout);
-    Frame->resize(1200, 600);
-    Frame->show();
+    mFrame->setLayout(mLayout);
+    mFrame->resize(1200, 600);
+    mFrame->show();
 
-    PreviousEncoderPosition.ForceAssign(Robot->EncoderPosition());
-    PreviousPotPosition.ForceAssign(Robot->PotPosition());
+    mPreviousEncoderPosition.ForceAssign(mRobot->EncoderPosition());
+    mPreviousPotPosition.ForceAssign(mRobot->PotPosition());
 
-    startTimer(1); // in ms
+    startTimer(0); // in ms, 0 is as fast as possible
 }
 
 void plotObject::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
-    Port->Read();
+    mPort->Read();
     // get time and plot 0 value
-    ElapsedTime += Robot->TimeStamp()[ActuatorIndex];
-    ZeroVelocity->AppendPoint(vct2(ElapsedTime, 0.005)); // slight offset to avoid overlap
+    mElapsedTime += mRobot->TimeStamp()[mActuatorIndex];
+    mZeroVelocity->AppendPoint(vct2(mElapsedTime, 0.005)); // slight offset to avoid overlap
 
     // encoder dt
-    EncoderDtSignal->AppendPoint(vct2(ElapsedTime,
-                                     Robot->EncoderVelocity()[ActuatorIndex]));
+    mEncoderDtSignal->AppendPoint(vct2(mElapsedTime,
+                                       mRobot->EncoderVelocity()[mActuatorIndex] + 1.0));
     // encoder velocity dx / dt
-    EncoderDx.ForceAssign(Robot->EncoderPosition());
-    EncoderDx.Subtract(PreviousEncoderPosition);
-    EncoderDx.ElementwiseDivide(Robot->TimeStamp());
-    EncoderDxSignal->AppendPoint((vct2(ElapsedTime,
-                                       EncoderDx[ActuatorIndex])));
+    mEncoderDx.ForceAssign(mRobot->EncoderPosition());
+    mEncoderDx.Subtract(mPreviousEncoderPosition);
+    mEncoderDx.ElementwiseDivide(mRobot->TimeStamp());
+    mEncoderDxSignal->AppendPoint((vct2(mElapsedTime,
+                                        mEncoderDx[mActuatorIndex])));
 
     // filtered dx / dt
     // update history
-    for (size_t index = 1; index < FilterSize; ++index) {
-        History[index - 1] = History[index];
+    for (size_t index = 1; index < mFilterSize; ++index) {
+        mHistory[index - 1] = mHistory[index];
     }
-    History[FilterSize - 1] = EncoderDx[ActuatorIndex];
+    mHistory[mFilterSize - 1] = mEncoderDx[mActuatorIndex];
     // apply filter
-    FilterElementwiseProduct.ElementwiseProductOf(SavitzkyGolayCoeff, History);
-    EncoderDxFilteredSignal->AppendPoint(vct2(ElapsedTime, FilterElementwiseProduct.SumOfElements()));
+    mFilterElementwiseProduct.ElementwiseProductOf(mSavitzkyGolayCoeff, mHistory);
+    mEncoderDxFilteredSignal->AppendPoint(vct2(mElapsedTime, mFilterElementwiseProduct.SumOfElements()));
 
     // pot velocity dx / dt
-    PotDx.ForceAssign(Robot->PotPosition());
-    PotDx.Subtract(PreviousPotPosition);
-    PotDx.ElementwiseDivide(Robot->TimeStamp());
-    PotDxSignal->AppendPoint((vct2(ElapsedTime,
-                                   PotDx[ActuatorIndex])));
+    mPotDx.ForceAssign(mRobot->PotPosition());
+    mPotDx.Subtract(mPreviousPotPosition);
+    mPotDx.ElementwiseDivide(mRobot->TimeStamp());
+    mPotDxSignal->AppendPoint((vct2(mElapsedTime,
+                                    mPotDx[mActuatorIndex])));
 
     // update plot
-    Plot->updateGL();
+    mPlot->updateGL();
 
     // save previous state
-    PreviousEncoderPosition.Assign(Robot->EncoderPosition());
-    PreviousPotPosition.Assign(Robot->PotPosition());
+    mPreviousEncoderPosition.Assign(mRobot->EncoderPosition());
+    mPreviousPotPosition.Assign(mRobot->PotPosition());
 }

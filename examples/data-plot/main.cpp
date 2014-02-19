@@ -40,10 +40,14 @@ int main(int argc, char * argv[])
 {
     cmnCommandLineOptions options;
     int portNumber = 0;
+    int actuatorIndex = 0;
     std::string configFile;
     options.AddOptionOneValue("c", "config",
                               "configuration file",
                               cmnCommandLineOptions::REQUIRED, &configFile);
+    options.AddOptionOneValue("a", "actuator",
+                              "actuator index",
+                              cmnCommandLineOptions::OPTIONAL, &actuatorIndex);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL, &portNumber);
@@ -81,7 +85,7 @@ int main(int argc, char * argv[])
     port->AddRobot(robot);
 
     QApplication application(argc, argv);
-    plotObject * plot = new plotObject(port, robot);
+    plotObject * plot = new plotObject(port, robot, actuatorIndex);
 
     application.exec();
 
