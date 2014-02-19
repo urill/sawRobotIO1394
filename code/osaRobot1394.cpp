@@ -250,11 +250,26 @@ void osaRobot1394::ConvertState(void)
 {
     // Perform read conversions
     EncoderBitsToPosition(mEncoderPositionBits, mEncoderPosition);
-    mJointPosition = mConfiguration.ActuatorToJointPosition * mEncoderPosition;
+    mJointPosition.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
 
-    // Use vel estimation from FPGA
-    EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);
-    mJointVelocity = mConfiguration.ActuatorToJointPosition * mEncoderVelocity;
+    // Velocity computation
+    const int mode = 1;
+    switch (mode) {
+    case 0:
+        // use vel estimation from FPGA
+        EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);
+        mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
+        break;
+    case 1:
+        // use encoder position divided by time
+        mEncoderVelocity.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
+        mEncoderVelocity.ElementwiseDivide(mTimeStamp);
+        mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
+        break;
+    default:
+        abort();
+        break;
+    }
 
     ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
     ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
@@ -480,15 +495,15 @@ void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
         break;
 
     case POTENTIOMETER_ON_JOINTS:
-        joint_positions = mConfiguration.ActuatorToJointPosition * mEncoderPosition;
-        joint_error = joint_positions - mPotPosition;
-        actuator_error = mConfiguration.JointToActuatorPosition * joint_error;
-        mBitsToPositionOffsets = mBitsToPositionOffsets - actuator_error;
+        joint_positions.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
+        joint_error.DifferenceOf(joint_positions, mPotPosition);
+        actuator_error.ProductOf(mConfiguration.JointToActuatorPosition, joint_error);
+        mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuator_error);
         break;
 
     case POTENTIOMETER_ON_ACTUATORS:
-        actuator_error = mEncoderPosition - mPotPosition;
-        mBitsToPositionOffsets = mBitsToPositionOffsets - actuator_error;
+        actuator_error.DifferenceOf(mEncoderPosition, mPotPosition);
+        mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuator_error);
         break;
     };
 }
@@ -597,26 +612,12 @@ void osaRobot1394::EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & dt)
 
 void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const
 {
-    const int method = 1;
-    switch(method) {
-    case 1:
-        // estimation in FPGA
-        // NOTE: BitsToVecocityScales, BitsToVelocityOffsets = 0
-        for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
-            vel[i] = mBitsToDPositionScales[i] / static_cast<double>(bits[i]);
-            if ((vel[i] < 0.001) && vel[i] > -0.001) {
-                vel[i] = 0.0;
-            }
+    // NOTE: BitsToVecocityScales, BitsToVelocityOffsets = 0
+    for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
+        vel[i] = mBitsToDPositionScales[i] / static_cast<double>(bits[i]);
+        if ((vel[i] < 0.001) && vel[i] > -0.001) {
+            vel[i] = 0.0;
         }
-        break;
-    case 2:
-        // diff averaged pot
-        break;
-    case 3:
-        // savitzky-golay filtering
-        break;
-    default:
-        std::cerr << "Unknown conversion methods chosen" << std::endl;
     }
 }
 
