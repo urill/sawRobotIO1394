@@ -6,7 +6,7 @@
   Author(s):  Zihan Chen
   Created on: 2013-02-07
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -52,13 +52,13 @@ int main(int argc, char ** argv)
     std::string robotName = "Robot";
     options.AddOptionOneValue("c", "config",
                               "configuration file",
-                              cmnCommandLineOptions::REQUIRED, &configFile);
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL, &port);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &port);
     options.AddOptionOneValue("n", "name",
                               "robot name",
-                              cmnCommandLineOptions::OPTIONAL, &robotName);
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &robotName);
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
