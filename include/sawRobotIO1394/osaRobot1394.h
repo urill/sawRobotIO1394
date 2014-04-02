@@ -216,7 +216,8 @@ namespace sawRobotIO1394 {
             mPowerStatus,
             mPreviousPowerStatus,
             mWatchdogStatus,
-            mPreviousWatchdogStatus;
+            mPreviousWatchdogStatus,
+            mIsAllBoardsFirmWareFour;
 
         unsigned short mSafetyRelay;
 
@@ -228,7 +229,8 @@ namespace sawRobotIO1394 {
         vctIntVec
             mPotBits,
             mEncoderPositionBits,
-            mEncoderVelocityBits,
+            mEncoderVelocityBits,     // latched velocity
+            mEncoderVelocityBitsNow,  // current counting velocity bits
             mEncoderDPositionBits,
             mEncoderDTimeBits;
 
@@ -243,6 +245,7 @@ namespace sawRobotIO1394 {
             mEncoderPosition,
             mEncoderPositionPrev,
             mEncoderVelocity,
+            mEncoderVelocityDxDt,
             mEncoderDPosition,
             mEncoderDTime,
             mJointPosition,

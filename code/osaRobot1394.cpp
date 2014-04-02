@@ -70,6 +70,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mPotBits.resize(mNumberOfActuators);
     mEncoderPositionBits.resize(mNumberOfActuators);
     mEncoderVelocityBits.resize(mNumberOfActuators);
+    mEncoderVelocityBitsNow.resize(mNumberOfActuators);
     mActuatorCurrentBitsCommand.resize(mNumberOfActuators);
     mActuatorCurrentBitsFeedback.resize(mNumberOfActuators);
     mTimeStamp.resize(mNumberOfActuators);
@@ -78,6 +79,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mEncoderPosition.resize(mNumberOfActuators);
     mEncoderPositionPrev.resize(mNumberOfActuators);
     mEncoderVelocity.resize(mNumberOfActuators);
+    mEncoderVelocityDxDt.resize(mNumberOfActuators);
     mJointPosition.resize(mNumberOfJoints);
     mJointVelocity.resize(mNumberOfJoints);
     mActuatorCurrentCommand.resize(mNumberOfActuators);
@@ -175,6 +177,17 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & boards)
         // Construct a list of unique boards
         mUniqueBoards[boards[i].board->GetBoardId()] = boards[i].board;
     }
+
+    mIsAllBoardsFirmWareFour = true;
+    for (unique_board_iterator board = mUniqueBoards.begin();
+         board != mUniqueBoards.end();
+         ++board) {
+        AmpIO_UInt32 fversion = board->second->GetFirmwareVersion();
+        if (fversion < 4) {
+            mIsAllBoardsFirmWareFour = false;
+            break;
+        }
+    }
 }
 
 void osaRobot1394::PollValidity(void)
@@ -230,9 +243,9 @@ void osaRobot1394::PollState(void)
         mDigitalInputs[i] = board->GetDigitalInput();
 
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
-        mEncoderPositionBits[i] = ((int)(board->GetEncoderPosition(axis) << 8)) >> 8;
-        // convert from 16 bits signed stored in 32 unsigned to 32 signed
-        mEncoderVelocityBits[i] = ((int)(board->GetEncoderVelocity(axis) << 16)) >> 16;
+        mEncoderPositionBits[i] = ((int32_t)(board->GetEncoderPosition(axis) << 8)) >> 8;
+        mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
+        mEncoderVelocityBitsNow[i] = board->GetEncoderVelocity(axis, false);
 
         mPotBits[i] = board->GetAnalogInput(axis);
 
@@ -253,23 +266,17 @@ void osaRobot1394::ConvertState(void)
     mJointPosition.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
 
     // Velocity computation
-    const int mode = 1;
-    switch (mode) {
-    case 0:
-        // use vel estimation from FPGA
-        EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);
-        mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
-        break;
-    case 1:
-        // use encoder position divided by time
-        mEncoderVelocity.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
-        mEncoderVelocity.ElementwiseDivide(mTimeStamp);
-        mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
-        break;
-    default:
-        abort();
-        break;
+    // compute both
+    EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);   // 1/dt
+    mEncoderVelocityDxDt.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
+    mEncoderVelocityDxDt.ElementwiseDivide(mTimeStamp);              // dx/dt
+
+    for (unsigned int i = 0; i < mEncoderVelocity.size(); i++) {
+        int cnter = abs((((int32_t) mEncoderVelocityBits[i]) << 16) >> 16);
+        if (cnter < 100)
+            mEncoderVelocity[i] = mEncoderVelocityDxDt[i];
     }
+    mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
 
     ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
     ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
@@ -612,11 +619,27 @@ void osaRobot1394::EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & dt)
 
 void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const
 {
-    // NOTE: BitsToVecocityScales, BitsToVelocityOffsets = 0
-    for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
-        vel[i] = mBitsToDPositionScales[i] / static_cast<double>(bits[i]);
-        if ((vel[i] < 0.001) && vel[i] > -0.001) {
+    int tmpbit, cnter_latch, cnter_now;
+    for (size_t i = 0; i < mEncoderVelocityBits.size() && i < vel.size(); i++)
+    {
+        if (mEncoderVelocityBits[i] == 0x8000 || mEncoderVelocityBitsNow[i] == 0x8000) {
             vel[i] = 0.0;
+        } else {
+            // convert to signed
+            cnter_latch = ((((int32_t) mEncoderVelocityBits[i]) << 16) >> 16);
+            cnter_now = ((((int32_t) mEncoderVelocityBitsNow[i]) << 16) >> 16);
+
+            tmpbit = cnter_latch;
+            if (mIsAllBoardsFirmWareFour) {
+                if (cnter_now > cnter_latch && cnter_latch > 0) {
+                    tmpbit = cnter_now;
+                }
+                else if (cnter_now < cnter_latch && cnter_latch < 0) {
+                    tmpbit = cnter_now;
+                }
+            }
+            if (tmpbit == 0) vel[i] = 0.0;
+            else vel[i] = mBitsToDPositionScales[i] / static_cast<double>(tmpbit);
         }
     }
 }
