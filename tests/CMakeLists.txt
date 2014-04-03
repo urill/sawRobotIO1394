@@ -1,5 +1,4 @@
 #
-# $Id$
 #
 # CMakeLists for sawRobotIO1394 tests
 #
