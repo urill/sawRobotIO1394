@@ -27,8 +27,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstMultiTask/mtsComponent.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
 
-#include <QtCore>
-#include <QtGui>
+#include <QWidget>
+#include <QCheckBox>
+#include <QPushButton>
+#include <QDoubleSpinBox>
 
 /*!
   \todo maybe rename this class to mtsRobotIO1394{Robot,DigitalInputs,Log}QtWidget and create using mtsRobotIO1394FactoryQtWidget

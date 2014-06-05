@@ -23,7 +23,10 @@ http://www.cisst.org/cisst/license.txt.
 
 // Qt include
 #include <QString>
-#include <QtGui>
+#include <QMessageBox>
+#include <QCloseEvent>
+#include <QCoreApplication>
+#include <QTime>
 
 // project include
 #include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>

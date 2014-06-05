@@ -33,6 +33,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawROS/mtsROSBridge.h>
 #endif
 
+// Qt includes
+#include <QApplication>
 
 int main(int argc, char ** argv)
 {

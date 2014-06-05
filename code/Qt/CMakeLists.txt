@@ -1,6 +1,6 @@
 #
 #
-# (C) Copyright 2013 Johns Hopkins University (JHU), All Rights
+# (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights
 # Reserved.
 #
 # --- begin cisst license - do not edit ---
@@ -34,8 +34,13 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # for Qt generated header files
   include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  qt4_wrap_cpp (SAW_ROBOTIO1394_QT_WRAP_CPP
-                ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394QtWidget.h)
+  if (CISST_HAS_QT4)
+    qt4_wrap_cpp (SAW_ROBOTIO1394_QT_WRAP_CPP
+                  ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394QtWidget.h)
+  else (CISST_HAS_QT4)
+    set (CMAKE_AUTOMOC ON)
+  endif (CISST_HAS_QT4)
+
   add_library (sawRobotIO1394Qt
                ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394QtWidget.h
                mtsRobotIO1394QtWidget.cpp
@@ -44,6 +49,9 @@ if (cisst_FOUND_AS_REQUIRED)
                ${SAW_ROBOTIO1394_QT_WRAP_CPP})
   set_property (TARGET sawRobotIO1394Qt PROPERTY FOLDER "sawRobotIO1394")
   cisst_target_link_libraries (sawRobotIO1394Qt ${REQUIRED_CISST_LIBRARIES})
+  if (CISST_HAS_QT5)
+    qt5_use_modules (sawRobotIO1394Qt Core Widgets)
+  endif (CISST_HAS_QT5)
 
   # make sure the new library is known by the parent folder to add to the config file
   set (sawRobotIO1394Qt_LIBRARIES sawRobotIO1394Qt PARENT_SCOPE)
