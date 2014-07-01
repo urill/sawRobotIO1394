@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen
   Created on: 2012-07-20
 
@@ -20,7 +19,6 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mtsRobotIO1394QtWidget_h
 #define _mtsRobotIO1394QtWidget_h
 
-#include <cisstCommonXML.h>
 #include <cisstOSAbstraction/osaTimeServer.h>
 #include <cisstVector/vctQtWidgetDynamicVector.h>
 #include <cisstMultiTask/mtsQtWidgetIntervalStatistics.h>
