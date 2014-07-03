@@ -49,9 +49,6 @@ if (cisst_FOUND_AS_REQUIRED)
                ${SAW_ROBOTIO1394_QT_WRAP_CPP})
   set_property (TARGET sawRobotIO1394Qt PROPERTY FOLDER "sawRobotIO1394")
   cisst_target_link_libraries (sawRobotIO1394Qt ${REQUIRED_CISST_LIBRARIES})
-  if (CISST_HAS_QT5)
-    qt5_use_modules (sawRobotIO1394Qt Core Widgets)
-  endif (CISST_HAS_QT5)
 
   # make sure the new library is known by the parent folder to add to the config file
   set (sawRobotIO1394Qt_LIBRARIES sawRobotIO1394Qt PARENT_SCOPE)

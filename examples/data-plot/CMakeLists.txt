@@ -53,9 +53,6 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawRobotIO1394QtDataPlot ${REQUIRED_CISST_LIBRARIES})
-    if (CISST_HAS_QT5)
-      qt5_use_modules (sawRobotIO1394QtDataPlot Core Widgets OpenGL)
-    endif (CISST_HAS_QT5)
 
   endif (sawRobotIO1394_FOUND)
 
