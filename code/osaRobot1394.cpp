@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren
   Created on: 2011-06-10
 
@@ -63,57 +62,59 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mActuatorInfo.resize(mNumberOfActuators);
 
     // Initialize state vectors to the appropriate sizes
-    mActuatorPowerStatus.resize(mNumberOfActuators);
-    mActuatorPowerEnabled.resize(mNumberOfActuators);
-    mDigitalInputs.resize(mNumberOfActuators);
-    mPotBits.resize(mNumberOfActuators);
-    mEncoderPositionBits.resize(mNumberOfActuators);
-    mEncoderVelocityBits.resize(mNumberOfActuators);
-    mEncoderVelocityBitsNow.resize(mNumberOfActuators);
-    mActuatorCurrentBitsCommand.resize(mNumberOfActuators);
-    mActuatorCurrentBitsFeedback.resize(mNumberOfActuators);
-    mTimeStamp.resize(mNumberOfActuators);
-    mPotVoltage.resize(mNumberOfActuators);
-    mPotPosition.resize(mNumberOfActuators);
-    mEncoderPosition.resize(mNumberOfActuators);
-    mEncoderPositionPrev.resize(mNumberOfActuators);
-    mEncoderVelocity.resize(mNumberOfActuators);
-    mEncoderVelocityDxDt.resize(mNumberOfActuators);
-    mJointPosition.resize(mNumberOfJoints);
-    mJointVelocity.resize(mNumberOfJoints);
-    mActuatorCurrentCommand.resize(mNumberOfActuators);
-    mActuatorEffortCommand.resize(mNumberOfActuators);
-    mActuatorCurrentFeedback.resize(mNumberOfActuators);
-    mActuatorEffortFeedback.resize(mNumberOfActuators);
+    mActuatorPowerStatus.SetSize(mNumberOfActuators);
+    mActuatorPowerEnabled.SetSize(mNumberOfActuators);
+    mDigitalInputs.SetSize(mNumberOfActuators);
+    mPotBits.SetSize(mNumberOfActuators);
+    mEncoderPositionBits.SetSize(mNumberOfActuators);
+    mEncoderVelocityBits.SetSize(mNumberOfActuators);
+    mEncoderVelocityBitsNow.SetSize(mNumberOfActuators);
+    mActuatorCurrentBitsCommand.SetSize(mNumberOfActuators);
+    mActuatorCurrentBitsFeedback.SetSize(mNumberOfActuators);
+    mTimeStamp.SetSize(mNumberOfActuators);
+    mPotVoltage.SetSize(mNumberOfActuators);
+    mPotPosition.SetSize(mNumberOfActuators);
+    mEncoderPosition.SetSize(mNumberOfActuators);
+    mEncoderPositionPrev.SetSize(mNumberOfActuators);
+    mEncoderVelocity.SetSize(mNumberOfActuators);
+    mEncoderVelocityDxDt.SetSize(mNumberOfActuators);
+    mJointPosition.SetSize(mNumberOfJoints);
+    mJointVelocity.SetSize(mNumberOfJoints);
+    mActuatorCurrentCommand.SetSize(mNumberOfActuators);
+    mActuatorEffortCommand.SetSize(mNumberOfActuators);
+    mActuatorCurrentFeedback.SetSize(mNumberOfActuators);
+    mActuatorEffortFeedback.SetSize(mNumberOfActuators);
 
     // Initialize property vectors to the appropriate sizes
-    mJointType.resize(mNumberOfJoints);
+    mJointType.SetSize(mNumberOfJoints);
 
-    mEffortToCurrentScales.resize(mNumberOfActuators);
-    mCurrentToBitsScales.resize(mNumberOfActuators);
-    mCurrentToBitsOffsets.resize(mNumberOfActuators);
-    mBitsToCurrentScales.resize(mNumberOfActuators);
-    mBitsToCurrentOffsets.resize(mNumberOfActuators);
-    mActuatorEffortCommandLimits.resize(mNumberOfActuators);
-    mActuatorCurrentCommandLimits.resize(mNumberOfActuators);
-    mActuatorCurrentFeedbackLimits.resize(mNumberOfActuators);
+    mEffortToCurrentScales.SetSize(mNumberOfActuators);
+    mActuatorCurrentToBitsScales.SetSize(mNumberOfActuators);
+    mActuatorCurrentToBitsOffsets.SetSize(mNumberOfActuators);
+    mActuatorBitsToCurrentScales.SetSize(mNumberOfActuators);
+    mActuatorBitsToCurrentOffsets.SetSize(mNumberOfActuators);
+    mActuatorEffortCommandLimits.SetSize(mNumberOfActuators);
+    mActuatorCurrentCommandLimits.SetSize(mNumberOfActuators);
+    mActuatorCurrentFeedbackLimits.SetSize(mNumberOfActuators);
 
-    mBitsToPositionScales.resize(mNumberOfActuators);
-    mBitsToPositionOffsets.resize(mNumberOfActuators);
-    mBitsToDPositionScales.resize(mNumberOfActuators);
-    mBitsToDPositionOffsets.resize(mNumberOfActuators);
-    mBitsToDTimeScales.resize(mNumberOfActuators);
-    mBitsToDTimeOffsets.resize(mNumberOfActuators);
-    mBitsToVecocityScales.resize(mNumberOfActuators);
-    mBitsToVelocityOffsets.resize(mNumberOfActuators);
+    mBitsToPositionScales.SetSize(mNumberOfActuators);
+    mBitsToPositionOffsets.SetSize(mNumberOfActuators);
+    mBitsToDPositionScales.SetSize(mNumberOfActuators);
+    mBitsToDPositionOffsets.SetSize(mNumberOfActuators);
+    mBitsToDTimeScales.SetSize(mNumberOfActuators);
+    mBitsToDTimeOffsets.SetSize(mNumberOfActuators);
+    mBitsToVecocityScales.SetSize(mNumberOfActuators);
+    mBitsToVelocityOffsets.SetSize(mNumberOfActuators);
 
-    mBitsToVoltageScales.resize(mNumberOfActuators);
-    mBitsToVoltageOffsets.resize(mNumberOfActuators);
-    mVoltageToPositionScales.resize(mNumberOfActuators);
-    mVoltageToPositionOffsets.resize(mNumberOfActuators);
-    mCountsPerTurn.resize(mNumberOfActuators);
+    mBitsToVoltageScales.SetSize(mNumberOfActuators);
+    mBitsToVoltageOffsets.SetSize(mNumberOfActuators);
+    mVoltageToPositionScales.SetSize(mNumberOfActuators);
+    mVoltageToPositionOffsets.SetSize(mNumberOfActuators);
+    mCountsPerTurn.SetSize(mNumberOfActuators);
 
-    mTemperature.resize(mNumberOfActuators);
+    mActuatorTemperature.SetSize(mNumberOfActuators);
+
+    mNumberOfBrakes = 0;
 
     // Construct property vectors
     for (size_t i = 0; i < mNumberOfActuators; i++) {
@@ -127,13 +128,13 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
         mJointType[i] = actuator.JointType;
 
         mEffortToCurrentScales[i]         = drive.EffortToCurrentScale;
-        mCurrentToBitsScales[i]           = drive.CurrentToBitsScale;
-        mCurrentToBitsOffsets[i]          = drive.CurrentToBitsOffset;
-        mBitsToCurrentScales[i]           = drive.BitsToCurrentScale;
-        mBitsToCurrentOffsets[i]          = drive.BitsToCurrentOffset;
-        mActuatorEffortCommandLimits[i]   = drive.ActuatorEffortCommandLimit;
-        mActuatorCurrentCommandLimits[i]  = drive.ActuatorCurrentCommandLimit;
-        // 120% of command curret is in the acceptable range
+        mActuatorCurrentToBitsScales[i]   = drive.CurrentToBitsScale;
+        mActuatorCurrentToBitsOffsets[i]  = drive.CurrentToBitsOffset;
+        mActuatorBitsToCurrentScales[i]   = drive.BitsToCurrentScale;
+        mActuatorBitsToCurrentOffsets[i]  = drive.BitsToCurrentOffset;
+        mActuatorEffortCommandLimits[i]   = drive.EffortCommandLimit;
+        mActuatorCurrentCommandLimits[i]  = drive.CurrentCommandLimit;
+        // 120% of command current is in the acceptable range
         // Add 50 mA for non motorized actuators due to a2d noise
         mActuatorCurrentFeedbackLimits[i] = 1.2 * mActuatorCurrentCommandLimits[i] + (50.0 / 1000.0);
 
@@ -157,24 +158,92 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
         mEncoderPositionPrev[i] = 0.0;
         mActuatorCurrentCommand[i] = 0.0;
         mActuatorCurrentFeedback[i] = 0.0;
+
+        // Count number of brakes
+        if (actuator.Brake) {
+            mNumberOfBrakes++;
+        }
+    }
+
+    // Update brake data
+    mBrakeCurrentToBitsScales.SetSize(mNumberOfBrakes);
+    mBrakeCurrentToBitsOffsets.SetSize(mNumberOfBrakes);
+    mBrakeBitsToCurrentScales.SetSize(mNumberOfBrakes);
+    mBrakeBitsToCurrentOffsets.SetSize(mNumberOfBrakes);
+    mBrakeCurrentCommandLimits.SetSize(mNumberOfBrakes);
+    mBrakeCurrentFeedbackLimits.SetSize(mNumberOfBrakes);
+    mBrakePowerStatus.SetSize(mNumberOfBrakes);
+    mBrakePowerEnabled.SetSize(mNumberOfBrakes);
+    mBrakeCurrentBitsCommand.SetSize(mNumberOfBrakes);
+    mBrakeCurrentBitsFeedback.SetSize(mNumberOfBrakes);
+    mBrakeCurrentCommand.SetSize(mNumberOfBrakes);
+    mBrakeCurrentFeedback.SetSize(mNumberOfBrakes);
+    mBrakeTemperature.SetSize(mNumberOfBrakes);
+    mBrakeReleaseCurrent.SetSize(mNumberOfBrakes);
+    mBrakeReleaseTime.SetSize(mNumberOfBrakes);
+    mBrakeReleasedCurrent.SetSize(mNumberOfBrakes);
+    mBrakeEngagedCurrent.SetSize(mNumberOfBrakes);
+
+    // Construct property vectors for brakes
+    size_t currentBrake = 0;
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        const osaActuator1394Configuration & actuator = config.Actuators[i];
+
+        // Count number of brakes
+        if (actuator.Brake) {
+            const osaAnalogBrake1394Configuration * brake = actuator.Brake;
+            const osaDrive1394Configuration & drive = brake->Drive;
+            mBrakeCurrentToBitsScales[currentBrake]   = drive.CurrentToBitsScale;
+            mBrakeCurrentToBitsOffsets[currentBrake]  = drive.CurrentToBitsOffset;
+            mBrakeBitsToCurrentScales[currentBrake]   = drive.BitsToCurrentScale;
+            mBrakeBitsToCurrentOffsets[currentBrake]  = drive.BitsToCurrentOffset;
+            mBrakeCurrentCommandLimits[currentBrake]  = drive.CurrentCommandLimit;
+            // 120% of command current is in the acceptable range
+            // Add 50 mA for non motorized actuators due to a2d noise
+            mBrakeCurrentFeedbackLimits[currentBrake] = 1.2 * mBrakeCurrentCommandLimits[currentBrake] + (50.0 / 1000.0);
+
+            mBrakeReleaseCurrent[currentBrake]  = brake->ReleaseCurrent;
+            mBrakeReleaseTime[currentBrake]     = brake->ReleaseTime;
+            mBrakeReleasedCurrent[currentBrake] = brake->ReleasedCurrent;
+            mBrakeEngagedCurrent[currentBrake]  = brake->EngagedCurrent;
+
+            // Initialize defaults
+            mBrakeCurrentCommand[currentBrake] = 0.0;
+            mBrakeCurrentFeedback[currentBrake] = 0.0;
+
+            currentBrake++;
+        }
     }
 
     // Compute effort command limits
     mJointEffortCommandLimits = mConfiguration.ActuatorToJointEffort * mActuatorEffortCommandLimits;
 }
 
-void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & boards)
+void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoards,
+                             const std::vector<osaBrakeMapping> & brakeBoards)
 {
-    if (boards.size() != mNumberOfActuators) {
-        cmnThrow(osaRuntimeError1394(this->Name() + ": number of boards different than the number of actuators."));
+    if (actuatorBoards.size() != mNumberOfActuators) {
+        cmnThrow(osaRuntimeError1394(this->Name() + ": number of actuator boards different than the number of actuators."));
+    }
+
+    if (brakeBoards.size() != mNumberOfBrakes) {
+        cmnThrow(osaRuntimeError1394(this->Name() + ": number of brake boards different than the number of brakes."));
     }
 
     for (size_t i = 0; i < mNumberOfActuators; i++) {
         // Store this board
-        mActuatorInfo[i].board = boards[i].board;
-        mActuatorInfo[i].axis = boards[i].axis;
+        mActuatorInfo[i].Board = actuatorBoards[i].Board;
+        mActuatorInfo[i].Axis = actuatorBoards[i].Axis;
         // Construct a list of unique boards
-        mUniqueBoards[boards[i].board->GetBoardId()] = boards[i].board;
+        mUniqueBoards[actuatorBoards[i].Board->GetBoardId()] = actuatorBoards[i].Board;
+    }
+
+    for (size_t i = 0; i < mNumberOfBrakes; i++) {
+        // Store this board
+        mBrakeInfo[i].Board = brakeBoards[i].Board;
+        mBrakeInfo[i].Axis = brakeBoards[i].Axis;
+        // Construct a list of unique boards
+        mUniqueBoards[brakeBoards[i].Board->GetBoardId()] = brakeBoards[i].Board;
     }
 
     mIsAllBoardsFirmWareFour = true;
@@ -233,8 +302,8 @@ void osaRobot1394::PollState(void)
 {
     // Poll data
     for (size_t i = 0; i < mNumberOfActuators; i++) {
-        AmpIO * board = mActuatorInfo[i].board;
-        int axis = mActuatorInfo[i].axis;
+        AmpIO * board = mActuatorInfo[i].Board;
+        int axis = mActuatorInfo[i].Axis;
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
 
@@ -254,7 +323,7 @@ void osaRobot1394::PollState(void)
 
         // first temperature corresponds to first 2 actuators, second to last 2
         // board reports temperature in celsius * 2
-        mTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
+        mActuatorTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
     }
 }
 
@@ -393,14 +462,14 @@ void osaRobot1394::SetWatchdogPeriod(const double & periodInSeconds)
 void osaRobot1394::SetActuatorPower(const bool & enabled)
 {
     for (size_t i = 0; i < mNumberOfActuators; i++) {
-        mActuatorInfo[i].board->SetAmpEnable(mActuatorInfo[i].axis, enabled);
+        mActuatorInfo[i].Board->SetAmpEnable(mActuatorInfo[i].Axis, enabled);
     }
 }
 
 void osaRobot1394::SetActuatorPower(const vctBoolVec & enabled)
 {
     for (size_t i = 0; i < mNumberOfActuators; i++) {
-        mActuatorInfo[i].board->SetAmpEnable(mActuatorInfo[i].axis, enabled[i]);
+        mActuatorInfo[i].Board->SetAmpEnable(mActuatorInfo[i].Axis, enabled[i]);
     }
 }
 
@@ -414,7 +483,7 @@ void osaRobot1394::SetEncoderPosition(const vctDoubleVec & pos)
 void osaRobot1394::SetEncoderPositionBits(const vctIntVec & bits)
 {
     for (size_t i = 0; i < mNumberOfActuators; i++) {
-        mActuatorInfo[i].board->WriteEncoderPreload(mActuatorInfo[i].axis, bits[i]);
+        mActuatorInfo[i].Board->WriteEncoderPreload(mActuatorInfo[i].Axis, bits[i]);
     }
 }
 
@@ -425,7 +494,7 @@ void osaRobot1394::SetSingleEncoderPosition(const int index, const double pos)
 
 void osaRobot1394::SetSingleEncoderPositionBits(const int index, const int bits)
 {
-    mActuatorInfo[index].board->WriteEncoderPreload(mActuatorInfo[index].axis, bits);
+    mActuatorInfo[index].Board->WriteEncoderPreload(mActuatorInfo[index].Axis, bits);
 }
 
 void osaRobot1394::ClipActuatorEffort(vctDoubleVec & efforts)
@@ -480,7 +549,7 @@ void osaRobot1394::SetActuatorCurrent(const vctDoubleVec & currents)
 void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 {
     for (size_t i=0; i<mNumberOfActuators; i++) {
-        mActuatorInfo[i].board->SetMotorCurrent(mActuatorInfo[i].axis, bits[i]);
+        mActuatorInfo[i].Board->SetMotorCurrent(mActuatorInfo[i].Axis, bits[i]);
     }
 
     // Store commanded bits
@@ -572,7 +641,7 @@ double osaRobot1394::NumberOfActuators(void) const {
 
 void osaRobot1394::GetJointTypes(prmJointTypeVec & joint_types) const
 {
-    joint_types.resize(mNumberOfJoints);
+    joint_types.SetSize(mNumberOfJoints);
     for (size_t i = 0; i < mNumberOfJoints; i++) {
         joint_types[i] = mJointType[i];
     }
@@ -649,13 +718,13 @@ void osaRobot1394::ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoub
 
 void osaRobot1394::ActuatorCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const {
     for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
-        bits[i] = static_cast<long>(currents[i] * mCurrentToBitsScales[i] + mCurrentToBitsOffsets[i]);
+        bits[i] = static_cast<long>(currents[i] * mActuatorCurrentToBitsScales[i] + mActuatorCurrentToBitsOffsets[i]);
     }
 }
 
 void osaRobot1394::ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & currents) const {
     for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
-        currents[i] = static_cast<double>(bits[i]) * mBitsToCurrentScales[i] + mBitsToCurrentOffsets[i];
+        currents[i] = static_cast<double>(bits[i]) * mActuatorBitsToCurrentScales[i] + mActuatorBitsToCurrentOffsets[i];
     }
 }
 

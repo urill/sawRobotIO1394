@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
@@ -58,7 +57,7 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mPowerStatus, "PowerStatus");
     mStateTableRead->AddData(mSafetyRelay, "SafetyRelay");
     mStateTableRead->AddData(mWatchdogStatus, "WatchdogTimeout");
-    mStateTableRead->AddData(mTemperature, "AmpTemperature");
+    mStateTableRead->AddData(mActuatorTemperature, "AmpTemperature");
     mStateTableRead->AddData(mActuatorPowerStatus, "AmpStatus");
     mStateTableRead->AddData(mActuatorPowerEnabled, "AmpEnable");
     mStateTableRead->AddData(mEncoderPositionBits, "PosRaw");
@@ -163,7 +162,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetSafetyRelay"); // unsigned short
     robotInterface->AddCommandReadState(*mStateTableRead, mWatchdogStatus,
                                         "GetWatchdogTimeout"); // bool
-    robotInterface->AddCommandReadState(*mStateTableRead, mTemperature,
+    robotInterface->AddCommandReadState(*mStateTableRead, mActuatorTemperature,
                                         "GetAmpTemperature"); // vector[double]
 
     robotInterface->AddCommandReadState(*mStateTableRead, mEncoderPositionBits,
@@ -274,7 +273,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
 bool mtsRobot1394::CheckConfiguration(void)
 {
     if ((NumberOfActuators() > 2)
-        && mCurrentToBitsOffsets.Equal(mCurrentToBitsOffsets[0])) {
+        && mActuatorCurrentToBitsOffsets.Equal(mActuatorCurrentToBitsOffsets[0])) {
         CMN_LOG_CLASS_INIT_ERROR << "CheckConfiguration: all currents to bits offsets are equal, please calibrate the current offsets for arm: "
                                  << this->Name() << std::endl;
         return false;

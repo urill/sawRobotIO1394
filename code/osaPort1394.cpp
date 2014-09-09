@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
@@ -72,24 +71,46 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
     }
 
     // Construct a vector of boards relevant to this robot
-    std::vector<osaActuatorMapping> robot_boards(config.NumberOfActuators);
+    std::vector<osaActuatorMapping> actuatorBoards(config.NumberOfActuators);
+    std::vector<osaBrakeMapping> brakeBoards(config.NumberOfBrakes);
+    int currentBrake = 0;
 
-    for (int i=0; i < config.NumberOfActuators; i++) {
-        int board_id = config.Actuators[i].BoardID;
+    for (int i = 0; i < config.NumberOfActuators; i++) {
+
+        // Board for the actuator
+        int boardId = config.Actuators[i].BoardID;
 
         // If the board hasn't been created, construct it and add it to the port
-        if (mBoards.count(board_id) == 0) {
-            mBoards[board_id] = new AmpIO(board_id);
-            mPort->AddBoard(mBoards[board_id]);
+        if (mBoards.count(boardId) == 0) {
+            mBoards[boardId] = new AmpIO(boardId);
+            mPort->AddBoard(mBoards[boardId]);
         }
 
         // Add the board to the list of boards relevant to this robot
-        robot_boards[i].board = mBoards[board_id];
-        robot_boards[i].axis = config.Actuators[i].AxisID;
+        actuatorBoards[i].Board = mBoards[boardId];
+        actuatorBoards[i].Axis = config.Actuators[i].AxisID;
+
+        // Board for the brake if any
+        osaAnalogBrake1394Configuration * brake = config.Actuators[i].Brake;
+        if (brake) {
+            // Board for the brake
+            boardId = brake->BoardID;
+            
+            // If the board hasn't been created, construct it and add it to the port
+            if (mBoards.count(boardId) == 0) {
+                mBoards[boardId] = new AmpIO(boardId);
+                mPort->AddBoard(mBoards[boardId]);
+            }
+            
+            // Add the board to the list of boards relevant to this robot
+            brakeBoards[currentBrake].Board = mBoards[boardId];
+            brakeBoards[currentBrake].Axis = brake->AxisID;
+            currentBrake++;
+        }
     }
 
     // Set the robot boards
-    robot->SetBoards(robot_boards);
+    robot->SetBoards(actuatorBoards, brakeBoards);
 
     // Store the robot by name
     mRobots.push_back(robot);

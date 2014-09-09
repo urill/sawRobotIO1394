@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
@@ -46,7 +45,7 @@ namespace sawRobotIO1394 {
      * conversion as well as safety monitoring for the QLA robot control
      * architecture.
      **/
-    class osaRobot1394 {
+class osaRobot1394 {
 
     public:
         //! Watchdog counts per ms (note counter width, e.g. 16 bits)
@@ -59,7 +58,9 @@ namespace sawRobotIO1394 {
 
         void Configure(const osaRobot1394Configuration & config);
 
-        void SetBoards(const std::vector<osaActuatorMapping> & boards);
+        void SetBoards(const std::vector<osaActuatorMapping> & actuatorBoards,
+                       const std::vector<osaBrakeMapping> & brakeBoards);
+
         /**}**/
 
         /** \name State Update Functions
@@ -166,6 +167,7 @@ namespace sawRobotIO1394 {
 
         //! Board Objects
         std::vector<osaActuatorMapping> mActuatorInfo;
+        std::vector<osaBrakeMapping> mBrakeInfo;
         std::map<int, AmpIO*> mUniqueBoards;
         typedef std::map<int, AmpIO*>::iterator unique_board_iterator;
         typedef std::map<int, AmpIO*>::const_iterator unique_board_const_iterator;
@@ -175,6 +177,7 @@ namespace sawRobotIO1394 {
         std::string mName;
         size_t mNumberOfActuators;
         size_t mNumberOfJoints;
+        size_t mNumberOfBrakes;
 
         //! Vectors of actuator properties
         vctIntVec
@@ -182,10 +185,14 @@ namespace sawRobotIO1394 {
 
         vctDoubleVec
             mEffortToCurrentScales,
-            mCurrentToBitsScales,
-            mCurrentToBitsOffsets,
-            mBitsToCurrentScales,
-            mBitsToCurrentOffsets,
+            mActuatorCurrentToBitsScales,
+            mBrakeCurrentToBitsScales,
+            mActuatorCurrentToBitsOffsets,
+            mBrakeCurrentToBitsOffsets,
+            mActuatorBitsToCurrentScales,
+            mBrakeBitsToCurrentScales,
+            mActuatorBitsToCurrentOffsets,
+            mBrakeBitsToCurrentOffsets,
             mBitsToPositionScales,
             mBitsToPositionOffsets,
             mBitsToDPositionScales,
@@ -203,7 +210,9 @@ namespace sawRobotIO1394 {
             mJointEffortCommandLimits,
             mActuatorEffortCommandLimits,
             mActuatorCurrentCommandLimits,
-            mActuatorCurrentFeedbackLimits;
+            mBrakeCurrentCommandLimits,
+            mActuatorCurrentFeedbackLimits, // limit used to trigger error
+            mBrakeCurrentFeedbackLimits;    // limit used to trigger error
 
         //! Robot type
         prmJointTypeVec mJointType;
@@ -222,7 +231,9 @@ namespace sawRobotIO1394 {
 
         vctBoolVec
             mActuatorPowerStatus,
+            mBrakePowerStatus,
             mActuatorPowerEnabled,
+            mBrakePowerEnabled,
             mDigitalInputs;
 
         vctIntVec
@@ -235,7 +246,9 @@ namespace sawRobotIO1394 {
 
         vctIntVec
             mActuatorCurrentBitsCommand,
-            mActuatorCurrentBitsFeedback;
+            mBrakeCurrentBitsCommand,
+            mActuatorCurrentBitsFeedback,
+            mBrakeCurrentBitsFeedback;
 
         vctDoubleVec
             mTimeStamp,
@@ -250,10 +263,17 @@ namespace sawRobotIO1394 {
             mJointPosition,
             mJointVelocity,
             mActuatorCurrentCommand,
+            mBrakeCurrentCommand,
             mActuatorEffortCommand,
             mActuatorCurrentFeedback,
+            mBrakeCurrentFeedback,
             mActuatorEffortFeedback,
-            mTemperature;
+            mActuatorTemperature,
+            mBrakeTemperature,
+            mBrakeReleaseCurrent,
+            mBrakeReleaseTime,
+            mBrakeReleasedCurrent,
+            mBrakeEngagedCurrent;
 
         size_t
             mCurrentSafetyViolationsCounter,

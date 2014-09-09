@@ -2,11 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
-  Author(s):  Jonathan Bohren
+  Author(s):  Jonathan Bohren, Anton Deguet
   Created on: 2013-06-29
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -60,8 +59,8 @@ namespace sawRobotIO1394 {
         double CurrentToBitsOffset;
         double BitsToCurrentScale;
         double BitsToCurrentOffset;
-        double ActuatorEffortCommandLimit;
-        double ActuatorCurrentCommandLimit;
+        double EffortCommandLimit;
+        double CurrentCommandLimit;
     };
 
     struct osaEncoder1394Configuration {
@@ -83,20 +82,31 @@ namespace sawRobotIO1394 {
         double VoltageToPositionOffset;
     };
 
+    struct osaAnalogBrake1394Configuration {
+        int BoardID;
+        int AxisID;
+        osaDrive1394Configuration Drive;
+        double ReleaseCurrent;
+        double ReleaseTime;
+        double ReleasedCurrent;
+        double EngagedCurrent;
+    };
+
     struct osaActuator1394Configuration {
         int BoardID;
         int AxisID;
         prmJointType JointType;
-
         osaDrive1394Configuration Drive;
         osaEncoder1394Configuration Encoder;
         osaPot1394Configuration Pot;
+        osaAnalogBrake1394Configuration * Brake; // 0 pointer for no brake
     };
 
     struct osaRobot1394Configuration {
         std::string Name;
         int NumberOfActuators;
         int NumberOfJoints;
+        int NumberOfBrakes;
         bool HasActuatorToJointCoupling;
 
         osaPot1394Location PotLocation;
@@ -126,8 +136,14 @@ namespace sawRobotIO1394 {
 
     // Maps an actuator to the hardware (board and axis)
     struct osaActuatorMapping {
-        AmpIO *board;
-        int axis;
+        AmpIO * Board;
+        int Axis;
+    };
+
+    // maps a brake to the hardware
+    struct osaBrakeMapping {
+        AmpIO * Board;
+        int Axis;
     };
 
 } // namespace sawRobotIO1394
