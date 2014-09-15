@@ -81,7 +81,7 @@ void plotObject::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
     mPort->Read();
     // get time and plot 0 value
-    mElapsedTime += mRobot->TimeStamp()[mActuatorIndex];
+    mElapsedTime += mRobot->ActuatorTimeStamp()[mActuatorIndex];
     mZeroVelocity->AppendPoint(vct2(mElapsedTime, 0.005)); // slight offset to avoid overlap
 
     // encoder dt
@@ -90,7 +90,7 @@ void plotObject::timerEvent(QTimerEvent * CMN_UNUSED(event))
     // encoder velocity dx / dt
     mEncoderDx.ForceAssign(mRobot->EncoderPosition());
     mEncoderDx.Subtract(mPreviousEncoderPosition);
-    mEncoderDx.ElementwiseDivide(mRobot->TimeStamp());
+    mEncoderDx.ElementwiseDivide(mRobot->ActuatorTimeStamp());
     mEncoderDxSignal->AppendPoint((vct2(mElapsedTime,
                                         mEncoderDx[mActuatorIndex])));
 
@@ -107,7 +107,7 @@ void plotObject::timerEvent(QTimerEvent * CMN_UNUSED(event))
     // pot velocity dx / dt
     mPotDx.ForceAssign(mRobot->PotPosition());
     mPotDx.Subtract(mPreviousPotPosition);
-    mPotDx.ElementwiseDivide(mRobot->TimeStamp());
+    mPotDx.ElementwiseDivide(mRobot->ActuatorTimeStamp());
     mPotDxSignal->AppendPoint((vct2(mElapsedTime,
                                     mPotDx[mActuatorIndex])));
 

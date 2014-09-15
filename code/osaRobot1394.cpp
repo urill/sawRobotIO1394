@@ -71,7 +71,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mEncoderVelocityBitsNow.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsCommand.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsFeedback.SetSize(mNumberOfActuators);
-    mTimeStamp.SetSize(mNumberOfActuators);
+    mActuatorTimeStamp.SetSize(mNumberOfActuators);
     mPotVoltage.SetSize(mNumberOfActuators);
     mPotPosition.SetSize(mNumberOfActuators);
     mEncoderPosition.SetSize(mNumberOfActuators);
@@ -166,6 +166,8 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     }
 
     // Update brake data
+    mBrakeInfo.resize(mNumberOfBrakes);
+
     mBrakeCurrentToBitsScales.SetSize(mNumberOfBrakes);
     mBrakeCurrentToBitsOffsets.SetSize(mNumberOfBrakes);
     mBrakeBitsToCurrentScales.SetSize(mNumberOfBrakes);
@@ -176,6 +178,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mBrakePowerEnabled.SetSize(mNumberOfBrakes);
     mBrakeCurrentBitsCommand.SetSize(mNumberOfBrakes);
     mBrakeCurrentBitsFeedback.SetSize(mNumberOfBrakes);
+    mBrakeTimeStamp.SetSize(mNumberOfActuators);
     mBrakeCurrentCommand.SetSize(mNumberOfBrakes);
     mBrakeCurrentFeedback.SetSize(mNumberOfBrakes);
     mBrakeTemperature.SetSize(mNumberOfBrakes);
@@ -307,7 +310,7 @@ void osaRobot1394::PollState(void)
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
 
-        mTimeStamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+        mActuatorTimeStamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
         mDigitalInputs[i] = board->GetDigitalInput();
 
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
@@ -325,6 +328,23 @@ void osaRobot1394::PollState(void)
         // board reports temperature in celsius * 2
         mActuatorTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
     }
+
+    for (size_t i = 0; i < mNumberOfBrakes; i++) {
+        AmpIO * board = mBrakeInfo[i].Board;
+        int axis = mBrakeInfo[i].Axis;
+
+        if (!board || (axis < 0)) continue; // We probably don't need this check any more
+
+        mBrakeTimeStamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+        mBrakeCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
+        mBrakePowerEnabled[i] = board->GetAmpEnable(axis);
+        mBrakePowerStatus[i] = board->GetAmpStatus(axis);
+
+        // first temperature corresponds to first 2 brakes, second to last 2
+        // board reports temperature in celsius * 2
+        mBrakeTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
+    }
+
 }
 
 void osaRobot1394::ConvertState(void)
@@ -337,7 +357,7 @@ void osaRobot1394::ConvertState(void)
     // compute both
     EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);   // 1/dt
     mEncoderVelocityDxDt.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
-    mEncoderVelocityDxDt.ElementwiseDivide(mTimeStamp);              // dx/dt
+    mEncoderVelocityDxDt.ElementwiseDivide(mActuatorTimeStamp);              // dx/dt
 
     for (unsigned int i = 0; i < mEncoderVelocity.size(); i++) {
         int cnter = abs((((int32_t) mEncoderVelocityBits[i]) << 16) >> 16);
@@ -370,6 +390,7 @@ void osaRobot1394::CheckState(void)
 
     for (size_t i = 0; i < mNumberOfBrakes; i++) {
         if (fabs(mBrakeCurrentFeedback[i]) >= mBrakeCurrentFeedbackLimits[i]) {
+            std::cerr << "brake power: " << mBrakeCurrentFeedback[i] << " Limit: " << mBrakeCurrentFeedbackLimits[i] << " for " << i << std::endl;
             current_safety_violation = true;
         }
     }
@@ -391,7 +412,7 @@ void osaRobot1394::CheckState(void)
          ++board) {
         AmpIO_UInt32 safetyAmpDisable = board->second->GetSafetyAmpDisable();
         if (safetyAmpDisable) {
-            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety ampdisable tripped." + mTimeStamp.ToString()));
+            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety ampdisable tripped." + mActuatorTimeStamp.ToString()));
         }
     }
 }
@@ -408,6 +429,7 @@ void osaRobot1394::EnableBoardsPower(void)
     for (unique_board_iterator board = mUniqueBoards.begin();
          board != mUniqueBoards.end();
          ++board) {
+        std::cerr << "board: " << board->first << std::endl;
         board->second->WriteSafetyRelay(true);
         board->second->WritePowerEnable(true);
     }
@@ -688,8 +710,12 @@ const vctDoubleVec & osaRobot1394::PotPosition(void) const {
     return mPotPosition;
 }
 
-const vctDoubleVec & osaRobot1394::TimeStamp(void) const {
-    return mTimeStamp;
+const vctDoubleVec & osaRobot1394::ActuatorTimeStamp(void) const {
+    return mActuatorTimeStamp;
+}
+
+const vctDoubleVec & osaRobot1394::BrakeTimeStamp(void) const {
+    return mBrakeTimeStamp;
 }
 
 const vctDoubleVec & osaRobot1394::EncoderPosition(void) const {

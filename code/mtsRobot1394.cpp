@@ -284,9 +284,9 @@ bool mtsRobot1394::CheckConfiguration(void)
 void mtsRobot1394::CheckState(void)
 {
     mPositionJointGet.Position().Assign(mJointPosition);
-    mPositionJointGet.Timestamps().Add(mTimeStamp); // todo: we don't take coupling into account here
+    mPositionJointGet.Timestamps().Add(mActuatorTimeStamp); // todo: we don't take coupling into account here
     mPositionActuatorGet.Position().Assign(mEncoderPosition);
-    mPositionActuatorGet.Timestamps().Add(mTimeStamp);
+    mPositionActuatorGet.Timestamps().Add(mActuatorTimeStamp);
 
     mVelocityJointGet.Velocity().ForceAssign(mJointVelocity);
 

@@ -127,7 +127,8 @@ class osaRobot1394 {
         const vctDoubleVec & ActuatorCurrentFeedback(void) const;
         const vctDoubleVec & BrakeCurrentFeedback(void) const;
         const vctDoubleVec & PotPosition(void) const;
-        const vctDoubleVec & TimeStamp(void) const;
+        const vctDoubleVec & ActuatorTimeStamp(void) const;
+        const vctDoubleVec & BrakeTimeStamp(void) const;
         const vctDoubleVec & EncoderPosition(void) const;
         const vctDoubleVec & EncoderVelocity(void) const;
         /**}**/
@@ -267,7 +268,8 @@ class osaRobot1394 {
             mBrakeCurrentBitsFeedback;
 
         vctDoubleVec
-            mTimeStamp,
+            mActuatorTimeStamp,
+            mBrakeTimeStamp,
             mPotVoltage,
             mPotPosition,
             mEncoderPosition,
