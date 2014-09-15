@@ -89,6 +89,8 @@ class osaRobot1394 {
 
         void SetActuatorPower(const bool & enabled);
         void SetActuatorPower(const vctBoolVec & enabled);
+        void SetBrakePower(const bool & enabled);
+        void SetBrakePower(const vctBoolVec & enabled);
 
         //! Encoder Control
         void SetEncoderPosition(const vctDoubleVec & pos);
@@ -101,6 +103,13 @@ class osaRobot1394 {
         void SetActuatorEffort(const vctDoubleVec & efforts);
         void SetActuatorCurrent(const vctDoubleVec & currents);
         void SetActuatorCurrentBits(const vctIntVec & bits);
+
+        //! Brake Control
+        void SetBrakeCurrent(const vctDoubleVec & currents);
+        void SetBrakeCurrentBits(const vctIntVec & bits);
+        void SetBrakeReleaseCurrent(void);
+        void SetBrakeReleasedCurrent(void);
+        void SetBrakeEngagedCurrent(void);
         /**}**/
 
 
@@ -114,7 +123,9 @@ class osaRobot1394 {
         bool SafetyRelay(void) const;
         bool WatchdogStatus(void) const;
         const vctBoolVec & ActuatorPowerStatus(void) const;
+        const vctBoolVec & BrakePowerStatus(void) const;
         const vctDoubleVec & ActuatorCurrentFeedback(void) const;
+        const vctDoubleVec & BrakeCurrentFeedback(void) const;
         const vctDoubleVec & PotPosition(void) const;
         const vctDoubleVec & TimeStamp(void) const;
         const vctDoubleVec & EncoderPosition(void) const;
@@ -149,11 +160,15 @@ class osaRobot1394 {
         void EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & dt) const;
         void EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const;
 
-        //! Conversions for current commands amd measurements
+        //! Conversions for actuator current commands and measurements
         void ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const;
         void ActuatorCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const;
         void ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & currents) const;
         void ActuatorCurrentToEffort(const vctDoubleVec & currents, vctDoubleVec & efforts) const;
+
+        //! Conversions for brake commands
+        void BrakeCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const;
+        void BrakeBitsToCurrent(const vctIntVec & bits, vctDoubleVec & currents) const;
 
         //! Conversions for potentiometers
         void PotBitsToVoltage(const vctIntVec & bits, vctDoubleVec & voltages) const;
@@ -164,6 +179,7 @@ class osaRobot1394 {
 
         void ClipActuatorEffort(vctDoubleVec & efforts);
         void ClipActuatorCurrent(vctDoubleVec & currents);
+        void ClipBrakeCurrent(vctDoubleVec & currents);
 
         //! Board Objects
         std::vector<osaActuatorMapping> mActuatorInfo;

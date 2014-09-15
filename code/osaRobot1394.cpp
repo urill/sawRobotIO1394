@@ -349,6 +349,8 @@ void osaRobot1394::ConvertState(void)
     ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
     ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
 
+    BrakeBitsToCurrent(mBrakeCurrentBitsFeedback, mBrakeCurrentFeedback);
+
     PotBitsToVoltage(mPotBits, mPotVoltage);
     PotVoltageToPosition(mPotVoltage, mPotPosition);
 }
@@ -362,6 +364,12 @@ void osaRobot1394::CheckState(void)
     bool current_safety_violation = false;
     for (size_t i = 0; i < mNumberOfActuators; i++) {
         if (fabs(mActuatorCurrentFeedback[i]) >= mActuatorCurrentFeedbackLimits[i]) {
+            current_safety_violation = true;
+        }
+    }
+
+    for (size_t i = 0; i < mNumberOfBrakes; i++) {
+        if (fabs(mBrakeCurrentFeedback[i]) >= mBrakeCurrentFeedbackLimits[i]) {
             current_safety_violation = true;
         }
     }
@@ -473,6 +481,20 @@ void osaRobot1394::SetActuatorPower(const vctBoolVec & enabled)
     }
 }
 
+void osaRobot1394::SetBrakePower(const bool & enabled)
+{
+    for (size_t i = 0; i < mNumberOfBrakes; i++) {
+        mBrakeInfo[i].Board->SetAmpEnable(mBrakeInfo[i].Axis, enabled);
+    }
+}
+
+void osaRobot1394::SetBrakePower(const vctBoolVec & enabled)
+{
+    for (size_t i = 0; i < mNumberOfBrakes; i++) {
+        mBrakeInfo[i].Board->SetAmpEnable(mBrakeInfo[i].Axis, enabled[i]);
+    }
+}
+
 void osaRobot1394::SetEncoderPosition(const vctDoubleVec & pos)
 {
     vctIntVec bits(mNumberOfActuators);
@@ -510,6 +532,14 @@ void osaRobot1394::ClipActuatorCurrent(vctDoubleVec & currents)
     for (size_t i = 0; i < mNumberOfActuators; i++) {
         currents[i] = std::min(currents[i], mActuatorCurrentCommandLimits[i]);
         currents[i] = std::max(currents[i], -mActuatorCurrentCommandLimits[i]);
+    }
+}
+
+void osaRobot1394::ClipBrakeCurrent(vctDoubleVec & currents)
+{
+    for (size_t i = 0; i < mNumberOfBrakes; i++) {
+        currents[i] = std::min(currents[i], mBrakeCurrentCommandLimits[i]);
+        currents[i] = std::max(currents[i], -mBrakeCurrentCommandLimits[i]);
     }
 }
 
@@ -554,6 +584,45 @@ void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 
     // Store commanded bits
     mActuatorCurrentBitsCommand = bits;
+}
+
+void osaRobot1394::SetBrakeCurrent(const vctDoubleVec & currents)
+{
+    // Convert amps to bits and set the command
+    vctDoubleVec clipped_amps = currents;
+    vctIntVec bits(mNumberOfBrakes);
+
+    this->ClipBrakeCurrent(clipped_amps);
+    this->BrakeCurrentToBits(clipped_amps, bits);
+    this->SetBrakeCurrentBits(bits);
+
+    // Store commanded amps
+    mBrakeCurrentCommand = clipped_amps;
+}
+
+void osaRobot1394::SetBrakeCurrentBits(const vctIntVec & bits)
+{
+    for (size_t i=0; i<mNumberOfBrakes; i++) {
+        mBrakeInfo[i].Board->SetMotorCurrent(mBrakeInfo[i].Axis, bits[i]);
+    }
+
+    // Store commanded bits
+    mBrakeCurrentBitsCommand = bits;
+}
+
+void osaRobot1394::SetBrakeReleaseCurrent(void)
+{
+    SetBrakeCurrent(mBrakeReleaseCurrent);
+}
+
+void osaRobot1394::SetBrakeReleasedCurrent(void)
+{
+    SetBrakeCurrent(mBrakeReleasedCurrent);
+}
+
+void osaRobot1394::SetBrakeEngagedCurrent(void)
+{
+    SetBrakeCurrent(mBrakeEngagedCurrent);
 }
 
 void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
@@ -603,8 +672,16 @@ const vctBoolVec & osaRobot1394::ActuatorPowerStatus(void) const {
     return mActuatorPowerStatus;
 }
 
+const vctBoolVec & osaRobot1394::BrakePowerStatus(void) const {
+    return mBrakePowerStatus;
+}
+
 const vctDoubleVec & osaRobot1394::ActuatorCurrentFeedback(void) const {
     return mActuatorCurrentFeedback;
+}
+
+const vctDoubleVec & osaRobot1394::BrakeCurrentFeedback(void) const {
+    return mBrakeCurrentFeedback;
 }
 
 const vctDoubleVec & osaRobot1394::PotPosition(void) const {
@@ -730,6 +807,18 @@ void osaRobot1394::ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & 
 
 void osaRobot1394::ActuatorCurrentToEffort(const vctDoubleVec & currents, vctDoubleVec & efforts) const {
     efforts.ElementwiseProductOf(currents, mEffortToCurrentScales);
+}
+
+void osaRobot1394::BrakeCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const {
+    for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
+        bits[i] = static_cast<long>(currents[i] * mBrakeCurrentToBitsScales[i] + mBrakeCurrentToBitsOffsets[i]);
+    }
+}
+
+void osaRobot1394::BrakeBitsToCurrent(const vctIntVec & bits, vctDoubleVec & currents) const {
+    for (size_t i = 0; i < bits.size() && i < currents.size(); i++) {
+        currents[i] = static_cast<double>(bits[i]) * mBrakeBitsToCurrentScales[i] + mBrakeBitsToCurrentOffsets[i];
+    }
 }
 
 void osaRobot1394::PotBitsToVoltage(const vctIntVec & bits, vctDoubleVec & voltages) const {
