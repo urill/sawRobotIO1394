@@ -57,9 +57,9 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mPowerStatus, "PowerStatus");
     mStateTableRead->AddData(mSafetyRelay, "SafetyRelay");
     mStateTableRead->AddData(mWatchdogStatus, "WatchdogTimeout");
-    mStateTableRead->AddData(mActuatorTemperature, "AmpTemperature");
-    mStateTableRead->AddData(mActuatorPowerStatus, "AmpStatus");
-    mStateTableRead->AddData(mActuatorPowerEnabled, "AmpEnable");
+    mStateTableRead->AddData(mActuatorTemperature, "ActuatorTemperature");
+    mStateTableRead->AddData(mActuatorPowerStatus, "ActuatorPowerStatus");
+    mStateTableRead->AddData(mActuatorPowerEnabled, "ActuatorPowerEnabled");
     mStateTableRead->AddData(mEncoderPositionBits, "PosRaw");
     mStateTableRead->AddData(mJointPosition, "PositionJoint");
     mStateTableRead->AddData(mEncoderVelocityBits, "VelRaw");
@@ -67,8 +67,8 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mPotBits, "AnalogInRaw");
     mStateTableRead->AddData(mPotVoltage, "AnalogInVolts");
     mStateTableRead->AddData(mPotPosition, "AnalogInPosSI");
-    mStateTableRead->AddData(mActuatorCurrentBitsFeedback, "MotorFeedbackCurrentRaw");
-    mStateTableRead->AddData(mActuatorCurrentFeedback, "MotorFeedbackCurrent");
+    mStateTableRead->AddData(mActuatorCurrentBitsFeedback, "ActuatorFeedbackCurrentRaw");
+    mStateTableRead->AddData(mActuatorCurrentFeedback, "ActuatorFeedbackCurrent");
 
     mPositionJointGet.SetSize(mNumberOfJoints);
     mPositionJointGet.Timestamps().SetAll(0.0);
@@ -80,8 +80,15 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
 
     mStateTableRead->AddData(mVelocityJointGet, "VelocityJointGet");
 
-    mStateTableWrite->AddData(mActuatorCurrentBitsCommand, "MotorControlCurrentRaw");
-    mStateTableWrite->AddData(mActuatorCurrentCommand, "MotorControlCurrent");
+    mStateTableWrite->AddData(mActuatorCurrentBitsCommand, "ActuatorControlCurrentRaw");
+    mStateTableWrite->AddData(mActuatorCurrentCommand, "ActuatorControlCurrent");
+
+    mStateTableRead->AddData(mBrakePowerStatus, "BrakePowerStatus");
+    mStateTableRead->AddData(mBrakePowerEnabled, "BrakePowerEnabled");
+    mStateTableWrite->AddData(mBrakeCurrentBitsCommand, "BrakeControlCurrentRaw");
+    mStateTableWrite->AddData(mBrakeCurrentCommand, "BrakeControlCurrent");
+    mStateTableRead->AddData(mBrakeCurrentFeedback, "BrakeFeedbackCurrent");
+    mStateTableRead->AddData(mBrakeTemperature, "BrakeTemperature");
 
     stateTableRead = mStateTableRead;
     stateTableWrite = mStateTableWrite;
@@ -154,6 +161,11 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandWrite(&osaRobot1394::SetWatchdogPeriod, thisBase,
                                     "SetWatchdogPeriod");
 
+    robotInterface->AddCommandReadState(*mStateTableRead, mActuatorPowerEnabled,
+                                        "GetActuatorAmpEnable"); // vector[bool]
+    robotInterface->AddCommandReadState(*mStateTableRead, mActuatorPowerStatus,
+                                        "GetActuatorAmpStatus"); // vector[bool]
+
     robotInterface->AddCommandReadState(*mStateTableRead, mStateTableRead->PeriodStats,
                                         "GetPeriodStatistics"); // mtsIntervalStatistics
     robotInterface->AddCommandReadState(*mStateTableRead, mPowerStatus,
@@ -163,7 +175,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableRead, mWatchdogStatus,
                                         "GetWatchdogTimeout"); // bool
     robotInterface->AddCommandReadState(*mStateTableRead, mActuatorTemperature,
-                                        "GetAmpTemperature"); // vector[double]
+                                        "GetActuatorAmpTemperature"); // vector[double]
 
     robotInterface->AddCommandReadState(*mStateTableRead, mEncoderPositionBits,
                                         "GetPositionEncoderRaw"); // vector[int]
@@ -189,12 +201,24 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetAnalogInputPosSI");
 
     robotInterface->AddCommandReadState(*mStateTableRead, mActuatorCurrentBitsFeedback,
-                                        "GetMotorFeedbackCurrentRaw");
+                                        "GetActuatorFeedbackCurrentRaw");
     robotInterface->AddCommandReadState(*mStateTableRead, mActuatorCurrentFeedback,
-                                        "GetMotorFeedbackCurrent");
-
+                                        "GetActuatorFeedbackCurrent");
     robotInterface->AddCommandReadState(*mStateTableWrite, mActuatorCurrentCommand,
-                                        "GetMotorRequestedCurrent");
+                                        "GetActuatorRequestedCurrent");
+
+    robotInterface->AddCommandWrite(&osaRobot1394::SetBrakePower, this,
+                                    "SetBrakeAmpEnable", mBrakePowerEnabled); // vector[bool]
+    robotInterface->AddCommandReadState(*mStateTableRead, mBrakePowerEnabled,
+                                        "GetBrakeAmpEnable"); // vector[bool]
+    robotInterface->AddCommandReadState(*mStateTableRead, mBrakePowerStatus,
+                                        "GetBrakeAmpStatus"); // vector[bool]
+    robotInterface->AddCommandReadState(*mStateTableRead, mBrakeCurrentFeedback,
+                                        "GetBrakeFeedbackCurrent");
+    robotInterface->AddCommandReadState(*mStateTableWrite, mBrakeCurrentCommand,
+                                        "GetBrakeRequestedCurrent");
+    robotInterface->AddCommandReadState(*mStateTableRead, mBrakeTemperature,
+                                        "GetBrakeAmpTemperature"); // vector[double]
 
     robotInterface->AddCommandWrite(&mtsRobot1394::SetTorqueJoint, this,
                                     "SetTorqueJoint", mTorqueJoint);
@@ -202,11 +226,11 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    "GetTorqueJointMax", mJointEffortCommandLimits);
 
     robotInterface->AddCommandWrite(&osaRobot1394::SetActuatorCurrentBits, thisBase,
-                                    "SetMotorCurrentRaw", mActuatorCurrentBitsCommand);
+                                    "SetActuatorCurrentRaw", mActuatorCurrentBitsCommand);
     robotInterface->AddCommandWrite(&osaRobot1394::SetActuatorCurrent, thisBase,
-                                    "SetMotorCurrent", mActuatorCurrentCommand);
+                                    "SetActuatorCurrent", mActuatorCurrentCommand);
     robotInterface->AddCommandRead(&osaRobot1394::GetActuatorCurrentCommandLimits, thisBase,
-                                   "GetMotorCurrentMax", mActuatorCurrentCommandLimits);
+                                   "GetActuatorCurrentMax", mActuatorCurrentCommandLimits);
     robotInterface->AddCommandRead(&osaRobot1394::GetJointTypes, thisBase,
                                    "GetJointType", mJointType);
 
@@ -231,11 +255,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandQualifiedRead(&osaRobot1394::PotBitsToVoltage, thisBase,
                                             "AnalogInBitsToVolts", mPotBits, mPotVoltage);
 
-    //Debug to run Cursor Example
-    robotInterface->AddCommandReadState(*mStateTableRead, mActuatorPowerEnabled,
-                                        "GetAmpEnable"); // vector[bool]
-    robotInterface->AddCommandReadState(*mStateTableRead, mActuatorPowerStatus,
-                                        "GetAmpStatus"); // vector[bool]
+    //
     robotInterface->AddCommandReadState(*mStateTableRead, mPositionActuatorGet,
                                         "GetPositionActuator"); // prmPositionJointGet
     robotInterface->AddCommandVoid(&osaRobot1394::CalibrateEncoderOffsetsFromPots,

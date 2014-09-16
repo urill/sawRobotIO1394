@@ -40,7 +40,10 @@ class mtsRobotIO1394QtWidget: public QWidget, public mtsComponent
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
 public:
-    mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators, double periodInSeconds = 50.0 * cmn_ms);
+    mtsRobotIO1394QtWidget(const std::string & componentName,
+                           unsigned int numberOfActuators,
+                           unsigned int numberOfBrakes,
+                           double periodInSeconds = 50.0 * cmn_ms);
     mtsRobotIO1394QtWidget(const mtsComponentConstructorNameAndUInt &arg);
     inline ~mtsRobotIO1394QtWidget(void) {}
 
@@ -56,10 +59,11 @@ private slots:
     void SlotEnableAmps(bool toggle);
     void SlotEnableAll(bool toggle);
     void SlotEnableDirectControl(bool toggle);
-    void SlotEnable(void);
+    void SlotActuatorAmpEnable(void);
     void SlotResetCurrentAll(void);
-    void SlotMotorCurrentValueChanged();
-    void SlotSliderMotorCurrentValueChanged(void);
+    void SlotActuatorCurrentValueChanged();
+    void SlotSliderActuatorCurrentValueChanged(void);
+    void SlotBrakeAmpEnable(void);
     void SlotResetEncodersAll(void);
     void SlotBiasEncodersAll(void);
     void SlotWatchdogPeriod(double period_ms);
@@ -81,26 +85,31 @@ protected:
 
     struct RobotStruct {
         mtsFunctionRead GetPeriodStatistics;
-        mtsFunctionRead GetNumberOfActuators;
         mtsFunctionRead IsValid;
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;
-        mtsFunctionVoid EnableSafetyRelay;
         mtsFunctionVoid DisableSafetyRelay;
 
         mtsFunctionRead GetPosition;
         mtsFunctionRead GetVelocity;
         mtsFunctionRead GetAnalogInputVolts;
         mtsFunctionRead GetAnalogInputPosSI;
-        mtsFunctionRead GetMotorRequestedCurrent;
-        mtsFunctionRead GetMotorFeedbackCurrent;
-        mtsFunctionRead GetMotorCurrentMax;
+        mtsFunctionRead GetActuatorRequestedCurrent;
+        mtsFunctionRead GetActuatorFeedbackCurrent;
+        mtsFunctionRead GetActuatorCurrentMax;
         mtsFunctionRead GetJointType;
         mtsFunctionRead GetPowerStatus;
         mtsFunctionRead GetSafetyRelay;
-        mtsFunctionRead GetAmpTemperature;
+        mtsFunctionRead GetActuatorAmpTemperature;
 
-        mtsFunctionWrite SetMotorCurrent;
+        mtsFunctionWrite SetBrakeAmpEnable;
+        mtsFunctionRead GetBrakeAmpEnable;
+        mtsFunctionRead GetBrakeAmpStatus;
+        mtsFunctionRead GetBrakeRequestedCurrent;
+        mtsFunctionRead GetBrakeFeedbackCurrent;
+        mtsFunctionRead GetBrakeAmpTemperature;
+
+        mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionWrite SetEncoderPosition;
         mtsFunctionWrite SetWatchdogPeriod;
 
@@ -112,17 +121,18 @@ protected:
         mtsFunctionVoid DisableBoardsPower;
 
         mtsFunctionWrite SetAmpEnable;
-        mtsFunctionWrite ResetSingleEncoder;
 
         mtsFunctionRead GetAmpEnable;
         mtsFunctionRead GetAmpStatus;
         mtsFunctionRead GetPositionActuator;
     } Actuators;
 
+
 private:
     mtsIntervalStatistics IntervalStatistics;
 
     size_t NumberOfActuators;
+    size_t NumberOfBrakes;
 
     vctDoubleVec UnitFactor;
     vctDoubleVec JointPosition;
@@ -131,13 +141,19 @@ private:
     vctDoubleVec ActuatorVelocity;
     vctDoubleVec PotentiometersVolts;
     vctDoubleVec PotentiometersPosition;
-    vctDoubleVec MotorFeedbackCurrent;
-    vctDoubleVec MotorControlCurrent;
-    vctBoolVec AmpEnable;
-    vctBoolVec AmpStatus;
+    vctDoubleVec ActuatorFeedbackCurrent;
+    vctDoubleVec ActuatorRequestedCurrent;
+    vctDoubleVec ActuatorAmpTemperature;
+    vctBoolVec ActuatorAmpEnable;
+    vctBoolVec ActuatorAmpStatus;
+    vctDoubleVec BrakeFeedbackCurrent;
+    vctDoubleVec BrakeRequestedCurrent;
+    vctDoubleVec BrakeAmpTemperature;
+    vctBoolVec BrakeAmpEnable;
+    vctBoolVec BrakeAmpStatus;
+
     bool PowerStatus;
     unsigned short SafetyRelay;
-    vctDoubleVec AmpTemperature;
 
     // Interface
     double DummyValueWhenNotConnected;
@@ -158,16 +174,21 @@ private:
     // GUI: timing
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
-    vctQtWidgetDynamicVectorBoolWrite * QVWCurrentEnableEachWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * QVWCurrentSpinBoxWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * QVWCurrentSliderWidget;
+    vctQtWidgetDynamicVectorBoolWrite * QVWActuatorCurrentEnableEachWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * QVWActuatorCurrentSpinBoxWidget;
+    vctQtWidgetDynamicVectorDoubleWrite * QVWActuatorCurrentSliderWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorCurrentFeedbackWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRJointPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRActuatorPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRActuatorVelocityWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRPotVoltsWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRPotPositionWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRCurrentFeedbackWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRAmpTemperature;
+    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorAmpTemperature;
+
+    vctQtWidgetDynamicVectorBoolWrite * QVWBrakeCurrentEnableEachWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRBrakeCurrentCommandWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRBrakeCurrentFeedbackWidget;
+    vctQtWidgetDynamicVectorDoubleRead * QVRBrakeAmpTemperature;
 
     QLabel * QLAmpStatus;
     QLabel * QLPowerStatus;

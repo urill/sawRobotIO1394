@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
  Author(s):  Zihan Chen, Peter Kazanzides
  Created on: 2012-07-31
 
@@ -93,8 +92,10 @@ void mtsRobotIO1394::Init(int port_num)
     if (configurationInterface) {
         configurationInterface->AddCommandRead(&osaPort1394::GetRobotNames, mPort,
                                                "GetRobotNames");
-        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfActuatorPerRobot, this,
+        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfActuatorsPerRobot, this,
                                                "GetNumActuators");
+        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfBrakesPerRobot, this,
+                                               "GetNumBrakes");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfRobots, this,
                                                "GetNumRobots");
         configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfDigitalInputs, this,
@@ -325,12 +326,22 @@ void mtsRobotIO1394::GetNumberOfRobots(int & placeHolder) const
     placeHolder = mPort->NumberOfRobots();
 }
 
-void mtsRobotIO1394::GetNumberOfActuatorPerRobot(vctIntVec & placeHolder) const
+void mtsRobotIO1394::GetNumberOfActuatorsPerRobot(vctIntVec & placeHolder) const
 {
-    size_t num_robots = mPort->NumberOfRobots();
-    placeHolder.resize(num_robots);
+    size_t numRobots = mPort->NumberOfRobots();
+    placeHolder.resize(numRobots);
 
-    for (size_t i = 0; i < num_robots; i++) {
+    for (size_t i = 0; i < numRobots; i++) {
         placeHolder[i] = mPort->Robot(i)->NumberOfActuators();
+    }
+}
+
+void mtsRobotIO1394::GetNumberOfBrakesPerRobot(vctIntVec & placeHolder) const
+{
+    size_t numRobots = mPort->NumberOfRobots();
+    placeHolder.resize(numRobots);
+
+    for (size_t i = 0; i < numRobots; i++) {
+        placeHolder[i] = mPort->Robot(i)->NumberOfBrakes();
     }
 }

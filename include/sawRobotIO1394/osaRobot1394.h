@@ -137,8 +137,9 @@ class osaRobot1394 {
          *\{**/
         osaRobot1394Configuration GetConfiguration(void) const;
         std::string Name(void) const;
-        double NumberOfJoints(void) const;
-        double NumberOfActuators(void) const;
+        size_t NumberOfJoints(void) const;
+        size_t NumberOfActuators(void) const;
+        size_t NumberOfBrakes(void) const;
         void GetJointTypes(prmJointTypeVec & jointTypes) const;
         void GetJointEffortCommandLimits(vctDoubleVec & limits) const;
         void GetActuatorEffortCommandLimits(vctDoubleVec & limits) const;

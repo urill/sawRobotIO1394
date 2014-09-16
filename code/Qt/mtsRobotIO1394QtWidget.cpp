@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen
   Created on: 2013-02-16
 
@@ -38,11 +37,15 @@ http://www.cisst.org/cisst/license.txt.
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394QtWidget, mtsComponent, mtsComponentConstructorNameAndUInt)
 
 
-mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName, unsigned int numberOfActuators, double periodInSeconds):
+mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName,
+                                               unsigned int numberOfActuators,
+                                               unsigned int numberOfBrakes,
+                                               double periodInSeconds):
     mtsComponent(componentName),
     DirectControl(false),
     TimerPeriodInMilliseconds(periodInSeconds * 1000), // Qt timers are in milliseconds
-    NumberOfActuators(numberOfActuators)
+    NumberOfActuators(numberOfActuators),
+    NumberOfBrakes(numberOfBrakes)
 {
     WatchdogPeriodInSeconds = 300.0 * cmn_ms;
     Init();
@@ -67,12 +70,11 @@ void mtsRobotIO1394QtWidget::Init(void)
     ActuatorVelocity.SetSize(NumberOfActuators);
     PotentiometersVolts.SetSize(NumberOfActuators);
     PotentiometersPosition.SetSize(NumberOfActuators);
-    MotorFeedbackCurrent.SetSize(NumberOfActuators);
-    MotorFeedbackCurrent.Zeros();
-    MotorControlCurrent.SetSize(NumberOfActuators);
-    MotorControlCurrent.Zeros();
-    AmpEnable.SetSize(NumberOfActuators);
-    AmpTemperature.SetSize(NumberOfActuators);
+    ActuatorFeedbackCurrent.SetSize(NumberOfActuators);
+    ActuatorFeedbackCurrent.Zeros();
+    ActuatorRequestedCurrent.SetSize(NumberOfActuators);
+    ActuatorRequestedCurrent.Zeros();
+    ActuatorAmpTemperature.SetSize(NumberOfActuators);
 
     StartTime = osaGetTime();
 
@@ -90,16 +92,16 @@ void mtsRobotIO1394QtWidget::Configure(const std::string &filename)
 void mtsRobotIO1394QtWidget::Startup(void)
 {
     CMN_LOG_CLASS_INIT_VERBOSE << "Startup" << std::endl;
-    vctDoubleVec motorCurrentMax(this->NumberOfActuators);
-    mtsExecutionResult result = Robot.GetMotorCurrentMax(motorCurrentMax);
+    vctDoubleVec actuatorCurrentMax(this->NumberOfActuators);
+    mtsExecutionResult result = Robot.GetActuatorCurrentMax(actuatorCurrentMax);
     if (!result) {
-        CMN_LOG_CLASS_INIT_ERROR << "Startup: Robot interface isn't connected properly, unable to get motor current max.  Function call returned: "
+        CMN_LOG_CLASS_INIT_ERROR << "Startup: Robot interface isn't connected properly, unable to get actuator current max.  Function call returned: "
                                  << result << std::endl;
     } else {
         // convert to mA
-        motorCurrentMax.Multiply(1000.0);
-        QVWCurrentSpinBoxWidget->SetRange(-motorCurrentMax, motorCurrentMax);
-        QVWCurrentSliderWidget->SetRange(-motorCurrentMax, motorCurrentMax);
+        actuatorCurrentMax.Multiply(1000.0);
+        QVWActuatorCurrentSpinBoxWidget->SetRange(-actuatorCurrentMax, actuatorCurrentMax);
+        QVWActuatorCurrentSliderWidget->SetRange(-actuatorCurrentMax, actuatorCurrentMax);
     }
 
     prmJointTypeVec jointType;
@@ -178,8 +180,15 @@ void mtsRobotIO1394QtWidget::SlotEnableAll(bool toggle)
     {
         QCBEnableAmps->setChecked(toggle);
     } QCBEnableAmps->blockSignals(false);
-    vctBoolVec allEnable(NumberOfActuators, toggle);
-    QVWCurrentEnableEachWidget->SetValue(allEnable);
+    if (NumberOfActuators != 0) {
+        vctBoolVec allEnable(NumberOfActuators, toggle);
+        QVWActuatorCurrentEnableEachWidget->SetValue(allEnable);
+    }
+    if (NumberOfBrakes != 0) {
+        vctBoolVec allEnable(NumberOfBrakes, toggle);
+        QVWBrakeCurrentEnableEachWidget->SetValue(allEnable);
+    }
+
     // set all current to 0
     SlotResetCurrentAll();
 }
@@ -188,8 +197,8 @@ void mtsRobotIO1394QtWidget::SlotEnableDirectControl(bool toggle)
 {
     DirectControl = toggle;
     // if checked in DIRECT_CONTROL mode
-    QVWCurrentSpinBoxWidget->setEnabled(toggle);
-    QVWCurrentSliderWidget->setEnabled(toggle);
+    QVWActuatorCurrentSpinBoxWidget->setEnabled(toggle);
+    QVWActuatorCurrentSliderWidget->setEnabled(toggle);
     QPBResetCurrentAll->setEnabled(toggle);
     // set all current to 0
     SlotResetCurrentAll();
@@ -200,41 +209,48 @@ void mtsRobotIO1394QtWidget::SlotResetCurrentAll(void)
     // send to controller first
     vctDoubleVec cmdCurA(NumberOfActuators);
     cmdCurA.SetAll(0.0);
-    Robot.SetMotorCurrent(cmdCurA);
+    Robot.SetActuatorCurrent(cmdCurA);
     // update GUI
-    QVWCurrentSpinBoxWidget->SetValue(cmdCurA);
-    QVWCurrentSliderWidget->SetValue(cmdCurA);
+    QVWActuatorCurrentSpinBoxWidget->SetValue(cmdCurA);
+    QVWActuatorCurrentSliderWidget->SetValue(cmdCurA);
 }
 
-void mtsRobotIO1394QtWidget::SlotEnable(void)
+void mtsRobotIO1394QtWidget::SlotActuatorAmpEnable(void)
 {
-    AmpEnable.SetSize(NumberOfActuators);
-    QVWCurrentEnableEachWidget->GetValue(AmpEnable);
-    Actuators.SetAmpEnable(AmpEnable);
+    ActuatorAmpEnable.SetSize(NumberOfActuators);
+    QVWActuatorCurrentEnableEachWidget->GetValue(ActuatorAmpEnable);
+    Actuators.SetAmpEnable(ActuatorAmpEnable);
 }
 
-void mtsRobotIO1394QtWidget::SlotMotorCurrentValueChanged()
+void mtsRobotIO1394QtWidget::SlotBrakeAmpEnable(void)
 {
-    vctDoubleVec cmdCurmA(NumberOfActuators);
-    vctDoubleVec cmdCurA(NumberOfActuators);
-    // get value from GUI
-    QVWCurrentSpinBoxWidget->GetValue(cmdCurmA);
-    QVWCurrentSliderWidget->SetValue(cmdCurmA);
-    // convert to amps and apply
-    cmdCurA = cmdCurmA.Divide(1000.0);
-    Robot.SetMotorCurrent(cmdCurA);
+    BrakeAmpEnable.SetSize(NumberOfBrakes);
+    QVWBrakeCurrentEnableEachWidget->GetValue(BrakeAmpEnable);
+    Robot.SetBrakeAmpEnable(BrakeAmpEnable);
 }
 
-void mtsRobotIO1394QtWidget::SlotSliderMotorCurrentValueChanged()
+void mtsRobotIO1394QtWidget::SlotActuatorCurrentValueChanged()
 {
     vctDoubleVec cmdCurmA(NumberOfActuators);
     vctDoubleVec cmdCurA(NumberOfActuators);
     // get value from GUI
-    QVWCurrentSliderWidget->GetValue(cmdCurmA);
-    QVWCurrentSpinBoxWidget->SetValue(cmdCurmA);
+    QVWActuatorCurrentSpinBoxWidget->GetValue(cmdCurmA);
+    QVWActuatorCurrentSliderWidget->SetValue(cmdCurmA);
     // convert to amps and apply
     cmdCurA = cmdCurmA.Divide(1000.0);
-    Robot.SetMotorCurrent(cmdCurA);
+    Robot.SetActuatorCurrent(cmdCurA);
+}
+
+void mtsRobotIO1394QtWidget::SlotSliderActuatorCurrentValueChanged()
+{
+    vctDoubleVec cmdCurmA(NumberOfActuators);
+    vctDoubleVec cmdCurA(NumberOfActuators);
+    // get value from GUI
+    QVWActuatorCurrentSliderWidget->GetValue(cmdCurmA);
+    QVWActuatorCurrentSpinBoxWidget->SetValue(cmdCurmA);
+    // convert to amps and apply
+    cmdCurA = cmdCurmA.Divide(1000.0);
+    Robot.SetActuatorCurrent(cmdCurA);
 }
 
 void mtsRobotIO1394QtWidget::SlotResetEncodersAll()
@@ -281,51 +297,66 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         Robot.IsValid(flag);
         if (flag) {
             Robot.GetPeriodStatistics(IntervalStatistics);
-            Robot.GetPosition(JointPosition); // vct
-            JointPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
-            Actuators.GetPositionActuator(ActuatorPositionGet); // prm
-            ActuatorPosition.Assign(ActuatorPositionGet.Position()); // vct
-            ActuatorPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
-            Robot.GetVelocity(ActuatorVelocity);
-            ActuatorVelocity.ElementwiseMultiply(UnitFactor); // to degrees or mm
-            Robot.GetAnalogInputVolts(PotentiometersVolts);
-            Robot.GetAnalogInputPosSI(PotentiometersPosition);
-            PotentiometersPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
-            Robot.GetMotorFeedbackCurrent(MotorFeedbackCurrent);
-            Actuators.GetAmpEnable(AmpEnable);
-            Actuators.GetAmpStatus(AmpStatus);
             Robot.GetPowerStatus(PowerStatus);
             Robot.GetSafetyRelay(SafetyRelay);
-            Robot.GetAmpTemperature(AmpTemperature);
+            if (NumberOfActuators != 0) {
+                Actuators.GetAmpEnable(ActuatorAmpEnable);
+                Actuators.GetAmpStatus(ActuatorAmpStatus);
+                Robot.GetPosition(JointPosition); // vct
+                JointPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
+                Actuators.GetPositionActuator(ActuatorPositionGet); // prm
+                ActuatorPosition.Assign(ActuatorPositionGet.Position()); // vct
+                ActuatorPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
+                Robot.GetVelocity(ActuatorVelocity);
+                ActuatorVelocity.ElementwiseMultiply(UnitFactor); // to degrees or mm
+                Robot.GetAnalogInputVolts(PotentiometersVolts);
+                Robot.GetAnalogInputPosSI(PotentiometersPosition);
+                PotentiometersPosition.ElementwiseMultiply(UnitFactor); // to degrees or mm
+                Robot.GetActuatorFeedbackCurrent(ActuatorFeedbackCurrent);
+                ActuatorFeedbackCurrent.Multiply(1000.0); // to mA
+                Robot.GetActuatorAmpTemperature(ActuatorAmpTemperature);
+            }
+            if (NumberOfBrakes != 0) {
+                Robot.GetBrakeAmpEnable(BrakeAmpEnable);
+                Robot.GetBrakeAmpStatus(BrakeAmpStatus);
+                Robot.GetBrakeFeedbackCurrent(BrakeFeedbackCurrent);
+                BrakeFeedbackCurrent.Multiply(1000.0); // to mA
+                Robot.GetBrakeAmpTemperature(BrakeAmpTemperature);
+            }
         } else {
             JointPosition.SetAll(DummyValueWhenNotConnected);
             ActuatorPosition.SetAll(DummyValueWhenNotConnected);
             ActuatorVelocity.SetAll(DummyValueWhenNotConnected);
             PotentiometersVolts.SetAll(DummyValueWhenNotConnected);
             PotentiometersPosition.SetAll(DummyValueWhenNotConnected);
-            MotorFeedbackCurrent.SetAll(DummyValueWhenNotConnected);
-            AmpTemperature.SetAll(DummyValueWhenNotConnected);
+            ActuatorFeedbackCurrent.SetAll(DummyValueWhenNotConnected);
+            ActuatorAmpTemperature.SetAll(DummyValueWhenNotConnected);
         }
 
         DummyValueWhenNotConnected += 0.1;
 
         // display requested current when we are not trying to set it using GUI
         if (flag && !DirectControl) {
-            vctDoubleVec requestedCurrent(NumberOfActuators);
-            Robot.GetMotorRequestedCurrent(requestedCurrent);
-            requestedCurrent.Multiply(1000.0); // got A, need mA for display
-            QVWCurrentSpinBoxWidget->SetValue(requestedCurrent);
-            QVWCurrentSliderWidget->SetValue(requestedCurrent);
+            Robot.GetActuatorRequestedCurrent(ActuatorRequestedCurrent);
+            ActuatorRequestedCurrent.Multiply(1000.0); // got A, need mA for display
+            QVWActuatorCurrentSpinBoxWidget->SetValue(ActuatorRequestedCurrent);
+            QVWActuatorCurrentSliderWidget->SetValue(ActuatorRequestedCurrent);
         }
 
         QMIntervalStatistics->SetValue(IntervalStatistics);
-        QVRJointPositionWidget->SetValue(JointPosition);
-        QVRActuatorPositionWidget->SetValue(ActuatorPosition);
-        QVRActuatorVelocityWidget->SetValue(ActuatorVelocity);
-        QVRPotVoltsWidget->SetValue(PotentiometersVolts);
-        QVRPotPositionWidget->SetValue(PotentiometersPosition);
-        QVRCurrentFeedbackWidget->SetValue(MotorFeedbackCurrent * 1000.0);
-        QVRAmpTemperature->SetValue(AmpTemperature);
+        if (NumberOfActuators != 0) {
+            QVRJointPositionWidget->SetValue(JointPosition);
+            QVRActuatorPositionWidget->SetValue(ActuatorPosition);
+            QVRActuatorVelocityWidget->SetValue(ActuatorVelocity);
+            QVRPotVoltsWidget->SetValue(PotentiometersVolts);
+            QVRPotPositionWidget->SetValue(PotentiometersPosition);
+            QVRActuatorCurrentFeedbackWidget->SetValue(ActuatorFeedbackCurrent);
+            QVRActuatorAmpTemperature->SetValue(ActuatorAmpTemperature);
+        }
+        if (NumberOfBrakes != 0) {
+            QVRBrakeCurrentFeedbackWidget->SetValue(BrakeFeedbackCurrent);
+            QVRBrakeAmpTemperature->SetValue(BrakeAmpTemperature);
+        }
 
         UpdateRobotInfo();
     }
@@ -341,26 +372,30 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
     mtsInterfaceRequired * robotInterface = AddInterfaceRequired("Robot");
     if (robotInterface) {
         robotInterface->AddFunction("GetPeriodStatistics", Robot.GetPeriodStatistics);
-        robotInterface->AddFunction("GetNumberOfActuators", Robot.GetNumberOfActuators);
         robotInterface->AddFunction("IsValid", Robot.IsValid);
         robotInterface->AddFunction("EnablePower", Robot.EnablePower);
         robotInterface->AddFunction("DisablePower", Robot.DisablePower);
-        robotInterface->AddFunction("EnableSafetyRelay", Robot.EnableSafetyRelay);
         robotInterface->AddFunction("DisableSafetyRelay", Robot.DisableSafetyRelay);
 
         robotInterface->AddFunction("GetPosition", Robot.GetPosition);
         robotInterface->AddFunction("GetVelocity", Robot.GetVelocity);
         robotInterface->AddFunction("GetAnalogInputVolts", Robot.GetAnalogInputVolts);
         robotInterface->AddFunction("GetAnalogInputPosSI", Robot.GetAnalogInputPosSI);
-        robotInterface->AddFunction("GetMotorRequestedCurrent", Robot.GetMotorRequestedCurrent);
-        robotInterface->AddFunction("GetMotorFeedbackCurrent", Robot.GetMotorFeedbackCurrent);
-        robotInterface->AddFunction("GetMotorCurrentMax", Robot.GetMotorCurrentMax);
+        robotInterface->AddFunction("GetActuatorRequestedCurrent", Robot.GetActuatorRequestedCurrent);
+        robotInterface->AddFunction("GetActuatorFeedbackCurrent", Robot.GetActuatorFeedbackCurrent);
+        robotInterface->AddFunction("GetActuatorCurrentMax", Robot.GetActuatorCurrentMax);
+        robotInterface->AddFunction("GetActuatorAmpTemperature", Robot.GetActuatorAmpTemperature);
         robotInterface->AddFunction("GetJointType", Robot.GetJointType);
         robotInterface->AddFunction("GetPowerStatus", Robot.GetPowerStatus);
         robotInterface->AddFunction("GetSafetyRelay", Robot.GetSafetyRelay);
-        robotInterface->AddFunction("GetAmpTemperature", Robot.GetAmpTemperature);
 
-        robotInterface->AddFunction("SetMotorCurrent", Robot.SetMotorCurrent);
+        robotInterface->AddFunction("SetBrakeAmpEnable", Robot.SetBrakeAmpEnable);
+        robotInterface->AddFunction("GetBrakeAmpStatus", Robot.GetBrakeAmpStatus);
+        robotInterface->AddFunction("GetBrakeRequestedCurrent", Robot.GetBrakeRequestedCurrent);
+        robotInterface->AddFunction("GetBrakeFeedbackCurrent", Robot.GetBrakeFeedbackCurrent);
+        robotInterface->AddFunction("GetBrakeAmpTemperature", Robot.GetBrakeAmpTemperature);
+
+        robotInterface->AddFunction("SetActuatorCurrent", Robot.SetActuatorCurrent);
         robotInterface->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
         robotInterface->AddFunction("SetWatchdogPeriod", Robot.SetWatchdogPeriod);
 
@@ -378,8 +413,6 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         actuatorInterface->AddFunction("EnableBoardsPower", Actuators.EnableBoardsPower);
         actuatorInterface->AddFunction("DisableBoardsPower", Actuators.DisableBoardsPower);
         actuatorInterface->AddFunction("SetAmpEnable", Actuators.SetAmpEnable);
-        actuatorInterface->AddFunction("ResetSingleEncoder", Actuators.ResetSingleEncoder);
-
         actuatorInterface->AddFunction("GetAmpEnable", Actuators.GetAmpEnable);
         actuatorInterface->AddFunction("GetAmpStatus", Actuators.GetAmpStatus);
     }
@@ -502,62 +535,91 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     gridLayout->setSpacing(1);
     int row = 0;
 
-    vctBoolVec defaultEnable(NumberOfActuators, false);
-    vctDoubleVec defaultCurrent(NumberOfActuators, 0.0);
+    if (NumberOfActuators != 0) {
 
-    gridLayout->addWidget(new QLabel("Actuator power"), row, 0);
-    QVWCurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
-    QVWCurrentEnableEachWidget->SetValue(defaultEnable);
-    gridLayout->addWidget(QVWCurrentEnableEachWidget, row, 1);
-    row++;
+        vctBoolVec defaultEnable(NumberOfActuators, false);
+        vctDoubleVec defaultCurrent(NumberOfActuators, 0.0);
 
-    gridLayout->addWidget(new QLabel("Desired current (mA)"), row, 0);
-    QVWCurrentSpinBoxWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SPINBOX_WIDGET);
-    QVWCurrentSpinBoxWidget->SetValue(defaultCurrent);
-    gridLayout->addWidget(QVWCurrentSpinBoxWidget, row, 1);
-    row++;
+        gridLayout->addWidget(new QLabel("Actuator power"), row, 0);
+        QVWActuatorCurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
+        QVWActuatorCurrentEnableEachWidget->SetValue(defaultEnable);
+        gridLayout->addWidget(QVWActuatorCurrentEnableEachWidget, row, 1);
+        row++;
 
-    QPBResetCurrentAll = new QPushButton("Reset current");
-    gridLayout->addWidget(QPBResetCurrentAll, row, 0);
-    QVWCurrentSliderWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SLIDER_WIDGET);
-    QVWCurrentSliderWidget->SetValue(defaultCurrent);
-    gridLayout->addWidget(QVWCurrentSliderWidget, row, 1);
-    row++;
+        gridLayout->addWidget(new QLabel("Desired current (mA)"), row, 0);
+        QVWActuatorCurrentSpinBoxWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SPINBOX_WIDGET);
+        QVWActuatorCurrentSpinBoxWidget->SetValue(defaultCurrent);
+        gridLayout->addWidget(QVWActuatorCurrentSpinBoxWidget, row, 1);
+        row++;
 
-    gridLayout->addWidget(new QLabel("Joint positions (deg)"), row, 0);
-    QVRJointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(QVRJointPositionWidget, row, 1);
-    row++;
+        QPBResetCurrentAll = new QPushButton("Reset current");
+        gridLayout->addWidget(QPBResetCurrentAll, row, 0);
+        QVWActuatorCurrentSliderWidget = new vctQtWidgetDynamicVectorDoubleWrite(vctQtWidgetDynamicVectorDoubleWrite::SLIDER_WIDGET);
+        QVWActuatorCurrentSliderWidget->SetValue(defaultCurrent);
+        gridLayout->addWidget(QVWActuatorCurrentSliderWidget, row, 1);
+        row++;
 
-    gridLayout->addWidget(new QLabel("Actuator positions (deg)"), row, 0);
-    QVRActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(QVRActuatorPositionWidget, row, 1);
-    row++;
+        gridLayout->addWidget(new QLabel("Current feedback (mA)"), row, 0);
+        QVRActuatorCurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRActuatorCurrentFeedbackWidget, row, 1);
+        row++;
 
-    gridLayout->addWidget(new QLabel("Velocities (deg/s)"), row, 0);
-    QVRActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(QVRActuatorVelocityWidget, row, 1);
-    row++;
+        gridLayout->addWidget(new QLabel("Joint positions (deg)"), row, 0);
+        QVRJointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRJointPositionWidget, row, 1);
+        row++;
 
-    gridLayout->addWidget(new QLabel("Analog inputs (V)"), row, 0);
-    QVRPotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(QVRPotVoltsWidget, row, 1);
-    row++;
+        gridLayout->addWidget(new QLabel("Actuator positions (deg)"), row, 0);
+        QVRActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRActuatorPositionWidget, row, 1);
+        row++;
 
-    gridLayout->addWidget(new QLabel("Potentiometers (deg)"), row, 0);
-    QVRPotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(QVRPotPositionWidget, row, 1);
-    row++;
+        gridLayout->addWidget(new QLabel("Velocities (deg/s)"), row, 0);
+        QVRActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRActuatorVelocityWidget, row, 1);
+        row++;
 
-    gridLayout->addWidget(new QLabel("Current feedback (mA)"), row, 0);
-    QVRCurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(QVRCurrentFeedbackWidget, row, 1);
-    row++;
+        gridLayout->addWidget(new QLabel("Analog inputs (V)"), row, 0);
+        QVRPotVoltsWidget = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRPotVoltsWidget, row, 1);
+        row++;
 
-    gridLayout->addWidget(new QLabel("Amp temperature (C)"), row, 0);
-    QVRAmpTemperature = new vctQtWidgetDynamicVectorDoubleRead();
-    gridLayout->addWidget(QVRAmpTemperature, row, 1);
-    row++;
+        gridLayout->addWidget(new QLabel("Potentiometers (deg)"), row, 0);
+        QVRPotPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRPotPositionWidget, row, 1);
+        row++;
+
+        gridLayout->addWidget(new QLabel("Amp temperature (C)"), row, 0);
+        QVRActuatorAmpTemperature = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRActuatorAmpTemperature, row, 1);
+        row++;
+    }
+
+    if (NumberOfBrakes != 0) {
+
+        vctBoolVec defaultEnable(NumberOfBrakes, false);
+
+        gridLayout->addWidget(new QLabel("Brake power"), row, 0);
+        QVWBrakeCurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
+        QVWBrakeCurrentEnableEachWidget->SetValue(defaultEnable);
+        gridLayout->addWidget(QVWBrakeCurrentEnableEachWidget, row, 1);
+        row++;
+
+        gridLayout->addWidget(new QLabel("Current desired (mA)"), row, 0);
+        QVRBrakeCurrentCommandWidget = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRBrakeCurrentCommandWidget, row, 1);
+        row++;
+
+        gridLayout->addWidget(new QLabel("Current feedback (mA)"), row, 0);
+        QVRBrakeCurrentFeedbackWidget = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRBrakeCurrentFeedbackWidget, row, 1);
+        row++;
+
+        gridLayout->addWidget(new QLabel("Amp temperature (C)"), row, 0);
+        QVRBrakeAmpTemperature = new vctQtWidgetDynamicVectorDoubleRead();
+        gridLayout->addWidget(QVRBrakeAmpTemperature, row, 1);
+        row++;
+    }
 
     // main layout
     QVBoxLayout * mainLayout = new QVBoxLayout;
@@ -579,9 +641,10 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     connect(QPBBiasEncAll, SIGNAL(clicked()), this, SLOT(SlotBiasEncodersAll()));
     connect(QSBWatchdogPeriod, SIGNAL(valueChanged(double)),
             this, SLOT(SlotWatchdogPeriod(double)));
-    connect(QVWCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotEnable()));
-    connect(QVWCurrentSpinBoxWidget, SIGNAL(valueChanged()), this, SLOT(SlotMotorCurrentValueChanged()));
-    connect(QVWCurrentSliderWidget, SIGNAL(valueChanged()), this, SLOT(SlotSliderMotorCurrentValueChanged()));
+    connect(QVWActuatorCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotActuatorAmpEnable()));
+    connect(QVWActuatorCurrentSpinBoxWidget, SIGNAL(valueChanged()), this, SLOT(SlotActuatorCurrentValueChanged()));
+    connect(QVWActuatorCurrentSliderWidget, SIGNAL(valueChanged()), this, SLOT(SlotSliderActuatorCurrentValueChanged()));
+    connect(QVWBrakeCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotBrakeAmpEnable()));
 
     // connect cisstMultiTask events
     connect(this, SIGNAL(SignalPowerStatus(bool)), this, SLOT(SlotPowerStatus(bool)));
@@ -597,9 +660,9 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
 void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
 {
-    // amplifier status
-    bool ampStatusGood = AmpStatus.All();
-    QVWCurrentEnableEachWidget->SetValue(AmpStatus);
+    // actuator amplifier status
+    bool ampStatusGood = ActuatorAmpStatus.All();
+    QVWActuatorCurrentEnableEachWidget->SetValue(ActuatorAmpStatus);
     if (ampStatusGood) {
         QLAmpStatus->setText("Actuators ON");
         QLAmpStatus->setStyleSheet("QPLabel { background-color: green }");
@@ -607,6 +670,9 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
         QLAmpStatus->setText("Actuators OFF");
         QLAmpStatus->setStyleSheet("QLabel { background-color: red }");
     }
+
+    // brake amplifier status
+    QVWBrakeCurrentEnableEachWidget->SetValue(BrakeAmpStatus);
 
     // power status
     if (PowerStatus) {
@@ -622,7 +688,14 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
         QCBEnableAmps->setChecked(ampStatusGood);
     } QCBEnableAmps->blockSignals(false);
     QCBEnableAll->blockSignals(true); {
-        QCBEnableAll->setChecked(ampStatusGood && AmpEnable.All());
+        bool status = ampStatusGood;
+        if (NumberOfActuators != 0) {
+            status = status && ActuatorAmpEnable.All();
+        }
+        if (NumberOfBrakes != 0) {
+            status = status && BrakeAmpEnable.All();
+        }
+        QCBEnableAll->setChecked(status);
     } QCBEnableAll->blockSignals(false);
 
     // safety Relay
