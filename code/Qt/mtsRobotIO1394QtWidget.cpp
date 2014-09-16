@@ -286,6 +286,16 @@ void mtsRobotIO1394QtWidget::SlotWatchdogPeriod(double period_ms)
     }
 }
 
+void mtsRobotIO1394QtWidget::SlotBrakeEngage(void)
+{
+    Robot.BrakeEngage();
+}
+
+void mtsRobotIO1394QtWidget::SlotBrakeRelease(void)
+{
+    Robot.BrakeRelease();
+}
+
 void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
 {
     ProcessQueuedEvents();
@@ -319,6 +329,8 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
             if (NumberOfBrakes != 0) {
                 Robot.GetBrakeAmpEnable(BrakeAmpEnable);
                 Robot.GetBrakeAmpStatus(BrakeAmpStatus);
+                Robot.GetBrakeRequestedCurrent(BrakeRequestedCurrent);
+                BrakeRequestedCurrent.Multiply(1000.0); // to mA
                 Robot.GetBrakeFeedbackCurrent(BrakeFeedbackCurrent);
                 BrakeFeedbackCurrent.Multiply(1000.0); // to mA
                 Robot.GetBrakeAmpTemperature(BrakeAmpTemperature);
@@ -354,6 +366,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
             QVRActuatorAmpTemperature->SetValue(ActuatorAmpTemperature);
         }
         if (NumberOfBrakes != 0) {
+            QVRBrakeCurrentCommandWidget->SetValue(BrakeRequestedCurrent);
             QVRBrakeCurrentFeedbackWidget->SetValue(BrakeFeedbackCurrent);
             QVRBrakeAmpTemperature->SetValue(BrakeAmpTemperature);
         }
@@ -394,6 +407,8 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("GetBrakeRequestedCurrent", Robot.GetBrakeRequestedCurrent);
         robotInterface->AddFunction("GetBrakeFeedbackCurrent", Robot.GetBrakeFeedbackCurrent);
         robotInterface->AddFunction("GetBrakeAmpTemperature", Robot.GetBrakeAmpTemperature);
+        robotInterface->AddFunction("BrakeRelease", Robot.BrakeRelease);
+        robotInterface->AddFunction("BrakeEngage", Robot.BrakeEngage);
 
         robotInterface->AddFunction("SetActuatorCurrent", Robot.SetActuatorCurrent);
         robotInterface->AddFunction("SetEncoderPosition", Robot.SetEncoderPosition);
@@ -599,6 +614,15 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
         vctBoolVec defaultEnable(NumberOfBrakes, false);
 
+        gridLayout->addWidget(new QLabel("Brakes"), row, 0);
+        QHBoxLayout * brakeButtonsLayout = new QHBoxLayout();
+        QPBBrakeRelease =  new QPushButton("Release");
+        brakeButtonsLayout->addWidget(QPBBrakeRelease);
+        QPBBrakeEngage =  new QPushButton("Engage");
+        brakeButtonsLayout->addWidget(QPBBrakeEngage);
+        gridLayout->addLayout(brakeButtonsLayout, row, 1);
+        row++;
+
         gridLayout->addWidget(new QLabel("Brake power"), row, 0);
         QVWBrakeCurrentEnableEachWidget = new vctQtWidgetDynamicVectorBoolWrite();
         QVWBrakeCurrentEnableEachWidget->SetValue(defaultEnable);
@@ -644,6 +668,8 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     connect(QVWActuatorCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotActuatorAmpEnable()));
     connect(QVWActuatorCurrentSpinBoxWidget, SIGNAL(valueChanged()), this, SLOT(SlotActuatorCurrentValueChanged()));
     connect(QVWActuatorCurrentSliderWidget, SIGNAL(valueChanged()), this, SLOT(SlotSliderActuatorCurrentValueChanged()));
+    connect(QPBBrakeRelease, SIGNAL(clicked()), this, SLOT(SlotBrakeRelease()));
+    connect(QPBBrakeEngage, SIGNAL(clicked()), this, SLOT(SlotBrakeEngage()));
     connect(QVWBrakeCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotBrakeAmpEnable()));
 
     // connect cisstMultiTask events

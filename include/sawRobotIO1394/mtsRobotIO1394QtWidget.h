@@ -67,6 +67,8 @@ private slots:
     void SlotResetEncodersAll(void);
     void SlotBiasEncodersAll(void);
     void SlotWatchdogPeriod(double period_ms);
+    void SlotBrakeEngage(void);
+    void SlotBrakeRelease(void);
 
     void timerEvent(QTimerEvent * event);
 
@@ -108,7 +110,8 @@ protected:
         mtsFunctionRead GetBrakeRequestedCurrent;
         mtsFunctionRead GetBrakeFeedbackCurrent;
         mtsFunctionRead GetBrakeAmpTemperature;
-
+        mtsFunctionVoid BrakeEngage;
+        mtsFunctionVoid BrakeRelease;
         mtsFunctionWrite SetActuatorCurrent;
         mtsFunctionWrite SetEncoderPosition;
         mtsFunctionWrite SetWatchdogPeriod;
@@ -185,6 +188,9 @@ private:
     vctQtWidgetDynamicVectorDoubleRead * QVRPotPositionWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRActuatorAmpTemperature;
 
+    // Brakes
+    QPushButton * QPBBrakeRelease;
+    QPushButton * QPBBrakeEngage;
     vctQtWidgetDynamicVectorBoolWrite * QVWBrakeCurrentEnableEachWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRBrakeCurrentCommandWidget;
     vctQtWidgetDynamicVectorDoubleRead * QVRBrakeCurrentFeedbackWidget;

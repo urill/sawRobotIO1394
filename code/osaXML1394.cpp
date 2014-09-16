@@ -159,6 +159,18 @@ namespace sawRobotIO1394 {
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/MaxCurrent/@Value", robotIndex, actuatorIndex);
                 xmlConfig.GetXMLValue(context, path, actuator.Brake->Drive.CurrentCommandLimit);
 
+                sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/ReleaseCurrent/@Value", robotIndex, actuatorIndex);
+                xmlConfig.GetXMLValue(context, path, actuator.Brake->ReleaseCurrent);
+
+                sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/ReleaseTime/@Value", robotIndex, actuatorIndex);
+                xmlConfig.GetXMLValue(context, path, actuator.Brake->ReleaseTime);
+
+                sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/ReleasedCurrent/@Value", robotIndex, actuatorIndex);
+                xmlConfig.GetXMLValue(context, path, actuator.Brake->ReleasedCurrent);
+
+                sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/EngagedCurrent/@Value", robotIndex, actuatorIndex);
+                xmlConfig.GetXMLValue(context, path, actuator.Brake->EngagedCurrent);
+
             } else {
                 // no brake found
                 actuator.Brake = 0;

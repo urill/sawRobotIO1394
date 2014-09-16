@@ -45,8 +45,8 @@ namespace sawRobotIO1394 {
      * conversion as well as safety monitoring for the QLA robot control
      * architecture.
      **/
-class osaRobot1394 {
-
+class osaRobot1394
+{
     public:
         //! Watchdog counts per ms (note counter width, e.g. 16 bits)
         static const size_t WATCHDOG_MS_TO_COUNT = 192;
@@ -105,11 +105,12 @@ class osaRobot1394 {
         void SetActuatorCurrentBits(const vctIntVec & bits);
 
         //! Brake Control
+    protected:
         void SetBrakeCurrent(const vctDoubleVec & currents);
         void SetBrakeCurrentBits(const vctIntVec & bits);
-        void SetBrakeReleaseCurrent(void);
-        void SetBrakeReleasedCurrent(void);
-        void SetBrakeEngagedCurrent(void);
+    public:
+        void BrakeRelease(void);
+        void BrakeEngage(void);
         /**}**/
 
 
@@ -197,6 +198,10 @@ class osaRobot1394 {
         size_t mNumberOfJoints;
         size_t mNumberOfBrakes;
 
+        // state of brakes
+        bool mBrakeReleasing;
+        vctDoubleVec mBrakeReleasingTimer;
+
         //! Vectors of actuator properties
         vctIntVec
             mCountsPerTurn;
@@ -269,8 +274,8 @@ class osaRobot1394 {
             mBrakeCurrentBitsFeedback;
 
         vctDoubleVec
-            mActuatorTimeStamp,
-            mBrakeTimeStamp,
+            mActuatorTimestamp,
+            mBrakeTimestamp,
             mPotVoltage,
             mPotPosition,
             mEncoderPosition,

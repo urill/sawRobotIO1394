@@ -30,7 +30,7 @@ http://www.cisst.org/cisst/license.txt.
 using namespace sawRobotIO1394;
 
 osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
-                           const size_t max_consecutive_current_safety_violations):
+                           const size_t maxConsecutiveCurrentSafetyViolations):
     // IO Structures
     mActuatorInfo(),
     mUniqueBoards(),
@@ -42,7 +42,7 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
     mPreviousWatchdogStatus(false),
     mSafetyRelay(false),
     mCurrentSafetyViolationsCounter(0),
-    mCurrentSafetyViolationsMaximum(max_consecutive_current_safety_violations)
+    mCurrentSafetyViolationsMaximum(maxConsecutiveCurrentSafetyViolations)
 {
     this->Configure(config);
 }
@@ -71,7 +71,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mEncoderVelocityBitsNow.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsCommand.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsFeedback.SetSize(mNumberOfActuators);
-    mActuatorTimeStamp.SetSize(mNumberOfActuators);
+    mActuatorTimestamp.SetSize(mNumberOfActuators);
     mPotVoltage.SetSize(mNumberOfActuators);
     mPotPosition.SetSize(mNumberOfActuators);
     mEncoderPosition.SetSize(mNumberOfActuators);
@@ -115,6 +115,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mActuatorTemperature.SetSize(mNumberOfActuators);
 
     mNumberOfBrakes = 0;
+    mBrakeReleasing = false;
 
     // Construct property vectors
     for (size_t i = 0; i < mNumberOfActuators; i++) {
@@ -167,6 +168,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
 
     // Update brake data
     mBrakeInfo.resize(mNumberOfBrakes);
+    mBrakeReleasingTimer.resize(mNumberOfBrakes);
 
     mBrakeCurrentToBitsScales.SetSize(mNumberOfBrakes);
     mBrakeCurrentToBitsOffsets.SetSize(mNumberOfBrakes);
@@ -178,7 +180,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mBrakePowerEnabled.SetSize(mNumberOfBrakes);
     mBrakeCurrentBitsCommand.SetSize(mNumberOfBrakes);
     mBrakeCurrentBitsFeedback.SetSize(mNumberOfBrakes);
-    mBrakeTimeStamp.SetSize(mNumberOfActuators);
+    mBrakeTimestamp.SetSize(mNumberOfBrakes);
     mBrakeCurrentCommand.SetSize(mNumberOfBrakes);
     mBrakeCurrentFeedback.SetSize(mNumberOfBrakes);
     mBrakeTemperature.SetSize(mNumberOfBrakes);
@@ -310,7 +312,7 @@ void osaRobot1394::PollState(void)
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
 
-        mActuatorTimeStamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+        mActuatorTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
         mDigitalInputs[i] = board->GetDigitalInput();
 
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
@@ -335,7 +337,7 @@ void osaRobot1394::PollState(void)
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
 
-        mBrakeTimeStamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+        mBrakeTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
         mBrakeCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
         mBrakePowerEnabled[i] = board->GetAmpEnable(axis);
         mBrakePowerStatus[i] = board->GetAmpStatus(axis);
@@ -357,7 +359,7 @@ void osaRobot1394::ConvertState(void)
     // compute both
     EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);   // 1/dt
     mEncoderVelocityDxDt.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
-    mEncoderVelocityDxDt.ElementwiseDivide(mActuatorTimeStamp);              // dx/dt
+    mEncoderVelocityDxDt.ElementwiseDivide(mActuatorTimestamp);              // dx/dt
 
     for (unsigned int i = 0; i < mEncoderVelocity.size(); i++) {
         int cnter = abs((((int32_t) mEncoderVelocityBits[i]) << 16) >> 16);
@@ -417,8 +419,26 @@ void osaRobot1394::CheckState(void)
          ++board) {
         AmpIO_UInt32 safetyAmpDisable = board->second->GetSafetyAmpDisable();
         if (safetyAmpDisable) {
-            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety ampdisable tripped." + mActuatorTimeStamp.ToString()));
+            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety ampdisable tripped." + mActuatorTimestamp.ToString()));
         }
+    }
+
+    // Check if brakes are releasing/released
+    if (mBrakeReleasing) {
+        bool allReleased = true;
+        // check how much time per brake, set all to high (release current)
+        mBrakeCurrentCommand.Assign(mBrakeReleaseCurrent);
+        mBrakeReleasingTimer.Add(mBrakeTimestamp);
+        for (size_t index = 0; index < mNumberOfBrakes; ++index) {
+            if (mBrakeReleasingTimer[index] > mBrakeReleaseTime[index]) {
+                // lower to releaseD current
+                mBrakeCurrentCommand[index] = mBrakeReleasedCurrent[index];
+            } else {
+                allReleased = false;
+            }
+        }
+        SetBrakeCurrent(mBrakeCurrentCommand);
+        mBrakeReleasing = !allReleased;
     }
 }
 
@@ -637,19 +657,21 @@ void osaRobot1394::SetBrakeCurrentBits(const vctIntVec & bits)
     mBrakeCurrentBitsCommand = bits;
 }
 
-void osaRobot1394::SetBrakeReleaseCurrent(void)
+void osaRobot1394::BrakeRelease(void)
 {
-    SetBrakeCurrent(mBrakeReleaseCurrent);
+    if (mNumberOfBrakes != 0) {
+        mBrakeReleasing = true;
+        mBrakeReleasingTimer.SetAll(0.0);
+        SetBrakeCurrent(mBrakeReleaseCurrent);
+    }
 }
 
-void osaRobot1394::SetBrakeReleasedCurrent(void)
+void osaRobot1394::BrakeEngage(void)
 {
-    SetBrakeCurrent(mBrakeReleasedCurrent);
-}
-
-void osaRobot1394::SetBrakeEngagedCurrent(void)
-{
-    SetBrakeCurrent(mBrakeEngagedCurrent);
+    if (mNumberOfBrakes != 0) {
+        mBrakeReleasing = false;
+        SetBrakeCurrent(mBrakeEngagedCurrent);
+    }
 }
 
 void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
@@ -716,11 +738,11 @@ const vctDoubleVec & osaRobot1394::PotPosition(void) const {
 }
 
 const vctDoubleVec & osaRobot1394::ActuatorTimeStamp(void) const {
-    return mActuatorTimeStamp;
+    return mActuatorTimestamp;
 }
 
 const vctDoubleVec & osaRobot1394::BrakeTimeStamp(void) const {
-    return mBrakeTimeStamp;
+    return mBrakeTimestamp;
 }
 
 const vctDoubleVec & osaRobot1394::EncoderPosition(void) const {

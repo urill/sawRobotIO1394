@@ -239,6 +239,11 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandWrite(&osaRobot1394::SetEncoderPosition, thisBase,
                                     "SetEncoderPosition");
 
+    robotInterface->AddCommandVoid(&osaRobot1394::BrakeRelease, thisBase,
+                                   "BrakeRelease");
+    robotInterface->AddCommandVoid(&osaRobot1394::BrakeEngage, thisBase,
+                                   "BrakeEngage");
+
     // unit conversion methods (Qualified Read)
     robotInterface->AddCommandQualifiedRead(&osaRobot1394::EncoderBitsToPosition, thisBase,
                                             "EncoderRawToSI", vctIntVec(), vctDoubleVec());
@@ -304,9 +309,9 @@ bool mtsRobot1394::CheckConfiguration(void)
 void mtsRobot1394::CheckState(void)
 {
     mPositionJointGet.Position().Assign(mJointPosition);
-    mPositionJointGet.Timestamps().Add(mActuatorTimeStamp); // todo: we don't take coupling into account here
+    mPositionJointGet.Timestamps().Add(mActuatorTimestamp); // todo: we don't take coupling into account here
     mPositionActuatorGet.Position().Assign(mEncoderPosition);
-    mPositionActuatorGet.Timestamps().Add(mActuatorTimeStamp);
+    mPositionActuatorGet.Timestamps().Add(mActuatorTimestamp);
 
     mVelocityJointGet.Velocity().ForceAssign(mJointVelocity);
 
