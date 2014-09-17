@@ -44,6 +44,10 @@ int main(int argc, char * argv[])
     options.AddOptionOneValue("p", "port",
                               "firewire port number(s)",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &portNumber);
+    options.AddOptionNoValue("b", "brakes",
+                             "calibrate current feedback on brakes instead of actuators",
+                              cmnCommandLineOptions::OPTIONAL_OPTION);
+
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -82,9 +86,17 @@ int main(int argc, char * argv[])
         return -1;
     }
     osaRobot1394 * robot = new osaRobot1394(config.Robots[0]);
-    size_t numberOfActuators = robot->NumberOfActuators();
+    size_t numberOfAxis = 0;
+    bool brakes = false;
+    if (options.IsSet("brakes")) {
+        brakes = true;
+        numberOfAxis = robot->NumberOfBrakes();
+    } else {
+        brakes = false;
+        numberOfAxis = robot->NumberOfActuators();
+    }
     vctDoubleVec zeros;
-    zeros.SetSize(numberOfActuators);
+    zeros.SetSize(numberOfAxis);
     zeros.SetAll(0.0);
 
     std::cout << "Creating port ..." << std::endl;
@@ -97,13 +109,21 @@ int main(int argc, char * argv[])
 
     std::cout << "Enabling power ..." << std::endl;
     robot->SetWatchdogPeriod(300.0 * cmn_ms);
-    robot->SetJointEffort(zeros);
+    if (brakes) {
+        robot->SetBrakeCurrent(zeros);
+    } else {
+        robot->SetActuatorCurrent(zeros);
+    }
     robot->EnablePower();
     port->Write();
 
     // wait a bit to make sure current stabilizes, 500 * 10 ms = 5 seconds
     for (size_t i = 0; i < 500; ++i) {
-        robot->SetJointEffort(zeros);
+        if (brakes) {
+            robot->SetBrakeCurrent(zeros);
+        } else {
+            robot->SetActuatorCurrent(zeros);
+        }
         osaSleep(10.0 * cmn_ms);
         port->Write();
     }
@@ -115,37 +135,59 @@ int main(int argc, char * argv[])
         delete port;
         return -1;
     }
-    if (!robot->ActuatorPowerStatus().All()) {
-        std::cerr << "Error: failed to turn on actuator power: " << robot->ActuatorPowerStatus() << std::endl;
-        delete port;
-        return -1;
+    if (brakes) {
+        if (!robot->BrakePowerStatus().All()) {
+            std::cerr << "Error: failed to turn on brake power: " << robot->BrakePowerStatus() << std::endl;
+            delete port;
+            return -1;
+        }
+    } else {
+        if (!robot->ActuatorPowerStatus().All()) {
+            std::cerr << "Error: failed to turn on actuator power: " << robot->ActuatorPowerStatus() << std::endl;
+            delete port;
+            return -1;
+        }
     }
     std::cout << "Status: power seems fine." << std::endl
               << "Starting calibration ..." << std::endl;
+
     // collect samples
     const size_t totalSamples = 50000;
     std::vector<vctDoubleVec> samples;
     samples.resize(totalSamples);
     vctDoubleVec sumSamples, averageAllSamples;
-    sumSamples.SetSize(numberOfActuators);
-    averageAllSamples.SetSize(numberOfActuators);
+    sumSamples.SetSize(numberOfAxis);
+    averageAllSamples.SetSize(numberOfAxis);
     sumSamples.SetAll(0.0);
     for (size_t index = 0; index < totalSamples; ++index) {
         // write to make sure watchdog is not tripped
-        robot->SetJointEffort(zeros);
+        if (brakes) {
+            robot->SetBrakeCurrent(zeros);
+        } else {
+            robot->SetActuatorCurrent(zeros);
+        }
         port->Write();
         port->Read();
-        samples[index].ForceAssign(robot->ActuatorCurrentFeedback());
+        if (brakes) {
+            samples[index].ForceAssign(robot->BrakeCurrentFeedback());
+        } else {
+            samples[index].ForceAssign(robot->ActuatorCurrentFeedback());
+        }
         samples[index].Multiply(1000.0); // convert all values to mA to be easier to read
         sumSamples.Add(samples[index]);
     }
+
+    // disable power
+    robot->DisablePower();
+    port->Write();
+
     // compute simple average
     averageAllSamples.Assign(sumSamples);
     averageAllSamples.Divide(totalSamples);
 
     // compute standard deviation
-    vctDoubleVec sumDifferencesSquared(numberOfActuators);
-    vctDoubleVec difference(numberOfActuators);
+    vctDoubleVec sumDifferencesSquared(numberOfAxis);
+    vctDoubleVec difference(numberOfAxis);
     for (size_t index = 0; index < totalSamples; ++index) {
         difference.DifferenceOf(samples[index], averageAllSamples);
         sumDifferencesSquared.AddElementwiseProductOf(difference, difference);
@@ -157,12 +199,12 @@ int main(int argc, char * argv[])
     }
 
     // eliminate outliers
-    vctDoubleVec lower(numberOfActuators);
+    vctDoubleVec lower(numberOfAxis);
     lower.DifferenceOf(averageAllSamples, stdDeviation);
-    vctDoubleVec upper(numberOfActuators);
+    vctDoubleVec upper(numberOfAxis);
     upper.SumOf(averageAllSamples, stdDeviation);
     size_t validSamples = 0;
-    vctDoubleVec averageValidSamples(numberOfActuators);
+    vctDoubleVec averageValidSamples(numberOfAxis);
     sumSamples.SetAll(0.0);
     for (size_t index = 0; index < totalSamples; ++index) {
         if (samples[index].ElementwiseLesserOrEqual(upper).All()
@@ -188,19 +230,27 @@ int main(int argc, char * argv[])
     if ((key == 'y') || (key == 'Y')) {
         cmnXMLPath xmlConfig;
         xmlConfig.SetInputSource(configFile);
+        std::string xmlQueryOffset, xmlQueryScale;
+        if (brakes) {
+            xmlQueryOffset = "Robot[1]/Actuator[%d]/AnalogBrake/AmpsToBits/@Offset";
+            xmlQueryScale  = "Robot[1]/Actuator[%d]/AnalogBrake/AmpsToBits/@Scale";
+        } else {
+            xmlQueryOffset = "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Offset";
+            xmlQueryScale  = "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Scale";
+        }
         // query previous current offset and scales
-        vctDoubleVec previousOffsets(numberOfActuators, 0.0);
-        vctDoubleVec previousScales(numberOfActuators, 0.0);
-        for (size_t index = 0; index < numberOfActuators; ++index) {
+        vctDoubleVec previousOffsets(numberOfAxis, 0.0);
+        vctDoubleVec previousScales(numberOfAxis, 0.0);
+        for (size_t index = 0; index < numberOfAxis; ++index) {
             char path[64];
             const char * context = "Config";
-            sprintf(path, "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Offset", static_cast<int>(index + 1));
+            sprintf(path, xmlQueryOffset.c_str(), static_cast<int>(index + 1));
             xmlConfig.GetXMLValue(context, path, previousOffsets[index]);
-            sprintf(path, "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Scale", static_cast<int>(index + 1));
+            sprintf(path, xmlQueryScale.c_str(), static_cast<int>(index + 1));
             xmlConfig.GetXMLValue(context, path, previousScales[index]);
         }
         // compute new offsets
-        vctDoubleVec newOffsets(numberOfActuators);
+        vctDoubleVec newOffsets(numberOfAxis);
         newOffsets.Assign(averageValidSamples);
         newOffsets.Divide(-1000.0); // convert back to Amps and negate
         newOffsets.ElementwiseMultiply(previousScales);
@@ -214,10 +264,10 @@ int main(int argc, char * argv[])
         key = cmnGetChar();
         if ((key == 's') || (key == 'S')) {
             vctIntVec newOffsetsInt(newOffsets);
-            for (size_t index = 0; index < numberOfActuators; ++index) {
+            for (size_t index = 0; index < numberOfAxis; ++index) {
                 char path[64];
                 const char * context = "Config";
-                sprintf(path, "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Offset", static_cast<int>(index + 1));
+                sprintf(path, xmlQueryOffset.c_str(), static_cast<int>(index + 1));
                 xmlConfig.SetXMLValue(context, path, newOffsetsInt[index]);
             }
             std::string newConfigFile = configFile + "-new";
