@@ -105,10 +105,8 @@ class osaRobot1394
         void SetActuatorCurrentBits(const vctIntVec & bits);
 
         //! Brake Control
-    protected:
         void SetBrakeCurrent(const vctDoubleVec & currents);
         void SetBrakeCurrentBits(const vctIntVec & bits);
-    public:
         void BrakeRelease(void);
         void BrakeEngage(void);
         /**}**/
