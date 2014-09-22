@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Zihan Chen
+  Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-16
 
   (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
@@ -668,9 +668,12 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     connect(QVWActuatorCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotActuatorAmpEnable()));
     connect(QVWActuatorCurrentSpinBoxWidget, SIGNAL(valueChanged()), this, SLOT(SlotActuatorCurrentValueChanged()));
     connect(QVWActuatorCurrentSliderWidget, SIGNAL(valueChanged()), this, SLOT(SlotSliderActuatorCurrentValueChanged()));
-    connect(QPBBrakeRelease, SIGNAL(clicked()), this, SLOT(SlotBrakeRelease()));
-    connect(QPBBrakeEngage, SIGNAL(clicked()), this, SLOT(SlotBrakeEngage()));
-    connect(QVWBrakeCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotBrakeAmpEnable()));
+
+    if (NumberOfBrakes != 0) {
+        connect(QPBBrakeRelease, SIGNAL(clicked()), this, SLOT(SlotBrakeRelease()));
+        connect(QPBBrakeEngage, SIGNAL(clicked()), this, SLOT(SlotBrakeEngage()));
+        connect(QVWBrakeCurrentEnableEachWidget, SIGNAL(valueChanged()), this, SLOT(SlotBrakeAmpEnable()));
+    }
 
     // connect cisstMultiTask events
     connect(this, SIGNAL(SignalPowerStatus(bool)), this, SLOT(SlotPowerStatus(bool)));
