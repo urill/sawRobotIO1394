@@ -691,7 +691,9 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
 {
     // actuator amplifier status
     bool ampStatusGood = ActuatorAmpStatus.All();
-    QVWActuatorCurrentEnableEachWidget->SetValue(ActuatorAmpStatus);
+    if (NumberOfActuators != 0) {
+        QVWActuatorCurrentEnableEachWidget->SetValue(ActuatorAmpStatus);
+    }
     if (ampStatusGood) {
         QLAmpStatus->setText("Actuators ON");
         QLAmpStatus->setStyleSheet("QPLabel { background-color: green }");
@@ -701,7 +703,9 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
     }
 
     // brake amplifier status
-    QVWBrakeCurrentEnableEachWidget->SetValue(BrakeAmpStatus);
+    if (NumberOfBrakes != 0) {
+        QVWBrakeCurrentEnableEachWidget->SetValue(BrakeAmpStatus);
+    }
 
     // power status
     if (PowerStatus) {
