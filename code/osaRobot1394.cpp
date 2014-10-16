@@ -96,6 +96,15 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mActuatorEffortCommandLimits.SetSize(mNumberOfActuators);
     mActuatorCurrentCommandLimits.SetSize(mNumberOfActuators);
     mActuatorCurrentFeedbackLimits.SetSize(mNumberOfActuators);
+    if (mPotType == POTENTIOMETER_ON_ACTUATORS) {
+        mPotsToEncodersTolerance.SetSize(mNumberOfActuators);
+        mPotsToEncodersError.SetSize(mNumberOfActuators);
+    } else if (mPotType == POTENTIOMETER_ON_JOINTS) {
+        mPotsToEncodersTolerance.SetSize(mNumberOfJoints);
+        mPotsToEncodersError.SetSize(mNumberOfJoints);
+    }
+    mPotsToEncodersTolerance.SetAll(0.0);
+    mUsePotsForSafetyCheck = false;
 
     mBitsToPositionScales.SetSize(mNumberOfActuators);
     mBitsToPositionOffsets.SetSize(mNumberOfActuators);
@@ -204,7 +213,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
             mBrakeBitsToCurrentOffsets[currentBrake]  = drive.BitsToCurrentOffset;
             mBrakeCurrentCommandLimits[currentBrake]  = drive.CurrentCommandLimit;
             // 120% of command current is in the acceptable range
-            // Add 50 mA for non motorized actuators due to a2d noise
+            // Add 50 mA for a2d noise around 0
             mBrakeCurrentFeedbackLimits[currentBrake] = 1.2 * mBrakeCurrentCommandLimits[currentBrake] + (50.0 / 1000.0);
 
             mBrakeReleaseCurrent[currentBrake]  = brake->ReleaseCurrent;
@@ -440,6 +449,38 @@ void osaRobot1394::CheckState(void)
         SetBrakeCurrent(mBrakeCurrentCommand);
         mBrakeReleasing = !allReleased;
     }
+
+    // Check if encoders and potentiometers agree
+    if (mUsePotsForSafetyCheck) {
+        switch (mPotType) {
+        case POTENTIOMETER_UNDEFINED:
+            break;
+        case POTENTIOMETER_ON_ACTUATORS:
+            mPotsToEncodersError.DifferenceOf(mEncoderPosition, mPotPosition).AbsSelf();
+            if (!mPotsToEncodersError.LesserOrEqual(mPotsToEncodersTolerance)) {
+                this->DisablePower();
+                std::string errorMessage = this->Name() + ": inconsistancy between actuator encoders and potentiometers, pots: ";
+                errorMessage.append(mPotPosition.ToString());
+                errorMessage.append(", encoders: ");
+                errorMessage.append(mEncoderPosition.ToString());
+                cmnThrow(osaRuntimeError1394(errorMessage));
+            }
+            break;
+        case POTENTIOMETER_ON_JOINTS:
+            mPotsToEncodersError.DifferenceOf(mJointPosition, mPotPosition).AbsSelf();
+            if (!mPotsToEncodersError.LesserOrEqual(mPotsToEncodersTolerance)) {
+                this->DisablePower();
+                std::string errorMessage = this->Name() + ": inconsistancy between joint encoders and potentiometers, pots: ";
+                errorMessage.append(mPotPosition.ToString());
+                errorMessage.append(", encoders: ");
+                errorMessage.append(mJointPosition.ToString());
+                cmnThrow(osaRuntimeError1394(errorMessage));
+            }
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 void osaRobot1394::EnablePower(void)
@@ -631,6 +672,16 @@ void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 
     // Store commanded bits
     mActuatorCurrentBitsCommand = bits;
+}
+
+void osaRobot1394::UsePotsForSafetyCheck(const bool & usePotsForSafetyCheck)
+{
+    mUsePotsForSafetyCheck = usePotsForSafetyCheck;
+}
+
+void osaRobot1394::SetPotsToEncodersTolerance(const vctDoubleVec & tolerances)
+{
+    mPotsToEncodersTolerance = tolerances;
 }
 
 void osaRobot1394::SetBrakeCurrent(const vctDoubleVec & currents)

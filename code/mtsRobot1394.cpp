@@ -62,6 +62,7 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mActuatorPowerEnabled, "ActuatorPowerEnabled");
     mStateTableRead->AddData(mEncoderPositionBits, "PosRaw");
     mStateTableRead->AddData(mJointPosition, "PositionJoint");
+    mStateTableRead->AddData(mPotsToEncodersError, "PotsToEncoderError");
     mStateTableRead->AddData(mEncoderVelocityBits, "VelRaw");
     mStateTableRead->AddData(mEncoderVelocity, "Vel");
     mStateTableRead->AddData(mPotBits, "AnalogInRaw");
@@ -181,6 +182,8 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetPositionEncoderRaw"); // vector[int]
     robotInterface->AddCommandReadState(*mStateTableRead, mJointPosition,
                                         "GetPosition"); // vector[double]
+    robotInterface->AddCommandReadState(*mStateTableRead, mPotsToEncodersError,
+                                        "GetPotsToEncodersError"); // vector[double]
 
     robotInterface->AddCommandReadState(*mStateTableRead, this->mPositionJointGet,
                                         "GetPositionJoint"); // prmPositionJointGet
@@ -206,6 +209,11 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetActuatorFeedbackCurrent");
     robotInterface->AddCommandReadState(*mStateTableWrite, mActuatorCurrentCommand,
                                         "GetActuatorRequestedCurrent");
+
+    robotInterface->AddCommandWrite(&osaRobot1394::UsePotsForSafetyCheck, thisBase,
+                                    "UsePotsForSafetyCheck", mUsePotsForSafetyCheck);
+    robotInterface->AddCommandWrite(&osaRobot1394::SetPotsToEncodersTolerance, thisBase,
+                                    "SetPotsToEncodersTolerance", mPotsToEncodersTolerance);
 
     robotInterface->AddCommandWrite(&osaRobot1394::SetBrakePower, this,
                                     "SetBrakeAmpEnable", mBrakePowerEnabled); // vector[bool]

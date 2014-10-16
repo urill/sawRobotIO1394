@@ -104,6 +104,10 @@ class osaRobot1394
         void SetActuatorCurrent(const vctDoubleVec & currents);
         void SetActuatorCurrentBits(const vctIntVec & bits);
 
+        //! Use potentiometers for safety
+        void UsePotsForSafetyCheck(const bool & usePotsForSafetyCheck);
+        void SetPotsToEncodersTolerance(const vctDoubleVec & tolerances);
+
         //! Brake Control
         void SetBrakeCurrent(const vctDoubleVec & currents);
         void SetBrakeCurrentBits(const vctIntVec & bits);
@@ -233,11 +237,13 @@ class osaRobot1394
             mActuatorCurrentCommandLimits,
             mBrakeCurrentCommandLimits,
             mActuatorCurrentFeedbackLimits, // limit used to trigger error
-            mBrakeCurrentFeedbackLimits;    // limit used to trigger error
+            mBrakeCurrentFeedbackLimits,    // limit used to trigger error
+            mPotsToEncodersTolerance;       // maximum error between encoders and pots
 
         //! Robot type
         prmJointTypeVec mJointType;
         osaPot1394Location mPotType;
+        bool mUsePotsForSafetyCheck;
 
         //! State Members
         bool
@@ -288,6 +294,7 @@ class osaRobot1394
             mBrakeCurrentCommand,
             mActuatorEffortCommand,
             mActuatorCurrentFeedback,
+            mPotsToEncodersError,
             mBrakeCurrentFeedback,
             mActuatorEffortFeedback,
             mActuatorTemperature,
