@@ -451,6 +451,7 @@ void osaRobot1394::CheckState(void)
     }
 
     // Check if encoders and potentiometers agree
+    bool errorFound = false;
     if (mUsePotsForSafetyCheck) {
         switch (mPotType) {
         case POTENTIOMETER_UNDEFINED:
@@ -458,28 +459,28 @@ void osaRobot1394::CheckState(void)
         case POTENTIOMETER_ON_ACTUATORS:
             mPotsToEncodersError.DifferenceOf(mEncoderPosition, mPotPosition).AbsSelf();
             if (!mPotsToEncodersError.LesserOrEqual(mPotsToEncodersTolerance)) {
-                this->DisablePower();
-                std::string errorMessage = this->Name() + ": inconsistancy between actuator encoders and potentiometers, pots: ";
-                errorMessage.append(mPotPosition.ToString());
-                errorMessage.append(", encoders: ");
-                errorMessage.append(mEncoderPosition.ToString());
-                cmnThrow(osaRuntimeError1394(errorMessage));
+                errorFound = true;
             }
             break;
         case POTENTIOMETER_ON_JOINTS:
             mPotsToEncodersError.DifferenceOf(mJointPosition, mPotPosition).AbsSelf();
             if (!mPotsToEncodersError.LesserOrEqual(mPotsToEncodersTolerance)) {
-                this->DisablePower();
-                std::string errorMessage = this->Name() + ": inconsistancy between joint encoders and potentiometers, pots: ";
-                errorMessage.append(mPotPosition.ToString());
-                errorMessage.append(", encoders: ");
-                errorMessage.append(mJointPosition.ToString());
-                cmnThrow(osaRuntimeError1394(errorMessage));
+                errorFound = true;
             }
             break;
         default:
             break;
         }
+    }
+    if (errorFound) {
+        this->DisablePower();
+        std::string errorMessage = this->Name() + ": inconsistancy between encoders and potentiometers, pots: ";
+        errorMessage.append(mPotPosition.ToString());
+        errorMessage.append(", encoders: ");
+        errorMessage.append(mJointPosition.ToString());
+        errorMessage.append(", mask: ");
+        errorMessage.append(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance).ToString());
+        cmnThrow(osaRuntimeError1394(errorMessage));
     }
 }
 
