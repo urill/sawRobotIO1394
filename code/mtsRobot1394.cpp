@@ -65,11 +65,13 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mPotsToEncodersError, "PotsToEncoderError");
     mStateTableRead->AddData(mEncoderVelocityBits, "VelRaw");
     mStateTableRead->AddData(mEncoderVelocity, "Vel");
+    mStateTableRead->AddData(mJointTorque, "Effortjoint");
     mStateTableRead->AddData(mPotBits, "AnalogInRaw");
     mStateTableRead->AddData(mPotVoltage, "AnalogInVolts");
     mStateTableRead->AddData(mPotPosition, "AnalogInPosSI");
     mStateTableRead->AddData(mActuatorCurrentBitsFeedback, "ActuatorFeedbackCurrentRaw");
     mStateTableRead->AddData(mActuatorCurrentFeedback, "ActuatorFeedbackCurrent");
+    mStateTableRead->AddData(mActuatorEffortFeedback, "mActuatorEffortFeedback");
 
     mPositionJointGet.SetSize(mNumberOfJoints);
     mPositionJointGet.Timestamps().SetAll(0.0);
@@ -182,6 +184,8 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetPositionEncoderRaw"); // vector[int]
     robotInterface->AddCommandReadState(*mStateTableRead, mJointPosition,
                                         "GetPosition"); // vector[double]
+    robotInterface->AddCommandReadState(*mStateTableRead, mJointTorque,
+                                        "GetTorqueJoint"); // vector[double]
     robotInterface->AddCommandReadState(*mStateTableRead, mPotsToEncodersError,
                                         "GetPotsToEncodersError"); // vector[double]
 
@@ -207,6 +211,8 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetActuatorFeedbackCurrentRaw");
     robotInterface->AddCommandReadState(*mStateTableRead, mActuatorCurrentFeedback,
                                         "GetActuatorFeedbackCurrent");
+    robotInterface->AddCommandReadState(*mStateTableRead, mActuatorEffortFeedback,
+                                        "GetActuatorEffortFeedback");
     robotInterface->AddCommandReadState(*mStateTableWrite, mActuatorCurrentCommand,
                                         "GetActuatorRequestedCurrent");
 

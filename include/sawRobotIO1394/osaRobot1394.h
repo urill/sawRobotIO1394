@@ -290,6 +290,7 @@ class osaRobot1394
             mEncoderDTime,
             mJointPosition,
             mJointVelocity,
+            mJointTorque,
             mActuatorCurrentCommand,
             mBrakeCurrentCommand,
             mActuatorEffortCommand,

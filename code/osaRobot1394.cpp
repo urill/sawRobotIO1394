@@ -80,6 +80,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mEncoderVelocityDxDt.SetSize(mNumberOfActuators);
     mJointPosition.SetSize(mNumberOfJoints);
     mJointVelocity.SetSize(mNumberOfJoints);
+    mJointTorque.SetSize(mNumberOfJoints);
     mActuatorCurrentCommand.SetSize(mNumberOfActuators);
     mActuatorEffortCommand.SetSize(mNumberOfActuators);
     mActuatorCurrentFeedback.SetSize(mNumberOfActuators);
@@ -377,8 +378,14 @@ void osaRobot1394::ConvertState(void)
     }
     mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
 
+    // Effort computation
     ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
     ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
+    mJointTorque.ProductOf(mConfiguration.ActuatorToJointEffort, mActuatorEffortFeedback);
+
+    std::cerr << "-------------------\n"
+              << mActuatorEffortFeedback << "\n"
+              << mJointTorque << std::endl;
 
     BrakeBitsToCurrent(mBrakeCurrentBitsFeedback, mBrakeCurrentFeedback);
 
@@ -915,7 +922,11 @@ void osaRobot1394::ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & 
 }
 
 void osaRobot1394::ActuatorCurrentToEffort(const vctDoubleVec & currents, vctDoubleVec & efforts) const {
-    efforts.ElementwiseProductOf(currents, mEffortToCurrentScales);
+    efforts.ElementwiseRatioOf(currents, mEffortToCurrentScales);
+
+//    for (size_t i = 0; i < currents.size(); i++) {
+//        efforts[i] = currents[i] / mEffortToCurrentScales[i];
+//    }
 }
 
 void osaRobot1394::BrakeCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const {
