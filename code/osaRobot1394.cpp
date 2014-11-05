@@ -383,10 +383,6 @@ void osaRobot1394::ConvertState(void)
     ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
     mJointTorque.ProductOf(mConfiguration.ActuatorToJointEffort, mActuatorEffortFeedback);
 
-    std::cerr << "-------------------\n"
-              << mActuatorEffortFeedback << "\n"
-              << mJointTorque << std::endl;
-
     BrakeBitsToCurrent(mBrakeCurrentBitsFeedback, mBrakeCurrentFeedback);
 
     PotBitsToVoltage(mPotBits, mPotVoltage);
