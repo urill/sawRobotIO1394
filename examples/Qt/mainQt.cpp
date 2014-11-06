@@ -77,34 +77,34 @@ int main(int argc, char ** argv)
 
     mtsManagerLocal * componentManager = mtsManagerLocal::GetInstance();
 
-    // Robot
-    mtsRobotIO1394 * robot = new mtsRobotIO1394("robot", 1 * cmn_ms, port);
+    // RobotIO
+    mtsRobotIO1394 * robotIO = new mtsRobotIO1394("robotIO", 1 * cmn_ms, port);
     mtsRobotIO1394QtWidgetFactory * robotWidgetFactory = new mtsRobotIO1394QtWidgetFactory("robotWidgetFactory");
 
-    componentManager->AddComponent(robot);
+    componentManager->AddComponent(robotIO);
     componentManager->AddComponent(robotWidgetFactory);
 
-    robot->Configure(configFile);
+    robotIO->Configure(configFile);
 
-    componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "robot", "Configuration");
+    componentManager->Connect("robotWidgetFactory", "RobotConfiguration", "robotIO", "Configuration");
     robotWidgetFactory->Configure();
 
 #ifdef WITH_ROS
     // ros wrapper
     mtsROSBridge robotBridge("RobotBridge", 1 * cmn_ms);
-    robotBridge.AddPublisherFromReadCommand<prmPositionJointGet, sensor_msgs::JointState>(
-                robotName, "GetPositionJoint", "/" + robotName + "/joint_position");
-    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>(
-                robotName, "GetVelocity", "/" + robotName + "/joint_velocity");
+    robotBridge.AddPublisherFromReadCommand<prmPositionJointGet, sensor_msgs::JointState>
+        (robotName, "GetPositionJoint", "/" + robotName + "/joint_position");
+    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>
+        (robotName, "GetVelocity", "/" + robotName + "/joint_velocity");
 
-    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>(
-                robotName, "GetAnalogInputPosSI", "/" + robotName + "/pot_position");
-    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>(
-                robotName, "GetAnalogInputVelSI", "/" + robotName + "/pot_velocity");
+    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>
+        (robotName, "GetAnalogInputPosSI", "/" + robotName + "/pot_position");
+    robotBridge.AddPublisherFromReadCommand<vctDoubleVec, sawROS::vctDoubleVec>
+        (robotName, "GetAnalogInputVelSI", "/" + robotName + "/pot_velocity");
 
     componentManager->AddComponent(&robotBridge);
     componentManager->Connect(robotBridge.GetName(), robotName,
-                              "robot", robotName);
+                              "robotIO", robotName);
 #endif
 
     // create the components
@@ -122,7 +122,7 @@ int main(int argc, char ** argv)
 
     // delete dvgc robot
     delete robotWidgetFactory;
-    delete robot;
+    delete robotIO;
 
     // stop all logs
     cmnLogger::Kill();

@@ -231,7 +231,11 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     }
 
     // Compute effort command limits
-    mJointEffortCommandLimits = mConfiguration.ActuatorToJointEffort * mActuatorEffortCommandLimits;
+    if (mConfiguration.HasActuatorToJointCoupling) {
+        mJointEffortCommandLimits.ProductOf(mConfiguration.ActuatorToJointEffort, mActuatorEffortCommandLimits);
+    } else {
+        mJointEffortCommandLimits.ForceAssign(mActuatorEffortCommandLimits);
+    }
 }
 
 void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoards,
@@ -363,7 +367,11 @@ void osaRobot1394::ConvertState(void)
 {
     // Perform read conversions
     EncoderBitsToPosition(mEncoderPositionBits, mEncoderPosition);
-    mJointPosition.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
+    if (mConfiguration.HasActuatorToJointCoupling) {
+        mJointPosition.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
+    } else {
+        mJointPosition.Assign(mEncoderPosition);
+    }
 
     // Velocity computation
     // compute both
@@ -376,16 +384,20 @@ void osaRobot1394::ConvertState(void)
         if (cnter < 100)
             mEncoderVelocity[i] = mEncoderVelocityDxDt[i];
     }
-    mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
+    if (mConfiguration.HasActuatorToJointCoupling) {
+        mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
+    } else {
+        mJointVelocity.Assign(mEncoderVelocity);
+    }
 
     // Effort computation
     ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
     ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
-    mJointTorque.ProductOf(mConfiguration.ActuatorToJointEffort, mActuatorEffortFeedback);
-
-    std::cerr << "-------------------\n"
-              << mActuatorEffortFeedback << "\n"
-              << mJointTorque << std::endl;
+    if (mConfiguration.HasActuatorToJointCoupling) {
+        mJointTorque.ProductOf(mConfiguration.ActuatorToJointEffort, mActuatorEffortFeedback);
+    } else {
+        mJointTorque.Assign(mActuatorEffortFeedback);
+    }
 
     BrakeBitsToCurrent(mBrakeCurrentBitsFeedback, mBrakeCurrentFeedback);
 
@@ -735,9 +747,9 @@ void osaRobot1394::BrakeEngage(void)
 
 void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
 {
-    vctDoubleVec joint_positions(mNumberOfJoints);
-    vctDoubleVec joint_error(mNumberOfJoints);
-    vctDoubleVec actuator_error(mNumberOfActuators);
+    vctDoubleVec jointPositions(mNumberOfJoints);
+    vctDoubleVec jointError(mNumberOfJoints);
+    vctDoubleVec actuatorError(mNumberOfActuators);
 
     switch(mPotType) {
 
@@ -747,15 +759,22 @@ void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
         break;
 
     case POTENTIOMETER_ON_JOINTS:
-        joint_positions.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
-        joint_error.DifferenceOf(joint_positions, mPotPosition);
-        actuator_error.ProductOf(mConfiguration.JointToActuatorPosition, joint_error);
-        mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuator_error);
+        if (mConfiguration.HasActuatorToJointCoupling) {
+            jointPositions.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
+            jointError.DifferenceOf(jointPositions, mPotPosition);
+            actuatorError.ProductOf(mConfiguration.JointToActuatorPosition, jointError);
+            mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuatorError);
+        } else {
+            CMN_LOG_RUN_WARNING << "osaRobot1394::CalibrateEncoderOffsetsFromPots: no actuator to joint coupling found, "
+                                << "calibration on joints doesn't make much sense, calibrating on actuators" << std::endl;
+            actuatorError.DifferenceOf(mEncoderPosition, mPotPosition);
+            mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuatorError);
+        }
         break;
 
     case POTENTIOMETER_ON_ACTUATORS:
-        actuator_error.DifferenceOf(mEncoderPosition, mPotPosition);
-        mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuator_error);
+        actuatorError.DifferenceOf(mEncoderPosition, mPotPosition);
+        mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuatorError);
         break;
     };
 }

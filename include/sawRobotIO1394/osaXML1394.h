@@ -25,6 +25,17 @@ http://www.cisst.org/cisst/license.txt.
 
 namespace sawRobotIO1394 {
 
+    template <typename _elementType>
+    bool osaXML1394GetValue(cmnXMLPath & path, const std::string & context, const std::string & XPath,
+                            _elementType & value, bool required = true) {
+          bool found = path.GetXMLValue(context.c_str(), XPath.c_str(), value);
+          if (required && !found) {
+              CMN_LOG_INIT_ERROR << "osaXML1394GetValue: " << XPath << " in context " << context << " is required but not found" << std::endl;
+              return false;
+          }
+          return true;
+    }
+
     void osaXML1394ConfigurePort(const std::string & filename,
                                  osaPort1394Configuration & config);
 

@@ -107,6 +107,7 @@ namespace sawRobotIO1394 {
         int NumberOfActuators;
         int NumberOfJoints;
         int NumberOfBrakes;
+        bool OnlyIO;
         bool HasActuatorToJointCoupling;
 
         osaPot1394Location PotLocation;

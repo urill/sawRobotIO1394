@@ -28,10 +28,10 @@ namespace sawRobotIO1394 {
         xmlConfig.SetInputSource(filename);
 
         // Get the number of robot elements
-        int num_robots = 0;
-        xmlConfig.GetXMLValue("", "count(/Config/Robot)",num_robots);
+        int numRobots = 0;
+        xmlConfig.GetXMLValue("", "count(/Config/Robot)", numRobots);
 
-        for (int i = 0; i < num_robots; i++) {
+        for (int i = 0; i < numRobots; i++) {
             osaRobot1394Configuration robot;
 
             // Store the robot in the config if it's succesfully parsed
@@ -41,16 +41,21 @@ namespace sawRobotIO1394 {
         }
 
         // Get the number of digital input elements
-        int num_digital_inputs = 0;
-        xmlConfig.GetXMLValue("", "count(/Config/DigitalIn)", num_digital_inputs);
+        int numDigitalInputs = 0;
+        xmlConfig.GetXMLValue("", "count(/Config/DigitalIn)", numDigitalInputs);
 
-        for (int i = 0; i < num_digital_inputs; i++) {
-            osaDigitalInput1394Configuration digital_input;
+        for (int i = 0; i < numDigitalInputs; i++) {
+            osaDigitalInput1394Configuration digitalInput;
 
             // Store the digital_input in the config if it's succesfully parsed
-            if (osaXML1394ConfigureDigitalInput(xmlConfig, i + 1, digital_input)) {
-                config.DigitalInputs.push_back(digital_input);
+            if (osaXML1394ConfigureDigitalInput(xmlConfig, i + 1, digitalInput)) {
+                config.DigitalInputs.push_back(digitalInput);
             }
+        }
+
+        // Check to make sure something was found
+        if ((numRobots + numDigitalInputs) == 0) {
+            CMN_LOG_INIT_ERROR << "osaXML1394ConfigurePort: file " << filename << " doesn't contain any Config/Robot nor Config/DigitalIn" << std::endl;
         }
     }
 
@@ -58,76 +63,91 @@ namespace sawRobotIO1394 {
                                   const int robotIndex,
                                   osaRobot1394Configuration & robot)
     {
-        bool tagsFound = true;
-        char path[128];
+        bool good = true;
+        char path[256];
         const char * context = "Config";
 
         robot.NumberOfBrakes = 0;
 
         sprintf(path, "Robot[%d]/@Name", robotIndex);
-        tagsFound &= xmlConfig.GetXMLValue(context, path, robot.Name);
+        good &= osaXML1394GetValue(xmlConfig, context, path, robot.Name);
 
         sprintf(path, "Robot[%d]/@NumOfActuator", robotIndex);
-        tagsFound &= xmlConfig.GetXMLValue(context, path, robot.NumberOfActuators);
+        good &= osaXML1394GetValue(xmlConfig, context, path, robot.NumberOfActuators);
 
         sprintf(path, "Robot[%d]/@NumOfJoint", robotIndex);
-        tagsFound &= xmlConfig.GetXMLValue(context, path, robot.NumberOfJoints);
+        good &= osaXML1394GetValue(xmlConfig, context, path, robot.NumberOfJoints);
+
+        std::string type;
+        sprintf(path, "Robot[%d]/@Type", robotIndex);
+        if (xmlConfig.GetXMLValue(context, path, type)) {
+            if (type == std::string("io-only")) {
+                robot.OnlyIO = true;
+            } else if (type == std::string("robot")) {
+                robot.OnlyIO = false;
+            } else {
+                CMN_LOG_INIT_ERROR << "osaXML1394ConfigureRobot: Type must be \"io-only\" or \"robot\", not " << type << std::endl;
+            }
+        } else {
+            // default is robot
+            robot.OnlyIO = false;
+        }
 
         for (int i = 0; i < robot.NumberOfActuators; i++) {
             osaActuator1394Configuration actuator;
             int actuatorIndex = i + 1;
 
-            sprintf(path,"Robot[%d]/Actuator[%d]/@BoardID", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.BoardID);
+            sprintf(path, "Robot[%d]/Actuator[%d]/@BoardID", robotIndex, actuatorIndex);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.BoardID);
             if ((actuator.BoardID < 0) || (actuator.BoardID >= (int)MAX_BOARDS)) {
                 CMN_LOG_RUN_ERROR << "Configure: invalid board number " << actuator.BoardID
                                   << " for board " << i << std::endl;
                 return false;
             }
 
-            sprintf(path,"Robot[%d]/Actuator[%d]/@AxisID", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.AxisID);
+            sprintf(path, "Robot[%d]/Actuator[%d]/@AxisID", robotIndex, actuatorIndex);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.AxisID);
             if ((actuator.AxisID < 0) || (actuator.AxisID >= (int)MAX_AXES)) {
                 CMN_LOG_RUN_ERROR << "Configure: invalid axis number " << actuator.AxisID
                                   << " for actuator " << i << std::endl;
                 return false;
             }
 
-            std::string actuator_type = "";
-            sprintf(path,"Robot[%d]/Actuator[%d]/@Type", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator_type);
-            if (actuator_type == "") {
+            std::string actuatorType = "";
+            sprintf(path, "Robot[%d]/Actuator[%d]/@Type", robotIndex, actuatorIndex);
+            xmlConfig.GetXMLValue(context, path, actuatorType);
+            if (actuatorType == "") {
                 CMN_LOG_RUN_WARNING << "Configure: no actuator type specified " << actuator.AxisID
                                     << " for actuator " << i << " set to Revolute by default" << std::endl;
-                actuator_type = "Revolute";
+                actuatorType = "Revolute";
             }
             double unitPosConversion;
-            if (actuator_type == "Revolute") {
+            if (actuatorType == "Revolute") {
                 // deg to radian
                 unitPosConversion = cmnPI_180;
                 actuator.JointType = PRM_REVOLUTE;
-            } else if (actuator_type == "Prismatic") {
+            } else if (actuatorType == "Prismatic") {
                 unitPosConversion = cmn_mm;
                 actuator.JointType = PRM_PRISMATIC;
             }
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Scale", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Drive.CurrentToBitsScale);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Drive.CurrentToBitsScale);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Offset", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Drive.CurrentToBitsOffset);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Drive.CurrentToBitsOffset);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Drive/BitsToFeedbackAmps/@Scale", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Drive.BitsToCurrentScale);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Drive.BitsToCurrentScale);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Drive/BitsToFeedbackAmps/@Offset", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Drive.BitsToCurrentOffset);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Drive.BitsToCurrentOffset);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Drive/NmToAmps/@Scale", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Drive.EffortToCurrentScale);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Drive.EffortToCurrentScale, !robot.OnlyIO);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Drive/MaxCurrent/@Value", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Drive.CurrentCommandLimit);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Drive.CurrentCommandLimit);
 
             // looking for brakes
             sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake", robotIndex, actuatorIndex);
@@ -139,37 +159,37 @@ namespace sawRobotIO1394 {
                 robot.NumberOfBrakes++;
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/@BoardID", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->BoardID);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->BoardID);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/@AxisID", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->AxisID);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->AxisID);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/AmpsToBits/@Scale", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->Drive.CurrentToBitsScale);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->Drive.CurrentToBitsScale);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/AmpsToBits/@Offset", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->Drive.CurrentToBitsOffset);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->Drive.CurrentToBitsOffset);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/BitsToFeedbackAmps/@Scale", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->Drive.BitsToCurrentScale);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->Drive.BitsToCurrentScale);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/BitsToFeedbackAmps/@Offset", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->Drive.BitsToCurrentOffset);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->Drive.BitsToCurrentOffset);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/MaxCurrent/@Value", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->Drive.CurrentCommandLimit);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->Drive.CurrentCommandLimit);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/ReleaseCurrent/@Value", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->ReleaseCurrent);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->ReleaseCurrent);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/ReleaseTime/@Value", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->ReleaseTime);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->ReleaseTime);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/ReleasedCurrent/@Value", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->ReleasedCurrent);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->ReleasedCurrent);
 
                 sprintf(path, "Robot[%i]/Actuator[%d]/AnalogBrake/EngagedCurrent/@Value", robotIndex, actuatorIndex);
-                xmlConfig.GetXMLValue(context, path, actuator.Brake->EngagedCurrent);
+                good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Brake->EngagedCurrent);
 
             } else {
                 // no brake found
@@ -177,41 +197,41 @@ namespace sawRobotIO1394 {
             }
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Scale", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToPositionScale);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToPositionScale, !robot.OnlyIO);
             actuator.Encoder.BitsToPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Offset", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToPositionOffset);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToPositionOffset, !robot.OnlyIO);
             actuator.Encoder.BitsToPositionOffset *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Scale", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToDPositionScale);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDPositionScale, !robot.OnlyIO);
             actuator.Encoder.BitsToDPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Offset", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToDPositionOffset);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDPositionOffset, !robot.OnlyIO);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Scale", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToDTimeScale);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDTimeScale, !robot.OnlyIO);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Offset", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToDTimeOffset);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDTimeOffset, !robot.OnlyIO);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/CountsPerTurn/@Value", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Encoder.CountsPerTurn);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.CountsPerTurn, !robot.OnlyIO);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/BitsToVolts/@Scale", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Pot.BitsToVoltageScale);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Pot.BitsToVoltageScale);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/BitsToVolts/@Offset", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Pot.BitsToVoltageOffset);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Pot.BitsToVoltageOffset);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Scale", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Pot.VoltageToPositionScale);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Pot.VoltageToPositionScale, !robot.OnlyIO);
             actuator.Pot.VoltageToPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
             sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/VoltsToPosSI/@Offset", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Pot. VoltageToPositionOffset);
+            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Pot. VoltageToPositionOffset, !robot.OnlyIO);
             actuator.Pot.VoltageToPositionOffset *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
             // Add the actuator
@@ -256,11 +276,7 @@ namespace sawRobotIO1394 {
             return false;
         }
 
-        if (!tagsFound) {
-            return false;
-        }
-
-        return true;
+        return good;
     }
 
     bool osaXML1394ConfigureCoupling(cmnXMLPath & xmlConfig,
@@ -302,29 +318,28 @@ namespace sawRobotIO1394 {
             if (!parse_success) {
                 return false;
             }
+
+            // make sure the coupling matrices make sense
+            vctDoubleMat product, identity;
+
+            identity.ForceAssign(vctDoubleMat::Eye(robot.NumberOfActuators));
+
+            product.SetSize(robot.NumberOfActuators, robot.NumberOfActuators);
+            product.ProductOf(robot.ActuatorToJointPosition, robot.JointToActuatorPosition);
+
+            if (!product.AlmostEqual(identity, 0.001)) {
+                CMN_LOG_RUN_ERROR << "ConfigureCoupling: product of position coupling matrices not identity:"
+                                  << std::endl << product << std::endl;
+                return false;
+            }
+
+            product.ProductOf(robot.ActuatorToJointEffort, robot.JointToActuatorEffort);
+            if (!product.AlmostEqual(identity, 0.001)) {
+                CMN_LOG_RUN_ERROR << "ConfigureCoupling: product of torque coupling matrices not identity:"
+                                  << std::endl << product << std::endl;
+                return false;
+            }
         }
-
-        // make sure the coupling matrices make sense
-        vctDoubleMat product, identity;
-
-        identity.ForceAssign(vctDoubleMat::Eye(robot.NumberOfActuators));
-
-        product.SetSize(robot.NumberOfActuators, robot.NumberOfActuators);
-        product.ProductOf(robot.ActuatorToJointPosition, robot.JointToActuatorPosition);
-
-        if (!product.AlmostEqual(identity, 0.001)) {
-            CMN_LOG_RUN_ERROR << "ConfigureCoupling: product of position coupling matrices not identity:"
-                              << std::endl << product << std::endl;
-            return false;
-        }
-
-        product.ProductOf(robot.ActuatorToJointEffort, robot.JointToActuatorEffort);
-        if (!product.AlmostEqual(identity, 0.001)) {
-            CMN_LOG_RUN_ERROR << "ConfigureCoupling: product of torque coupling matrices not identity:"
-                              << std::endl << product << std::endl;
-            return false;
-        }
-
         return true;
     }
 
