@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren
   Created on: 2011-06-10
 
@@ -96,18 +95,18 @@ void osaDigitalInput1394::PollState(void)
     }
 }
 
-osaDigitalInput1394Configuration osaDigitalInput1394::Configuration(void) const {
+const osaDigitalInput1394Configuration & osaDigitalInput1394::Configuration(void) const {
     return mConfiguration;
 }
 
-std::string osaDigitalInput1394::Name(void) const {
+const std::string & osaDigitalInput1394::Name(void) const {
     return mName;
 }
 
-bool osaDigitalInput1394::Value(void) const {
+const bool & osaDigitalInput1394::Value(void) const {
     return mValue;
 }
 
-bool osaDigitalInput1394::PreviousValue(void) const {
+const bool & osaDigitalInput1394::PreviousValue(void) const {
     return mPreviousValue;
 }

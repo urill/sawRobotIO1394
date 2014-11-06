@@ -130,9 +130,16 @@ namespace sawRobotIO1394 {
         double DebounceThreshold;
     };
 
+    struct osaDigitalOutput1394Configuration {
+        std::string Name;
+        int BoardID;
+        int BitID;
+    };
+
     struct osaPort1394Configuration {
         std::vector<osaRobot1394Configuration> Robots;
         std::vector<osaDigitalInput1394Configuration> DigitalInputs;
+        std::vector<osaDigitalOutput1394Configuration> DigitalOutputs;
     };
 
     // Maps an actuator to the hardware (board and axis)

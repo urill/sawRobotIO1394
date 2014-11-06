@@ -55,8 +55,12 @@ namespace sawRobotIO1394 {
                                            vctDoubleMat & resultMatrix);
 
     bool osaXML1394ConfigureDigitalInput(cmnXMLPath & xmlConfig,
-                                         const int tagIndex,
+                                         const int inputIndex,
                                          osaDigitalInput1394Configuration & digitalInput);
+
+    bool osaXML1394ConfigureDigitalOutput(cmnXMLPath & xmlConfig,
+                                          const int outputIndex,
+                                          osaDigitalOutput1394Configuration & digitalOutput);
 
 } // namespace sawRobotIO1394
 

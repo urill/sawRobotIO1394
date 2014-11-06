@@ -47,15 +47,29 @@ namespace sawRobotIO1394 {
         for (int i = 0; i < numDigitalInputs; i++) {
             osaDigitalInput1394Configuration digitalInput;
 
-            // Store the digital_input in the config if it's succesfully parsed
+            // Store the digitalInput in the config if it's succesfully parsed
             if (osaXML1394ConfigureDigitalInput(xmlConfig, i + 1, digitalInput)) {
                 config.DigitalInputs.push_back(digitalInput);
             }
         }
 
+        // Get the number of digital output elements
+        int numDigitalOutputs = 0;
+        xmlConfig.GetXMLValue("", "count(/Config/DigitalOut)", numDigitalOutputs);
+
+        for (int i = 0; i < numDigitalOutputs; i++) {
+            osaDigitalOutput1394Configuration digitalOutput;
+
+            // Store the digitalOutput in the config if it's succesfully parsed
+            if (osaXML1394ConfigureDigitalOutput(xmlConfig, i + 1, digitalOutput)) {
+                config.DigitalOutputs.push_back(digitalOutput);
+            }
+        }
+
         // Check to make sure something was found
-        if ((numRobots + numDigitalInputs) == 0) {
-            CMN_LOG_INIT_ERROR << "osaXML1394ConfigurePort: file " << filename << " doesn't contain any Config/Robot nor Config/DigitalIn" << std::endl;
+        if ((numRobots + numDigitalInputs + numDigitalOutputs) == 0) {
+            CMN_LOG_INIT_ERROR << "osaXML1394ConfigurePort: file " << filename
+                               << " doesn't contain any Config/Robot, Config/DigitalIn not Config/DigitalOut" << std::endl;
         }
     }
 
@@ -100,16 +114,16 @@ namespace sawRobotIO1394 {
             sprintf(path, "Robot[%d]/Actuator[%d]/@BoardID", robotIndex, actuatorIndex);
             good &= osaXML1394GetValue(xmlConfig, context, path, actuator.BoardID);
             if ((actuator.BoardID < 0) || (actuator.BoardID >= (int)MAX_BOARDS)) {
-                CMN_LOG_RUN_ERROR << "Configure: invalid board number " << actuator.BoardID
-                                  << " for board " << i << std::endl;
+                CMN_LOG_INIT_ERROR << "Configure: invalid board number " << actuator.BoardID
+                                   << " for board " << i << std::endl;
                 return false;
             }
 
             sprintf(path, "Robot[%d]/Actuator[%d]/@AxisID", robotIndex, actuatorIndex);
             good &= osaXML1394GetValue(xmlConfig, context, path, actuator.AxisID);
             if ((actuator.AxisID < 0) || (actuator.AxisID >= (int)MAX_AXES)) {
-                CMN_LOG_RUN_ERROR << "Configure: invalid axis number " << actuator.AxisID
-                                  << " for actuator " << i << std::endl;
+                CMN_LOG_INIT_ERROR << "Configure: invalid axis number " << actuator.AxisID
+                                   << " for actuator " << i << std::endl;
                 return false;
             }
 
@@ -117,8 +131,8 @@ namespace sawRobotIO1394 {
             sprintf(path, "Robot[%d]/Actuator[%d]/@Type", robotIndex, actuatorIndex);
             xmlConfig.GetXMLValue(context, path, actuatorType);
             if (actuatorType == "") {
-                CMN_LOG_RUN_WARNING << "Configure: no actuator type specified " << actuator.AxisID
-                                    << " for actuator " << i << " set to Revolute by default" << std::endl;
+                CMN_LOG_INIT_WARNING << "Configure: no actuator type specified " << actuator.AxisID
+                                     << " for actuator " << i << " set to Revolute by default" << std::endl;
                 actuatorType = "Revolute";
             }
             double unitPosConversion;
@@ -264,11 +278,11 @@ namespace sawRobotIO1394 {
             } else if (potentiometerPosition == "Joints") {
                 robot.PotLocation = POTENTIOMETER_ON_JOINTS;
             } else {
-                CMN_LOG_RUN_ERROR << "Configure: invalid <Potentiometers Position=\"\"> value, must be either \"Joints\" or \"Actuators\" for robot number "
-                                  << robotIndex << std::endl;
+                CMN_LOG_INIT_ERROR << "Configure: invalid <Potentiometers Position=\"\"> value, must be either \"Joints\" or \"Actuators\" for robot number "
+                                   << robotIndex << std::endl;
             }
         } else {
-            CMN_LOG_RUN_VERBOSE << "Configure: no <Potentiometers Position=\"\"> found." << std::endl;
+            CMN_LOG_INIT_VERBOSE << "Configure: no <Potentiometers Position=\"\"> found." << std::endl;
         }
 
         // Configure Coupling
@@ -328,14 +342,14 @@ namespace sawRobotIO1394 {
             product.ProductOf(robot.ActuatorToJointPosition, robot.JointToActuatorPosition);
 
             if (!product.AlmostEqual(identity, 0.001)) {
-                CMN_LOG_RUN_ERROR << "ConfigureCoupling: product of position coupling matrices not identity:"
-                                  << std::endl << product << std::endl;
+                CMN_LOG_INIT_ERROR << "ConfigureCoupling: product of position coupling matrices not identity:"
+                                   << std::endl << product << std::endl;
                 return false;
             }
 
             product.ProductOf(robot.ActuatorToJointEffort, robot.JointToActuatorEffort);
             if (!product.AlmostEqual(identity, 0.001)) {
-                CMN_LOG_RUN_ERROR << "ConfigureCoupling: product of torque coupling matrices not identity:"
+                CMN_LOG_INIT_ERROR << "ConfigureCoupling: product of torque coupling matrices not identity:"
                                   << std::endl << product << std::endl;
                 return false;
             }
@@ -373,7 +387,7 @@ namespace sawRobotIO1394 {
             row.SetSize(numCols);
 
             if (!row.FromStreamRaw(rowAsStringStream)) {
-                CMN_LOG_RUN_ERROR << "Row vector Assign failed on row " << i << ", path: " << rowPath.str() << std::endl;
+                CMN_LOG_INIT_ERROR << "Row vector Assign failed on row " << i << ", path: " << rowPath.str() << std::endl;
                 return false;
             }
             resultMatrix.Row(i).Assign(row);
@@ -382,8 +396,8 @@ namespace sawRobotIO1394 {
     }
 
     bool osaXML1394ConfigureDigitalInput(cmnXMLPath & xmlConfig,
-                                         const int tagIndex,
-                                         osaDigitalInput1394Configuration & digital_input)
+                                         const int inputIndex,
+                                         osaDigitalInput1394Configuration & digitalInput)
     {
         // Digital Input Setup Stage
         char path[64];
@@ -391,57 +405,82 @@ namespace sawRobotIO1394 {
         bool tagsFound = true;
 
         //Check there is digital input entry. Return boolean result for success/fail.
-        sprintf(path,"DigitalIn[%i]/@Name", tagIndex);
-        tagsFound &= xmlConfig.GetXMLValue(context, path, digital_input.Name);
-        sprintf(path,"DigitalIn[%i]/@BoardID", tagIndex);
-        tagsFound &= xmlConfig.GetXMLValue(context, path, digital_input.BoardID);
-        sprintf(path,"DigitalIn[%i]/@BitID", tagIndex);
-        tagsFound &= xmlConfig.GetXMLValue(context, path, digital_input.BitID);
+        sprintf(path,"DigitalIn[%i]/@Name", inputIndex);
+        tagsFound &= xmlConfig.GetXMLValue(context, path, digitalInput.Name);
+        sprintf(path,"DigitalIn[%i]/@BoardID", inputIndex);
+        tagsFound &= xmlConfig.GetXMLValue(context, path, digitalInput.BoardID);
+        sprintf(path,"DigitalIn[%i]/@BitID", inputIndex);
+        tagsFound &= xmlConfig.GetXMLValue(context, path, digitalInput.BitID);
 
         if (!tagsFound) {
-            CMN_LOG_RUN_ERROR << "Configuration for " << path << " failed. Stopping config." << std::endl;
+            CMN_LOG_INIT_ERROR << "Configuration for " << path << " failed. Stopping config." << std::endl;
             return false;
         }
 
         int pressed_value = 0;
-        sprintf(path, "DigitalIn[%i]/@Pressed", tagIndex);
+        sprintf(path, "DigitalIn[%i]/@Pressed", inputIndex);
         xmlConfig.GetXMLValue(context,path, pressed_value);
-        digital_input.PressedValue = bool(pressed_value);
+        digitalInput.PressedValue = bool(pressed_value);
 
         std::string trigger_modes;
-        sprintf(path, "DigitalIn[%i]/@Trigger", tagIndex);
+        sprintf(path, "DigitalIn[%i]/@Trigger", inputIndex);
         xmlConfig.GetXMLValue(context, path, trigger_modes);
 
-        digital_input.TriggerWhenPressed = false;
-        digital_input.TriggerWhenReleased = false;
+        digitalInput.TriggerWhenPressed = false;
+        digitalInput.TriggerWhenReleased = false;
 
         if (trigger_modes == "all") {
-            digital_input.TriggerWhenPressed = true;
-            digital_input.TriggerWhenReleased = true;
+            digitalInput.TriggerWhenPressed = true;
+            digitalInput.TriggerWhenReleased = true;
         }
         else if (trigger_modes == "press") {
-            digital_input.TriggerWhenPressed = true;
+            digitalInput.TriggerWhenPressed = true;
         }
         else if (trigger_modes == "release") {
-            digital_input.TriggerWhenReleased = true;
+            digitalInput.TriggerWhenReleased = true;
         }
         else if (trigger_modes != "none") {
             // Should not come here during init.
-            CMN_LOG_RUN_ERROR << "Unacceptable Trigger argument: " << trigger_modes << "." << std::endl
-                              << "Trigger argument should be one of these: [all,press,release,none]." << std::endl;
+            CMN_LOG_INIT_ERROR << "Unacceptable Trigger argument: " << trigger_modes << "." << std::endl
+                               << "Trigger argument should be one of these: [all,press,release,none]." << std::endl;
             return false;
         }
 
         double debounce = 0.0;
-        sprintf(path, "DigitalIn[%i]/@Debounce", tagIndex);
+        sprintf(path, "DigitalIn[%i]/@Debounce", inputIndex);
         xmlConfig.GetXMLValue(context, path, debounce, 0.0);
         if (debounce < 0.0) {
             debounce = 0.0;
-            CMN_LOG_RUN_ERROR << "Configuration for " << path << " failed, you can't have a negative debounce value. Stopping config." << std::endl;
+            CMN_LOG_INIT_ERROR << "Configuration for " << path << " failed, you can't have a negative debounce value. Stopping config." << std::endl;
             return false;
         }
-        digital_input.DebounceThreshold = debounce;
+        digitalInput.DebounceThreshold = debounce;
 
+        return true;
+    }
+
+
+    bool osaXML1394ConfigureDigitalOutput(cmnXMLPath & xmlConfig,
+                                          const int outputIndex,
+                                          osaDigitalOutput1394Configuration & digitalOutput)
+    {
+        // Digital Input Setup Stage
+        char path[64];
+        const char * context = "Config";
+        bool tagsFound = true;
+
+        //Check there is digital input entry. Return boolean result for success/fail.
+        sprintf(path,"DigitalIn[%i]/@Name", outputIndex);
+        tagsFound &= xmlConfig.GetXMLValue(context, path, digitalOutput.Name);
+        sprintf(path,"DigitalIn[%i]/@BoardID", outputIndex);
+        tagsFound &= xmlConfig.GetXMLValue(context, path, digitalOutput.BoardID);
+        sprintf(path,"DigitalIn[%i]/@BitID", outputIndex);
+        tagsFound &= xmlConfig.GetXMLValue(context, path, digitalOutput.BitID);
+
+        if (!tagsFound) {
+            CMN_LOG_INIT_ERROR << "Configuration for " << path << " failed. Stopping config." << std::endl;
+            return false;
+        }
         return true;
     }
 }

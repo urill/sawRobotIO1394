@@ -2,7 +2,6 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren
   Created on: 2011-06-10
 
@@ -34,11 +33,11 @@ namespace sawRobotIO1394 {
 
         void PollState(void);
 
-        osaDigitalInput1394Configuration Configuration(void) const;
+        const osaDigitalInput1394Configuration & Configuration(void) const;
 
-        std::string Name(void) const;
-        bool Value(void) const;
-        bool PreviousValue(void) const;
+        const std::string & Name(void) const;
+        const bool & Value(void) const;
+        const bool & PreviousValue(void) const;
 
     protected:
         AmpIO * mBoard;              // Board Assignment

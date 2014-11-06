@@ -46,9 +46,11 @@ if (cisst_FOUND_AS_REQUIRED)
                ${sawRobotIO1394_HEADER_DIR}/osaPort1394.h
                ${sawRobotIO1394_HEADER_DIR}/osaRobot1394.h
                ${sawRobotIO1394_HEADER_DIR}/osaDigitalInput1394.h
+               ${sawRobotIO1394_HEADER_DIR}/osaDigitalOutput1394.h
                ${sawRobotIO1394_HEADER_DIR}/osaXML1394.h
                osaRobot1394.cpp
                osaDigitalInput1394.cpp
+               osaDigitalOutput1394.cpp
                osaPort1394.cpp
                osaXML1394.cpp
                ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394.h
@@ -56,6 +58,8 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsRobot1394.cpp
                mtsDigitalInput1394.h
                mtsDigitalInput1394.cpp
+               mtsDigitalOutput1394.h
+               mtsDigitalOutput1394.cpp
                mtsRobotIO1394.cpp)
 
   set_property (TARGET sawRobotIO1394 PROPERTY FOLDER "sawRobotIO1394")
