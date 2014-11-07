@@ -34,13 +34,14 @@
 
 #include "mtsRobot1394.h"
 #include "mtsDigitalInput1394.h"
+#include "mtsDigitalOutput1394.h"
 
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mtsRobotIO1394, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg)
 
 using namespace sawRobotIO1394;
 
-mtsRobotIO1394::mtsRobotIO1394(const std::string & name, double periodInSeconds, int portNumber):
+mtsRobotIO1394::mtsRobotIO1394(const std::string & name, const double periodInSeconds, const int portNumber):
     mtsTaskPeriodic(name, periodInSeconds)
 {
     Init(portNumber);
@@ -59,12 +60,12 @@ mtsRobotIO1394::~mtsRobotIO1394()
     delete MessageStream;
 }
 
-void mtsRobotIO1394::Init(int port_num)
+void mtsRobotIO1394::Init(const int portNumber)
 {
     // construct port
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     try {
-        mPort = new sawRobotIO1394::osaPort1394(port_num, *MessageStream);
+        mPort = new sawRobotIO1394::osaPort1394(portNumber, *MessageStream);
     } catch (std::runtime_error &err) {
         CMN_LOG_CLASS_INIT_ERROR << err.what();
         abort();
@@ -102,6 +103,10 @@ void mtsRobotIO1394::Init(int port_num)
                                                "GetNumDigitalInputs");
         configurationInterface->AddCommandRead(&osaPort1394::GetDigitalInputNames, mPort,
                                                "GetDigitalInputNames");
+        configurationInterface->AddCommandRead(&mtsRobotIO1394::GetNumberOfDigitalOutputs, this,
+                                               "GetNumDigitalOutputs");
+        configurationInterface->AddCommandRead(&osaPort1394::GetDigitalOutputNames, mPort,
+                                               "GetDigitalOutputNames");
         configurationInterface->AddCommandRead<mtsComponent>(&mtsComponent::GetName, this,
                                                              "GetName");
     } else {
@@ -142,12 +147,26 @@ void mtsRobotIO1394::Configure(const std::string & filename)
          it != config.DigitalInputs.end();
          ++it) {
         // Create a new digital input
-        mtsDigitalInput1394 * digital_input = new mtsDigitalInput1394(*this, *it);
+        mtsDigitalInput1394 * digitalInput = new mtsDigitalInput1394(*this, *it);
         // Set up the cisstMultiTask interfaces
-        if (!this->SetupDigitalInput(digital_input)) {
-            delete digital_input;
+        if (!this->SetupDigitalInput(digitalInput)) {
+            delete digitalInput;
         } else {
-            mDigitalInputs.push_back(digital_input);
+            mDigitalInputs.push_back(digitalInput);
+        }
+    }
+
+    // Add all the digital outputs
+    for (std::vector<osaDigitalOutput1394Configuration>::const_iterator it = config.DigitalOutputs.begin();
+         it != config.DigitalOutputs.end();
+         ++it) {
+        // Create a new digital input
+        mtsDigitalOutput1394 * digitalOutput = new mtsDigitalOutput1394(*this, *it);
+        // Set up the cisstMultiTask interfaces
+        if (!this->SetupDigitalOutput(digitalOutput)) {
+            delete digitalOutput;
+        } else {
+            mDigitalOutputs.push_back(digitalOutput);
         }
     }
 }
@@ -212,7 +231,26 @@ bool mtsRobotIO1394::SetupDigitalInput(mtsDigitalInput1394 * digitalInput)
     try {
         mPort->AddDigitalInput(digitalInput);
     } catch (osaRuntimeError1394 & err) {
-        CMN_LOG_CLASS_INIT_ERROR << "SetupDigitalInput: unable to add the robot to the port: " << err.what() << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "SetupDigitalInput: unable to add the digital input to the port: " << err.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool mtsRobotIO1394::SetupDigitalOutput(mtsDigitalOutput1394 * digitalOutput)
+{
+    // Configure pressed active direction and edge detection
+    digitalOutput->SetupStateTable(this->StateTable);
+
+    mtsInterfaceProvided * digitalOutInterface = this->AddInterfaceProvided(digitalOutput->Name());
+
+    digitalOutput->SetupProvidedInterface(digitalOutInterface, this->StateTable);
+
+    // Add the digital input to the port
+    try {
+        mPort->AddDigitalOutput(digitalOutput);
+    } catch (osaRuntimeError1394 & err) {
+        CMN_LOG_CLASS_INIT_ERROR << "SetupDigitalOutput: unable to add the digital output to the port: " << err.what() << std::endl;
         return false;
     }
     return true;
@@ -314,6 +352,11 @@ void mtsRobotIO1394::Cleanup(void)
 void mtsRobotIO1394::GetNumberOfDigitalInputs(int & placeHolder) const
 {
     placeHolder = mPort->NumberOfDigitalInputs();
+}
+
+void mtsRobotIO1394::GetNumberOfDigitalOutputs(int & placeHolder) const
+{
+    placeHolder = mPort->NumberOfDigitalOutputs();
 }
 
 void mtsRobotIO1394::GetNumberOfBoards(int & placeHolder) const

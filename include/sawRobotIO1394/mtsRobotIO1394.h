@@ -30,6 +30,7 @@ namespace sawRobotIO1394 {
     class osaPort1394;
     class mtsRobot1394;
     class mtsDigitalInput1394;
+    class mtsDigitalOutput1394;
 }
 
 class mtsRobotIO1394 : public mtsTaskPeriodic {
@@ -52,22 +53,28 @@ protected:
     typedef DigitalInputsType::iterator digital_inputs_iterator;
     DigitalInputsType mDigitalInputs;
 
+    typedef std::vector<sawRobotIO1394::mtsDigitalOutput1394*> DigitalOutputsType;
+    typedef DigitalOutputsType::iterator digital_outputs_iterator;
+    DigitalOutputsType mDigitalOutputs;
+
     ///////////// Public Class Methods ///////////////////////////
 public:
     // Constructor & Destructor
-    mtsRobotIO1394(const std::string & name, double periodInSeconds, int portNumber);
+    mtsRobotIO1394(const std::string & name, const double periodInSeconds, const int portNumber);
     mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg); // TODO: add port_num
     virtual ~mtsRobotIO1394();
 
-    void Init(int portNumber);
+    void Init(const int portNumber);
 
     void Configure(const std::string & filename);
     bool SetupRobot(sawRobotIO1394::mtsRobot1394 * robot);
     bool SetupDigitalInput(sawRobotIO1394::mtsDigitalInput1394 * digitalInput);
+    bool SetupDigitalOutput(sawRobotIO1394::mtsDigitalOutput1394 * digitalOutput);
     void Startup(void);
     void Run(void);
     void Cleanup(void);
     void GetNumberOfDigitalInputs(int & placeHolder) const;
+    void GetNumberOfDigitalOutputs(int & placeHolder) const;
 
 protected:
     void GetNumberOfBoards(int & placeHolder) const;
@@ -84,7 +91,7 @@ protected:
 private:
     // Make uncopyable
     mtsRobotIO1394(const mtsRobotIO1394 &);
-    mtsRobotIO1394 &operator=(const mtsRobotIO1394 &);
+    mtsRobotIO1394 & operator = (const mtsRobotIO1394 &);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394);

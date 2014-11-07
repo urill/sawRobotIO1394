@@ -32,6 +32,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/osaConfiguration1394.h>
 #include <sawRobotIO1394/osaRobot1394.h>
 #include <sawRobotIO1394/osaDigitalInput1394.h>
+#include <sawRobotIO1394/osaDigitalOutput1394.h>
 
 class AmpIO;
 class FirewirePort;
@@ -65,7 +66,8 @@ namespace sawRobotIO1394 {
         // which provides an instance of an mtsDigitalInput1394 component (derived from osaDigitalInput1394).
         // This class takes "ownership" of the pointer and deletes it in the destructor (it
         // assumes the object was dynamically created).
-        void AddDigitalInput(osaDigitalInput1394 * digital_input);
+        void AddDigitalInput(osaDigitalInput1394 * digitalInput);
+        void AddDigitalOutput(osaDigitalOutput1394 * digitalInput);
 
         //! Robot Accessors
         osaRobot1394 * Robot(const std::string & name);
@@ -76,6 +78,7 @@ namespace sawRobotIO1394 {
 
         void GetRobotNames(std::vector<std::string> & names) const;
         void GetDigitalInputNames(std::vector<std::string> & names) const;
+        void GetDigitalOutputNames(std::vector<std::string> & names) const;
 
         //! Input/Ouput
         void Read(void);
@@ -84,6 +87,7 @@ namespace sawRobotIO1394 {
         int NumberOfBoards(void) const;
         int NumberOfRobots(void) const;
         int NumberOfDigitalInputs(void) const;
+        int NumberOfDigitalOutputs(void) const;
 
     protected:
 
@@ -104,6 +108,11 @@ namespace sawRobotIO1394 {
         std::map<std::string, osaDigitalInput1394*> mDigitalInputsByName;
         typedef std::vector<osaDigitalInput1394*>::iterator digital_input_iterator;
         typedef std::vector<osaDigitalInput1394*>::const_iterator digital_input_const_iterator;
+
+        std::vector<osaDigitalOutput1394*> mDigitalOutputs;
+        std::map<std::string, osaDigitalOutput1394*> mDigitalOutputsByName;
+        typedef std::vector<osaDigitalOutput1394*>::iterator digital_output_iterator;
+        typedef std::vector<osaDigitalOutput1394*>::const_iterator digital_output_const_iterator;
     };
 
 } // namespace sawRobotIO1394

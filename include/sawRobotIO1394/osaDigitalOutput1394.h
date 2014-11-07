@@ -47,7 +47,7 @@ namespace sawRobotIO1394 {
 
         // State data
         AmpIO_UInt32 mDigitalOutputBits; // BitMask for this output. From DigitalOutput Stream.
-        bool mValue;                    // Current read value
+        bool mValue;                     // Current read value
     };
 
 }

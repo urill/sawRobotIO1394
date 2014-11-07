@@ -56,7 +56,7 @@ void osaDigitalOutput1394::PollState(void)
     mDigitalOutputBits =  mBoard->GetDigitalOutput();
 
     // Use masked bit
-    bool value = (mDigitalOutputBits & mBitMask);
+    mValue = (mDigitalOutputBits & mBitMask);
 }
 
 const osaDigitalOutput1394Configuration & osaDigitalOutput1394::Configuration(void) const {

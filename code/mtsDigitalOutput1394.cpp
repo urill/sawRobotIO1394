@@ -39,8 +39,7 @@ void mtsDigitalOutput1394::SetupStateTable(mtsStateTable & stateTable)
 
 void mtsDigitalOutput1394::SetupProvidedInterface(mtsInterfaceProvided * prov, mtsStateTable & stateTable)
 {
-    prov->AddCommandReadState(stateTable, this->mValue, "GetButton");
-    prov->AddEventWrite(this->Button, "Button", prmEventButton());
+    prov->AddCommandReadState(stateTable, this->mValue, "GetValue");
 }
 
 void mtsDigitalOutput1394::CheckState(void)

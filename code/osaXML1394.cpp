@@ -469,12 +469,12 @@ namespace sawRobotIO1394 {
         const char * context = "Config";
         bool tagsFound = true;
 
-        //Check there is digital input entry. Return boolean result for success/fail.
-        sprintf(path,"DigitalIn[%i]/@Name", outputIndex);
+        //Check there is digital output entry. Return boolean result for success/fail.
+        sprintf(path,"DigitalOut[%i]/@Name", outputIndex);
         tagsFound &= xmlConfig.GetXMLValue(context, path, digitalOutput.Name);
-        sprintf(path,"DigitalIn[%i]/@BoardID", outputIndex);
+        sprintf(path,"DigitalOut[%i]/@BoardID", outputIndex);
         tagsFound &= xmlConfig.GetXMLValue(context, path, digitalOutput.BoardID);
-        sprintf(path,"DigitalIn[%i]/@BitID", outputIndex);
+        sprintf(path,"DigitalOut[%i]/@BitID", outputIndex);
         tagsFound &= xmlConfig.GetXMLValue(context, path, digitalOutput.BitID);
 
         if (!tagsFound) {
