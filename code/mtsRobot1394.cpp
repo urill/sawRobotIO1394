@@ -53,6 +53,7 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableWrite = new mtsStateTable(stateTableSize, this->Name() + "Write");
     mStateTableWrite->SetAutomaticAdvance(false);
 
+    mStateTableRead->AddData(mEncoderChannelsA, "EncoderChannelA");
     mStateTableRead->AddData(mValid, "Valid");
     mStateTableRead->AddData(mPowerStatus, "PowerStatus");
     mStateTableRead->AddData(mSafetyRelay, "SafetyRelay");
@@ -180,6 +181,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableRead, mActuatorTemperature,
                                         "GetActuatorAmpTemperature"); // vector[double]
 
+
+    robotInterface->AddCommandReadState(*mStateTableRead, mEncoderChannelsA,
+                                        "GetEncoderChannelA"); // vector[bool]
     robotInterface->AddCommandReadState(*mStateTableRead, mEncoderPositionBits,
                                         "GetPositionEncoderRaw"); // vector[int]
     robotInterface->AddCommandReadState(*mStateTableRead, mJointPosition,

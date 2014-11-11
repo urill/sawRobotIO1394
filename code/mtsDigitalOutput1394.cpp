@@ -37,9 +37,14 @@ void mtsDigitalOutput1394::SetupStateTable(mtsStateTable & stateTable)
     stateTable.AddData(mValue, mName + "Value");
 }
 
-void mtsDigitalOutput1394::SetupProvidedInterface(mtsInterfaceProvided * prov, mtsStateTable & stateTable)
+void mtsDigitalOutput1394::SetupProvidedInterface(mtsInterfaceProvided * interfaceProvided, mtsStateTable & stateTable)
 {
-    prov->AddCommandReadState(stateTable, this->mValue, "GetValue");
+    osaDigitalOutput1394 * thisBase = dynamic_cast<osaDigitalOutput1394 *>(this);
+    CMN_ASSERT(thisBase);
+
+    interfaceProvided->AddCommandReadState(stateTable, this->mValue, "GetValue");
+    interfaceProvided->AddCommandWrite(&osaDigitalOutput1394::SetValue, thisBase,
+                                       "SetValue");
 }
 
 void mtsDigitalOutput1394::CheckState(void)

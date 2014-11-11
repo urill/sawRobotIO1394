@@ -70,3 +70,15 @@ const std::string & osaDigitalOutput1394::Name(void) const {
 const bool & osaDigitalOutput1394::Value(void) const {
     return mValue;
 }
+
+void osaDigitalOutput1394::SetValue(const bool & newValue)
+{
+    // read from the boards
+    mDigitalOutputBits =  mBoard->GetDigitalOutput();
+    if (newValue) {
+        mDigitalOutputBits |= mBitMask;
+    } else {
+        mDigitalOutputBits &= ~mBitMask;
+    }
+    mBoard->WriteDigitalOutput(0x0f, mDigitalOutputBits);
+}

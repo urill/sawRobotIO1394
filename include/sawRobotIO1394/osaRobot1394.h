@@ -261,7 +261,8 @@ class osaRobot1394
             mBrakePowerStatus,
             mActuatorPowerEnabled,
             mBrakePowerEnabled,
-            mDigitalInputs;
+            mDigitalInputs,
+            mEncoderChannelsA;
 
         vctIntVec
             mPotBits,

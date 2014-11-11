@@ -65,6 +65,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mActuatorPowerStatus.SetSize(mNumberOfActuators);
     mActuatorPowerEnabled.SetSize(mNumberOfActuators);
     mDigitalInputs.SetSize(mNumberOfActuators);
+    mEncoderChannelsA.SetSize(mNumberOfActuators);
     mPotBits.SetSize(mNumberOfActuators);
     mEncoderPositionBits.SetSize(mNumberOfActuators);
     mEncoderVelocityBits.SetSize(mNumberOfActuators);
@@ -328,6 +329,9 @@ void osaRobot1394::PollState(void)
 
         mActuatorTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
         mDigitalInputs[i] = board->GetDigitalInput();
+
+        // vectors of bits
+        mEncoderChannelsA[i] = board->GetEncoderChannelA(axis);
 
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
         mEncoderPositionBits[i] = ((int32_t)(board->GetEncoderPosition(axis) << 8)) >> 8;
@@ -942,10 +946,6 @@ void osaRobot1394::ActuatorBitsToCurrent(const vctIntVec & bits, vctDoubleVec & 
 
 void osaRobot1394::ActuatorCurrentToEffort(const vctDoubleVec & currents, vctDoubleVec & efforts) const {
     efforts.ElementwiseRatioOf(currents, mEffortToCurrentScales);
-
-//    for (size_t i = 0; i < currents.size(); i++) {
-//        efforts[i] = currents[i] / mEffortToCurrentScales[i];
-//    }
 }
 
 void osaRobot1394::BrakeCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const {

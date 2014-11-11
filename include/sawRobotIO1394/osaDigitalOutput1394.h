@@ -36,6 +36,7 @@ namespace sawRobotIO1394 {
         const osaDigitalOutput1394Configuration & Configuration(void) const;
         const std::string & Name(void) const;
         const bool & Value(void) const;
+        void SetValue(const bool & newValue);
 
     protected:
         AmpIO * mBoard;              // Board Assignment
