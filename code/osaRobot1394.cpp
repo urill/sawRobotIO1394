@@ -96,6 +96,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mActuatorBitsToCurrentScales.SetSize(mNumberOfActuators);
     mActuatorBitsToCurrentOffsets.SetSize(mNumberOfActuators);
     mActuatorEffortCommandLimits.SetSize(mNumberOfActuators);
+    mJointEffortCommandLimits.SetSize(mNumberOfJoints);
     mActuatorCurrentCommandLimits.SetSize(mNumberOfActuators);
     mActuatorCurrentFeedbackLimits.SetSize(mNumberOfActuators);
     if (mPotType == POTENTIOMETER_ON_ACTUATORS) {
@@ -235,7 +236,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     if (mConfiguration.HasActuatorToJointCoupling) {
         mJointEffortCommandLimits.ProductOf(mConfiguration.ActuatorToJointEffort, mActuatorEffortCommandLimits);
     } else {
-        mJointEffortCommandLimits.ForceAssign(mActuatorEffortCommandLimits);
+        mJointEffortCommandLimits.Assign(mActuatorEffortCommandLimits);
     }
 }
 
