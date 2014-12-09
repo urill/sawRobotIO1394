@@ -112,13 +112,14 @@ void mtsRobotIO1394QtWidget::Startup(void)
         UnitFactor.SetAll(0.0);
     } else {
         // set unitFactor;
-        for (size_t i = 0; i < this->NumberOfActuators; i++ ){
-            if (jointType[i] == PRM_REVOLUTE)
+        for (size_t i = 0; i < this->NumberOfActuators; i++ ) {
+            if (jointType[i] == PRM_REVOLUTE) {
                 UnitFactor[i] = cmn180_PI;
-            else if (jointType[i] == PRM_PRISMATIC)
-                UnitFactor[i] = cmn_mm;
-            else
+            } else if (jointType[i] == PRM_PRISMATIC) {
+                UnitFactor[i] = 1000.0; // comes in meters, display in mm
+            } else {
                 cmnThrow("mtsRobotIO1394QtWidget: Unknown joint type");
+            }
         }
     }
     if (!parent()) {
