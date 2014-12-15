@@ -613,26 +613,17 @@ void osaRobot1394::SetSingleEncoderPositionBits(const int index, const int bits)
 
 void osaRobot1394::ClipActuatorEffort(vctDoubleVec & efforts)
 {
-    for (size_t i = 0; i < mNumberOfActuators; i++) {
-        efforts[i] = std::min(efforts[i], mActuatorEffortCommandLimits[i]);
-        efforts[i] = std::max(efforts[i], -mActuatorEffortCommandLimits[i]);
-    }
+    efforts.ElementwiseClipIn(mActuatorEffortCommandLimits);
 }
 
 void osaRobot1394::ClipActuatorCurrent(vctDoubleVec & currents)
 {
-    for (size_t i = 0; i < mNumberOfActuators; i++) {
-        currents[i] = std::min(currents[i], mActuatorCurrentCommandLimits[i]);
-        currents[i] = std::max(currents[i], -mActuatorCurrentCommandLimits[i]);
-    }
+    currents.ElementwiseClipIn(mActuatorCurrentCommandLimits);
 }
 
 void osaRobot1394::ClipBrakeCurrent(vctDoubleVec & currents)
 {
-    for (size_t i = 0; i < mNumberOfBrakes; i++) {
-        currents[i] = std::min(currents[i], mBrakeCurrentCommandLimits[i]);
-        currents[i] = std::max(currents[i], -mBrakeCurrentCommandLimits[i]);
-    }
+    currents.ElementwiseClipIn(mBrakeCurrentCommandLimits);
 }
 
 void osaRobot1394::SetJointEffort(const vctDoubleVec & efforts)
