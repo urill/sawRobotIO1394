@@ -1,15 +1,23 @@
-
 sawRobotIO1394
 ==============
 
 This SAW package contains code for interfacing with the Amp1394 QLA (Quad
 Linear Amplifier) library.
 
+Links
+=====
+ * License: http://github.com/jhu-cisst/cisst/blob/master/license.txt
+ * JHU-LCSR software: http://jhu-lcsr.github.io/software/
+ 
+Dependencies
+============
+ * Linux only
+ * cisst libraries: https://github.com/jhu-cisst/cisst
+
+Building without cisst/saw
+==========================
+
 The core API ("osa" classes) can be built with or without CISST.
-
-Building Without CISST
-----------------------
-
 The core API has only a few dependencies on CISST, the largest of which being
 cisstVector. If desired, the Eigen3 library can be used instead, by taking
 advantage of Eigen's [customization
