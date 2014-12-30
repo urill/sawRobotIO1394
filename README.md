@@ -13,6 +13,7 @@ Dependencies
 ============
  * Linux only
  * cisst libraries: https://github.com/jhu-cisst/cisst
+ * QLA mechatronics: http://jhu-cisst.github.io/mechatronics
 
 Building without cisst/saw
 ==========================
