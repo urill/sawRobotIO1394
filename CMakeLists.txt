@@ -1,6 +1,5 @@
 #
-#
-# (C) Copyright 2012-2013 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2012-2014 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -10,15 +9,15 @@
 #
 # --- end cisst license ---
 
-project(sawRobotIO1394)
+project (sawRobotIO1394)
 
-add_subdirectory(code)
+add_subdirectory (code)
 
 # Examples of config files
 add_subdirectory (share)
 
 # Examples
-add_subdirectory(examples)
+add_subdirectory (examples)
 
 # Tests programs, will only get compiled if cisstTestsDriver has been compiled
 add_subdirectory (tests)
