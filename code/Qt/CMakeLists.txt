@@ -1,5 +1,4 @@
 #
-#
 # (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights
 # Reserved.
 #
@@ -52,6 +51,11 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # make sure the new library is known by the parent folder to add to the config file
   set (sawRobotIO1394Qt_LIBRARIES sawRobotIO1394Qt PARENT_SCOPE)
+
+  install (TARGETS sawRobotIO1394Qt
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib
+           ARCHIVE DESTINATION lib)
 
 else (cisst_FOUND_AS_REQUIRED)
   message ("Information: code will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")

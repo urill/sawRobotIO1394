@@ -1,6 +1,5 @@
 #
-#
-# (C) Copyright 2012-2013 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2012-2014 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -33,9 +32,21 @@ if (cisst_FOUND_AS_REQUIRED)
   include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
   # create/configure file for find_package (sawRobotIO1394)
-  set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
+  set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include"
+                                  "${sawRobotIO1394_BINARY_DIR}/include"
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
   set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
   set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
+
+  # Set the version number
+  set (sawRobotIO1394_VERSION_MAJOR "1")
+  set (sawRobotIO1394_VERSION_MINOR "0")
+  set (sawRobotIO1394_VERSION_PATCH "1")
+  set (sawRobotIO1394_VERSION "${sawRobotIO1394_VERSION_MAJOR}.${sawRobotIO1394_VERSION_MINOR}.${sawRobotIO1394_VERSION_PATCH}")
+
+  # Generate sawRobotIO1394Revision.h
+  configure_file ("${sawRobotIO1394_SOURCE_DIR}/code/sawRobotIO1394Revision.h.in"
+                  "${sawRobotIO1394_BINARY_DIR}/include/sawRobotIO1394/sawRobotIO1394Revision.h")
 
   include_directories (${sawRobotIO1394_INCLUDE_DIR})
   set (sawRobotIO1394_HEADER_DIR "${sawRobotIO1394_SOURCE_DIR}/include/sawRobotIO1394")
@@ -76,5 +87,20 @@ if (cisst_FOUND_AS_REQUIRED)
   configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawRobotIO1394Config.cmake.in"
                   "${sawRobotIO1394_BINARY_DIR}/sawRobotIO1394Config.cmake"
                    @ONLY@)
+
+  # Install targets for headers and library
+  install (DIRECTORY
+           ${sawRobotIO1394_SOURCE_DIR}/include/sawRobotIO1394
+           ${sawRobotIO1394_BINARY_DIR}/include/sawRobotIO1394
+           DESTINATION include
+           PATTERN .svn EXCLUDE)
+
+  install (TARGETS sawRobotIO1394
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib
+           ARCHIVE DESTINATION lib)
+
+  install (FILES "${sawRobotIO1394_BINARY_DIR}/sawRobotIO1394Config.cmake"
+           DESTINATION "${CISST_CMAKE_INSTALL_SUFFIX}/saw")
 
 endif(cisst_FOUND_AS_REQUIRED)
