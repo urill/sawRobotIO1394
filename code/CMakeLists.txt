@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2012-2014 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2012-2015 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -21,6 +21,11 @@ find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
+  # where to save the libraries
+  if (NOT DEFINED LIBRARY_OUTPUT_PATH)
+    set (LIBRARY_OUTPUT_PATH "${sawRobotIO1394_BINARY_DIR}/lib")
+  endif ()
+
   # Compile lib Amp1394 and examples within this project, this relies on svn:externals
   add_subdirectory (Amp1394)
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
@@ -36,6 +41,7 @@ if (cisst_FOUND_AS_REQUIRED)
                                   "${sawRobotIO1394_BINARY_DIR}/include"
                                   "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
   set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
+  set (sawRobotIO1394_LIBRARIES sawRobotIO1394)
   set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
 
   # Set the version number
@@ -84,9 +90,21 @@ if (cisst_FOUND_AS_REQUIRED)
   add_subdirectory (Qt)
   set (sawRobotIO1394_LIBRARIES ${sawRobotIO1394_LIBRARIES} ${sawRobotIO1394Qt_LIBRARIES})
 
+  cisst_is_catkin_build (sawRobotIO1394_IS_CATKIN_BUILT)
+  if (sawRobotIO1394_IS_CATKIN_BUILT)
+    set (sawRobotIO1394_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
+  else ()
+    set (sawRobotIO1394_CONFIG_FILE_DIR "${sawRobotIO1394_BINARY_DIR}")
+  endif ()
+
   configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawRobotIO1394Config.cmake.in"
-                  "${sawRobotIO1394_BINARY_DIR}/sawRobotIO1394Config.cmake"
+                  "${sawRobotIO1394_CONFIG_FILE_DIR}/sawRobotIO1394Config.cmake"
                    @ONLY@)
+
+  cisst_add_config_version ("${sawRobotIO1394_CONFIG_FILE_DIR}/sawRobotIO1394ConfigVersion.cmake"
+                            VERSION ${sawRobotIO1394_VERSION}
+                            DESTINATION ${CISST_CMAKE_INSTALL_SUFFIX}/saw
+                            COMPONENT sawRobotIO1394)
 
   # Install targets for headers and library
   install (DIRECTORY
