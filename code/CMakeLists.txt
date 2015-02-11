@@ -21,17 +21,21 @@ find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
-  # where to save the libraries
-  if (NOT DEFINED LIBRARY_OUTPUT_PATH)
+  # Modify CMake configuration to use cisst
+  include (${CISST_USE_FILE})
+
+  # catkin/ROS paths
+  cisst_is_catkin_build (sawRobotIO1394_IS_CATKIN_BUILT)
+  if (sawRobotIO1394_IS_CATKIN_BUILT)
+    set (sawRobotIO1394_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
     set (LIBRARY_OUTPUT_PATH "${sawRobotIO1394_BINARY_DIR}/lib")
+  else ()
+    set (sawRobotIO1394_CONFIG_FILE_DIR "${sawRobotIO1394_BINARY_DIR}")
   endif ()
 
   # Compile lib Amp1394 and examples within this project, this relies on svn:externals
   add_subdirectory (Amp1394)
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
-
-  # Modify CMake configuration to use cisst
-  include (${CISST_USE_FILE})
 
   # Allow c++ code to find local header files
   include_directories (${CMAKE_CURRENT_SOURCE_DIR})
@@ -89,13 +93,6 @@ if (cisst_FOUND_AS_REQUIRED)
   # add Qt code
   add_subdirectory (Qt)
   set (sawRobotIO1394_LIBRARIES ${sawRobotIO1394_LIBRARIES} ${sawRobotIO1394Qt_LIBRARIES})
-
-  cisst_is_catkin_build (sawRobotIO1394_IS_CATKIN_BUILT)
-  if (sawRobotIO1394_IS_CATKIN_BUILT)
-    set (sawRobotIO1394_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
-  else ()
-    set (sawRobotIO1394_CONFIG_FILE_DIR "${sawRobotIO1394_BINARY_DIR}")
-  endif ()
 
   configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawRobotIO1394Config.cmake.in"
                   "${sawRobotIO1394_CONFIG_FILE_DIR}/sawRobotIO1394Config.cmake"
