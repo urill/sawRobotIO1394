@@ -122,6 +122,10 @@ void mtsRobot1394::GetNumberOfJoints(int & numberOfJoints) const {
     numberOfJoints = this->NumberOfJoints();
 }
 
+void mtsRobot1394::GetSerialNumber(int & serialNumber) const {
+    serialNumber = this->SerialNumber();
+}
+
 void mtsRobot1394::SetTorqueJoint(const prmForceTorqueJointSet & efforts) {
     this->SetJointEffort(efforts.ForceTorque());
 }
@@ -148,6 +152,8 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    "GetNumberOfActuators");
     robotInterface->AddCommandRead(&mtsRobot1394::GetNumberOfJoints, this,
                                    "GetNumberOfJoints");
+    robotInterface->AddCommandRead(&mtsRobot1394::GetSerialNumber, this,
+                                   "GetSerialNumber");
     robotInterface->AddCommandReadState(*mStateTableRead, this->mValid,
                                         "IsValid");
 

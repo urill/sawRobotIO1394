@@ -56,6 +56,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mName = config.Name;
     mNumberOfActuators = config.NumberOfActuators;
     mNumberOfJoints = config.NumberOfJoints;
+    mSerialNumber = config.SerialNumber;
     mPotType = config.PotLocation;
 
     // Low-level API
@@ -477,11 +478,13 @@ void osaRobot1394::CheckState(void)
     }
     if (errorFound) {
         this->DisablePower();
-        std::string errorMessage = this->Name() + ": inconsistancy between encoders and potentiometers, pots: ";
+        std::string errorMessage = this->Name() + ": inconsistancy between encoders and potentiometers, \n pots: ";
         errorMessage.append(mPotPosition.ToString());
-        errorMessage.append(", encoders: ");
+        errorMessage.append(", \n encoders: ");
         errorMessage.append(mJointPosition.ToString());
-        errorMessage.append(", mask: ");
+        errorMessage.append(", \n tolerance: ");
+        errorMessage.append(mPotsToEncodersTolerance.ToString());
+        errorMessage.append(", \n mask: ");
         errorMessage.append(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance).ToString());
         cmnThrow(osaRuntimeError1394(errorMessage));
     }
@@ -822,6 +825,10 @@ size_t osaRobot1394::NumberOfJoints(void) const {
 
 size_t osaRobot1394::NumberOfActuators(void) const {
     return mNumberOfActuators;
+}
+
+size_t osaRobot1394::SerialNumber(void) const {
+    return mSerialNumber;
 }
 
 size_t osaRobot1394::NumberOfBrakes(void) const {

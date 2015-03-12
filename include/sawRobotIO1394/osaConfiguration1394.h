@@ -107,6 +107,7 @@ namespace sawRobotIO1394 {
         std::string Name;
         int NumberOfActuators;
         int NumberOfJoints;
+        int SerialNumber;
         int NumberOfBrakes;
         bool HasActuatorToJointCoupling;
 

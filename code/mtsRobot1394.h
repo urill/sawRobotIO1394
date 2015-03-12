@@ -71,6 +71,7 @@ namespace sawRobotIO1394 {
         // Wrapper of osa methods to match command signatures
         void GetNumberOfActuators(int & num_actuators) const;
         void GetNumberOfJoints(int & num_joints) const;
+        void GetSerialNumber(int & serialNumber) const;
         void SetTorqueJoint(const prmForceTorqueJointSet & jointTorques);
         void EnableSafetyRelay(void);
         void DisableSafetyRelay(void);

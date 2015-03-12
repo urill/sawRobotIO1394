@@ -73,6 +73,9 @@ namespace sawRobotIO1394 {
         sprintf(path, "Robot[%d]/@NumOfJoint", robotIndex);
         tagsFound &= xmlConfig.GetXMLValue(context, path, robot.NumberOfJoints);
 
+        sprintf(path, "Robot[%d]/@SN", robotIndex);
+        tagsFound &= xmlConfig.GetXMLValue(context, path, robot.SerialNumber);
+
         for (int i = 0; i < robot.NumberOfActuators; i++) {
             osaActuator1394Configuration actuator;
             int actuatorIndex = i + 1;

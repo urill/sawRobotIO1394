@@ -142,6 +142,7 @@ class osaRobot1394
         std::string Name(void) const;
         size_t NumberOfJoints(void) const;
         size_t NumberOfActuators(void) const;
+        size_t SerialNumber(void) const;
         size_t NumberOfBrakes(void) const;
         void GetJointTypes(prmJointTypeVec & jointTypes) const;
         void GetJointEffortCommandLimits(vctDoubleVec & limits) const;
@@ -199,6 +200,7 @@ class osaRobot1394
         size_t mNumberOfActuators;
         size_t mNumberOfJoints;
         size_t mNumberOfBrakes;
+        size_t mSerialNumber;
 
         // state of brakes
         bool mBrakeReleasing;
