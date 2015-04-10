@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -261,6 +261,7 @@ class osaRobot1394
             mBrakePowerStatus,
             mActuatorPowerEnabled,
             mBrakePowerEnabled,
+            mEncoderOverflow,
             mDigitalInputs;
 
         vctIntVec

@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren
+  Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -23,6 +23,11 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SAW_ROBOT_IO_1394_WO_CISST
 #include <cisstCommon/cmnUnits.h>
 #include <cisstOSAbstraction/osaSleep.h>
+#endif
+
+#include <Amp1394/AmpIORevision.h>
+#if ((Amp1394_VERSION_MAJOR < 1) || ((Amp1394_VERSION_MAJOR == 1) && (Amp1394_VERSION_MINOR < 1)))
+#error "Version 1.1 or higher of libAmpIO is required (change to signed encoder positions)"
 #endif
 
 #include <AmpIO.h>
@@ -66,6 +71,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mActuatorPowerEnabled.SetSize(mNumberOfActuators);
     mDigitalInputs.SetSize(mNumberOfActuators);
     mPotBits.SetSize(mNumberOfActuators);
+    mEncoderOverflow.SetSize(mNumberOfActuators);
     mEncoderPositionBits.SetSize(mNumberOfActuators);
     mEncoderVelocityBits.SetSize(mNumberOfActuators);
     mEncoderVelocityBitsNow.SetSize(mNumberOfActuators);
@@ -108,7 +114,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mUsePotsForSafetyCheck = false;
 
     mBitsToPositionScales.SetSize(mNumberOfActuators);
-    mBitsToPositionOffsets.SetSize(mNumberOfActuators);
     mBitsToDPositionScales.SetSize(mNumberOfActuators);
     mBitsToDPositionOffsets.SetSize(mNumberOfActuators);
     mBitsToDTimeScales.SetSize(mNumberOfActuators);
@@ -150,7 +155,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
         mActuatorCurrentFeedbackLimits[i] = 1.2 * mActuatorCurrentCommandLimits[i] + (50.0 / 1000.0);
 
         mBitsToPositionScales[i]   = encoder.BitsToPositionScale;
-        mBitsToPositionOffsets[i]  = encoder.BitsToPositionOffset;
         mBitsToDPositionScales[i]  = encoder.BitsToDPositionScale;
         mBitsToDPositionOffsets[i] = encoder.BitsToDPositionOffset;
         mBitsToDTimeScales[i]      = encoder.BitsToDTimeScale;
@@ -325,8 +329,9 @@ void osaRobot1394::PollState(void)
         mActuatorTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
         mDigitalInputs[i] = board->GetDigitalInput();
 
+        mEncoderOverflow[i] = board->GetEncoderOverflow(axis);
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
-        mEncoderPositionBits[i] = ((int32_t)(board->GetEncoderPosition(axis) << 8)) >> 8;
+        mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
         mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
         mEncoderVelocityBitsNow[i] = board->GetEncoderVelocity(axis, false);
 
@@ -485,6 +490,14 @@ void osaRobot1394::CheckState(void)
         errorMessage.append(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance).ToString());
         cmnThrow(osaRuntimeError1394(errorMessage));
     }
+
+    // Check for encoder overflow
+    if (mEncoderOverflow.Any()) {
+        this->DisablePower();
+        std::string errorMessage = this->Name() + ": detected encoder overflow: ";
+        errorMessage.append(mEncoderOverflow.ToString());
+        cmnThrow(osaRuntimeError1394(errorMessage));
+    }
 }
 
 void osaRobot1394::EnablePower(void)
@@ -603,7 +616,7 @@ void osaRobot1394::SetEncoderPositionBits(const vctIntVec & bits)
 
 void osaRobot1394::SetSingleEncoderPosition(const int index, const double pos)
 {
-    SetSingleEncoderPositionBits(index, (pos - mBitsToPositionOffsets[index]) / mBitsToPositionScales[index]);
+    SetSingleEncoderPositionBits(index, pos / mBitsToPositionScales[index]);
 }
 
 void osaRobot1394::SetSingleEncoderPositionBits(const int index, const int bits)
@@ -722,9 +735,7 @@ void osaRobot1394::BrakeEngage(void)
 
 void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
 {
-    vctDoubleVec joint_positions(mNumberOfJoints);
-    vctDoubleVec joint_error(mNumberOfJoints);
-    vctDoubleVec actuator_error(mNumberOfActuators);
+    vctDoubleVec actuatorPosition(mNumberOfActuators);
 
     switch(mPotType) {
 
@@ -734,15 +745,12 @@ void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
         break;
 
     case POTENTIOMETER_ON_JOINTS:
-        joint_positions.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
-        joint_error.DifferenceOf(joint_positions, mPotPosition);
-        actuator_error.ProductOf(mConfiguration.JointToActuatorPosition, joint_error);
-        mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuator_error);
+        actuatorPosition.ProductOf(mConfiguration.JointToActuatorPosition, mPotPosition);
+        SetEncoderPosition(actuatorPosition);
         break;
 
     case POTENTIOMETER_ON_ACTUATORS:
-        actuator_error.DifferenceOf(mEncoderPosition, mPotPosition);
-        mBitsToPositionOffsets.DifferenceOf(mBitsToPositionOffsets, actuator_error);
+        SetEncoderPosition(mPotPosition);
         break;
     };
 }
@@ -843,13 +851,13 @@ void osaRobot1394::GetActuatorCurrentCommandLimits(vctDoubleVec & limits) const
 
 void osaRobot1394::EncoderPositionToBits(const vctDoubleVec & pos, vctIntVec & bits) const {
     for (size_t i = 0; i < bits.size() && i < pos.size(); i++) {
-        bits[i] = static_cast<long>((pos[i] - mBitsToPositionOffsets[i]) / mBitsToPositionScales[i]);
+        bits[i] = static_cast<long>(pos[i] / mBitsToPositionScales[i]);
     }
 }
 
 void osaRobot1394::EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & pos) const {
     for (size_t i = 0; i < bits.size() && i < pos.size(); i++) {
-        pos[i] = static_cast<double>(bits[i]) * mBitsToPositionScales[i] + mBitsToPositionOffsets[i];
+        pos[i] = static_cast<double>(bits[i]) * mBitsToPositionScales[i];
     }
 }
 
