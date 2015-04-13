@@ -221,6 +221,12 @@ bool mtsRobotIO1394::SetupDigitalInput(mtsDigitalInput1394 * digitalInput)
 void mtsRobotIO1394::Startup(void)
 {
     // osaCPUSetAffinity(OSA_CPU4);
+    const robots_iterator robotsEnd = mRobots.end();
+    for (robots_iterator robot = mRobots.begin();
+         robot != robotsEnd;
+         ++robot) {
+        (*robot)->SetEncoderPosition(vctDoubleVec((*robot)->NumberOfActuators(), 0.0));
+    }
 }
 
 void mtsRobotIO1394::PreRead(void)
