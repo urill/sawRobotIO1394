@@ -72,6 +72,8 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mDigitalInputs.SetSize(mNumberOfActuators);
     mPotBits.SetSize(mNumberOfActuators);
     mEncoderOverflow.SetSize(mNumberOfActuators);
+    mPreviousEncoderOverflow.SetSize(mNumberOfActuators);
+    mPreviousEncoderOverflow.SetAll(false);
     mEncoderPositionBits.SetSize(mNumberOfActuators);
     mEncoderVelocityBits.SetSize(mNumberOfActuators);
     mEncoderVelocityBitsNow.SetSize(mNumberOfActuators);
@@ -106,11 +108,14 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     if (mPotType == POTENTIOMETER_ON_ACTUATORS) {
         mPotsToEncodersTolerance.SetSize(mNumberOfActuators);
         mPotsToEncodersError.SetSize(mNumberOfActuators);
+        mPotsToEncodersErrorFlag.SetSize(mNumberOfActuators);
     } else if (mPotType == POTENTIOMETER_ON_JOINTS) {
         mPotsToEncodersTolerance.SetSize(mNumberOfJoints);
         mPotsToEncodersError.SetSize(mNumberOfJoints);
+        mPotsToEncodersErrorFlag.SetSize(mNumberOfJoints);
     }
     mPotsToEncodersTolerance.SetAll(0.0);
+    mPotsToEncodersErrorFlag.SetAll(true);
     mUsePotsForSafetyCheck = false;
 
     mBitsToPositionScales.SetSize(mNumberOfActuators);
@@ -482,21 +487,28 @@ void osaRobot1394::CheckState(void)
     }
     if (errorFound) {
         this->DisablePower();
-        std::string errorMessage = this->Name() + ": inconsistancy between encoders and potentiometers, pots: ";
-        errorMessage.append(mPotPosition.ToString());
-        errorMessage.append(", encoders: ");
-        errorMessage.append(mJointPosition.ToString());
-        errorMessage.append(", mask: ");
-        errorMessage.append(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance).ToString());
-        cmnThrow(osaRuntimeError1394(errorMessage));
+        vctBoolVec newErrors(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance));
+        if (newErrors.NotEqual(mPotsToEncodersErrorFlag)) {
+            mPotsToEncodersErrorFlag.Assign(newErrors);
+            std::string errorMessage = this->Name() + ": inconsistancy between encoders and potentiometers, pots: ";
+            errorMessage.append(mPotPosition.ToString());
+            errorMessage.append(", encoders: ");
+            errorMessage.append(mJointPosition.ToString());
+            errorMessage.append(", mask: ");
+            errorMessage.append(mPotsToEncodersErrorFlag.ToString());
+            cmnThrow(osaRuntimeError1394(errorMessage));
+        }
     }
 
     // Check for encoder overflow
     if (mEncoderOverflow.Any()) {
         this->DisablePower();
-        std::string errorMessage = this->Name() + ": detected encoder overflow: ";
-        errorMessage.append(mEncoderOverflow.ToString());
-        cmnThrow(osaRuntimeError1394(errorMessage));
+        if (mEncoderOverflow.NotEqual(mPreviousEncoderOverflow)) {
+            mPreviousEncoderOverflow.Assign(mEncoderOverflow);
+            std::string errorMessage = this->Name() + ": detected encoder overflow: ";
+            errorMessage.append(mEncoderOverflow.ToString());
+            cmnThrow(osaRuntimeError1394(errorMessage));
+        }
     }
 }
 

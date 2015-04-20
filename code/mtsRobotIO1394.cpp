@@ -246,8 +246,16 @@ void mtsRobotIO1394::PostRead(void)
     for (robots_iterator robot = mRobots.begin();
          robot != robotsEnd;
          ++robot) {
-        (*robot)->CheckState();
-        (*robot)->AdvanceReadStateTable();
+        try {
+            (*robot)->CheckState();
+            (*robot)->AdvanceReadStateTable();
+        } catch (std::exception & stdException) {
+            CMN_LOG_CLASS_RUN_ERROR << "PostRead: " << (*robot)->Name() << ": standard exception \"" << stdException.what() << "\"" << std::endl;
+            (*robot)->MessageEvents.Error("IO exception: " + (*robot)->Name() + ", " + stdException.what());
+        } catch (...) {
+            CMN_LOG_CLASS_RUN_ERROR << "PostRead: " << (*robot)->Name() << ": unknown exception" << std::endl;
+            (*robot)->MessageEvents.Error("IO unknown exception: " + (*robot)->Name());
+        }
     }
     // Trigger digital input events
     const digital_inputs_iterator digital_inputs_end = mDigitalInputs.end();
@@ -292,7 +300,7 @@ void mtsRobotIO1394::Run(void)
     } catch (...) {
         CMN_LOG_CLASS_RUN_ERROR << "Run: " << this->Name << ": unknown exception" << std::endl;
     }
-    this->PostRead();
+    this->PostRead(); // this performs all state conversions and checks
 
     // Invoke connected components (if any)
     this->RunEvent();

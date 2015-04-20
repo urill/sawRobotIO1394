@@ -286,6 +286,10 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
     robotInterface->AddEventWrite(EventTriggers.WatchdogStatus, "WatchdogStatus", false);
 
+    robotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
+    robotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
+    robotInterface->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
+
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
                                       "EnableBoardsPower");
@@ -331,9 +335,15 @@ void mtsRobot1394::CheckState(void)
 
     if (mPreviousPowerStatus != mPowerStatus) {
         EventTriggers.PowerStatus(mPowerStatus);
+        if (!mPowerStatus) {
+            MessageEvents.Error(this->Name() + " power off");
+        }
     }
 
     if (mPreviousWatchdogStatus != mWatchdogStatus) {
         EventTriggers.WatchdogStatus(mWatchdogStatus);
+        if (!mWatchdogStatus) {
+            MessageEvents.Error(this->Name() + " watchdog triggered");
+        }
     }
 }

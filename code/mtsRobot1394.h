@@ -2,11 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,8 +18,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #ifndef _mtsRobot1394_h
 #define _mtsRobot1394_h
-
-#include <sawRobotIO1394/mtsRobotIO1394.h>
 
 #include <cisstParameterTypes/prmJointType.h>
 #include <cisstParameterTypes/prmPositionJointGet.h>
@@ -90,6 +87,13 @@ namespace sawRobotIO1394 {
             mtsFunctionWrite PowerStatus;
             mtsFunctionWrite WatchdogStatus;
         } EventTriggers;
+
+    public:
+        struct {
+            mtsFunctionWrite Status;
+            mtsFunctionWrite Warning;
+            mtsFunctionWrite Error;
+        } MessageEvents;
     };
 
 } // namespace sawRobotIO1394

@@ -260,7 +260,9 @@ class osaRobot1394
             mActuatorPowerStatus,
             mBrakePowerStatus,
             mActuatorPowerEnabled,
+            mPotsToEncodersErrorFlag,
             mBrakePowerEnabled,
+            mPreviousEncoderOverflow,
             mEncoderOverflow,
             mDigitalInputs;
 
