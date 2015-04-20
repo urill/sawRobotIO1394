@@ -336,14 +336,14 @@ void mtsRobot1394::CheckState(void)
     if (mPreviousPowerStatus != mPowerStatus) {
         EventTriggers.PowerStatus(mPowerStatus);
         if (!mPowerStatus) {
-            MessageEvents.Error(this->Name() + " power off");
+            MessageEvents.Error("IO: " + this->Name() + " power off");
         }
     }
 
     if (mPreviousWatchdogStatus != mWatchdogStatus) {
         EventTriggers.WatchdogStatus(mWatchdogStatus);
         if (!mWatchdogStatus) {
-            MessageEvents.Error(this->Name() + " watchdog triggered");
+            MessageEvents.Error("IO: " + this->Name() + " watchdog triggered");
         }
     }
 }
