@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -28,7 +28,8 @@ mtsRobot1394::mtsRobot1394(const cmnGenericObject & owner,
     osaRobot1394(config, 100),
     OwnerServices(owner.Services()),
     mStateTableRead(0),
-    mStateTableWrite(0)
+    mStateTableWrite(0),
+    mFirstWatchdog(true)
 {
 }
 
@@ -343,7 +344,12 @@ void mtsRobot1394::CheckState(void)
     if (mPreviousWatchdogStatus != mWatchdogStatus) {
         EventTriggers.WatchdogStatus(mWatchdogStatus);
         if (!mWatchdogStatus) {
-            MessageEvents.Error("IO: " + this->Name() + " watchdog triggered");
+            if (mFirstWatchdog) {
+                MessageEvents.Status("IO: " + this->Name() + " watchdog triggered");
+                mFirstWatchdog = false;
+            } else {
+                MessageEvents.Error("IO: " + this->Name() + " watchdog triggered");
+            }
         }
     }
 }

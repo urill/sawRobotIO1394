@@ -76,6 +76,7 @@ namespace sawRobotIO1394 {
     protected:
         mtsStateTable * mStateTableRead;
         mtsStateTable * mStateTableWrite;
+        bool mFirstWatchdog;
 
         prmForceTorqueJointSet mTorqueJoint;
         prmPositionJointGet mPositionJointGet;
