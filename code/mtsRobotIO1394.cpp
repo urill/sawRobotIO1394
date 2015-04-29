@@ -5,7 +5,7 @@
  Author(s):  Zihan Chen, Peter Kazanzides
  Created on: 2012-07-31
 
- (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+ (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
  --- begin cisst license - do not edit ---
 
@@ -65,7 +65,8 @@ void mtsRobotIO1394::Init(int port_num)
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     try {
         mPort = new sawRobotIO1394::osaPort1394(port_num, *MessageStream);
-    } catch (std::runtime_error &err) {
+        mPortExceptionFlag = false;
+    } catch (std::runtime_error & err) {
         CMN_LOG_CLASS_INIT_ERROR << err.what();
         abort();
     }
@@ -221,6 +222,12 @@ bool mtsRobotIO1394::SetupDigitalInput(mtsDigitalInput1394 * digitalInput)
 void mtsRobotIO1394::Startup(void)
 {
     // osaCPUSetAffinity(OSA_CPU4);
+    const robots_iterator robotsEnd = mRobots.end();
+    for (robots_iterator robot = mRobots.begin();
+         robot != robotsEnd;
+         ++robot) {
+        (*robot)->SetEncoderPosition(vctDoubleVec((*robot)->NumberOfActuators(), 0.0));
+    }
 }
 
 void mtsRobotIO1394::PreRead(void)
@@ -240,8 +247,16 @@ void mtsRobotIO1394::PostRead(void)
     for (robots_iterator robot = mRobots.begin();
          robot != robotsEnd;
          ++robot) {
-        (*robot)->CheckState();
-        (*robot)->AdvanceReadStateTable();
+        try {
+            (*robot)->CheckState();
+            (*robot)->AdvanceReadStateTable();
+        } catch (std::exception & stdException) {
+            CMN_LOG_CLASS_RUN_ERROR << "PostRead: " << (*robot)->Name() << ": standard exception \"" << stdException.what() << "\"" << std::endl;
+            (*robot)->MessageEvents.Error("IO exception: " + (*robot)->Name() + ", " + stdException.what());
+        } catch (...) {
+            CMN_LOG_CLASS_RUN_ERROR << "PostRead: " << (*robot)->Name() << ": unknown exception" << std::endl;
+            (*robot)->MessageEvents.Error("IO unknown exception: " + (*robot)->Name());
+        }
     }
     // Trigger digital input events
     const digital_inputs_iterator digital_inputs_end = mDigitalInputs.end();
@@ -276,17 +291,49 @@ void mtsRobotIO1394::PostWrite(void)
 void mtsRobotIO1394::Run(void)
 {
     // Read from all boards
+    bool gotException = false;
+    std::string message;
+
     this->PreRead();
     try {
         mPort->Read();
     } catch (sawRobotIO1394::osaRuntimeError1394 & sawException) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: " << this->Name << ": sawRobotIO1394 exception \"" << sawException.what() << "\"" << std::endl;
+        gotException = true;
+        message = this->Name + ": sawRobotIO1394 exception \"" + sawException.what() + "\"";
     } catch (std::exception & stdException) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: " << this->Name << ": standard exception \"" << stdException.what() << "\"" << std::endl;
+        gotException = true;
+        message = this->Name + ": standard exception \"" + stdException.what() + "\"";
     } catch (...) {
-        CMN_LOG_CLASS_RUN_ERROR << "Run: " << this->Name << ": unknown exception" << std::endl;
+        gotException = true;
+        message = this->Name + ": unknown exception";
     }
-    this->PostRead();
+    if (gotException) {
+        if (!mPortExceptionFlag) {
+            mPortExceptionFlag = true;
+            CMN_LOG_CLASS_RUN_ERROR << "Run: port read, " << message << std::endl;
+            // Trigger robot events
+            const robots_iterator robotsEnd = mRobots.end();
+            for (robots_iterator robot = mRobots.begin();
+                 robot != robotsEnd;
+                 ++robot) {
+                (*robot)->MessageEvents.Error(message);
+            }
+        }
+    } else {
+        if (mPortExceptionFlag) {
+            mPortExceptionFlag = false;
+            message = this->Name + ": read from port succeeded";
+            CMN_LOG_CLASS_RUN_DEBUG << "Run: " << message << std::endl;
+            // Trigger robot events
+            const robots_iterator robotsEnd = mRobots.end();
+            for (robots_iterator robot = mRobots.begin();
+                 robot != robotsEnd;
+                 ++robot) {
+                (*robot)->MessageEvents.Status(message);
+            }
+        }
+    }
+    this->PostRead(); // this performs all state conversions and checks
 
     // Invoke connected components (if any)
     this->RunEvent();

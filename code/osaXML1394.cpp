@@ -183,10 +183,6 @@ namespace sawRobotIO1394 {
             xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToPositionScale);
             actuator.Encoder.BitsToPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Offset", robotIndex, actuatorIndex);
-            xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToPositionOffset);
-            actuator.Encoder.BitsToPositionOffset *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
-
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Scale", robotIndex, actuatorIndex);
             xmlConfig.GetXMLValue(context, path, actuator.Encoder.BitsToDPositionScale);
             actuator.Encoder.BitsToDPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees

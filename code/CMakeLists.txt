@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2012-2014 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2012-2015 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -21,12 +21,22 @@ find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
+  # Modify CMake configuration to use cisst
+  include (${CISST_USE_FILE})
+
+  # catkin/ROS paths
+  cisst_is_catkin_build (sawRobotIO1394_IS_CATKIN_BUILT)
+  if (sawRobotIO1394_IS_CATKIN_BUILT)
+    set (sawRobotIO1394_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
+    set (LIBRARY_OUTPUT_PATH "${sawRobotIO1394_BINARY_DIR}/lib")
+    set (EXECUTABLE_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/bin")
+  else ()
+    set (sawRobotIO1394_CONFIG_FILE_DIR "${sawRobotIO1394_BINARY_DIR}")
+  endif ()
+
   # Compile lib Amp1394 and examples within this project, this relies on svn:externals
   add_subdirectory (Amp1394)
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
-
-  # Modify CMake configuration to use cisst
-  include (${CISST_USE_FILE})
 
   # Allow c++ code to find local header files
   include_directories (${CMAKE_CURRENT_SOURCE_DIR})
@@ -34,8 +44,10 @@ if (cisst_FOUND_AS_REQUIRED)
   # create/configure file for find_package (sawRobotIO1394)
   set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include"
                                   "${sawRobotIO1394_BINARY_DIR}/include"
-                                  "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib"
+                                  "${CMAKE_CURRENT_BINARY_DIR}/Amp1394")
   set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
+  set (sawRobotIO1394_LIBRARIES sawRobotIO1394)
   set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
 
   # Set the version number
@@ -85,8 +97,13 @@ if (cisst_FOUND_AS_REQUIRED)
   set (sawRobotIO1394_LIBRARIES ${sawRobotIO1394_LIBRARIES} ${sawRobotIO1394Qt_LIBRARIES})
 
   configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawRobotIO1394Config.cmake.in"
-                  "${sawRobotIO1394_BINARY_DIR}/sawRobotIO1394Config.cmake"
+                  "${sawRobotIO1394_CONFIG_FILE_DIR}/sawRobotIO1394Config.cmake"
                    @ONLY@)
+
+  cisst_add_config_version ("${sawRobotIO1394_CONFIG_FILE_DIR}/sawRobotIO1394ConfigVersion.cmake"
+                            VERSION ${sawRobotIO1394_VERSION}
+                            DESTINATION ${CISST_CMAKE_INSTALL_SUFFIX}/saw
+                            COMPONENT sawRobotIO1394)
 
   # Install targets for headers and library
   install (DIRECTORY
