@@ -409,7 +409,7 @@ void osaRobot1394::CheckState(void)
     bool current_safety_violation = false;
     for (size_t i = 0; i < mNumberOfActuators; i++) {
         if (fabs(mActuatorCurrentFeedback[i]) >= mActuatorCurrentFeedbackLimits[i]) {
-            CMN_LOG_RUN_WARNING << "CheckState: actuator " << i
+            CMN_LOG_RUN_WARNING << "CheckState: " << this->mName << ", actuator " << i
                                 << " power: " << mActuatorCurrentFeedback[i]
                                 << " > limit: " << mActuatorCurrentFeedbackLimits[i] << std::endl;
             current_safety_violation = true;
@@ -418,7 +418,7 @@ void osaRobot1394::CheckState(void)
 
     for (size_t i = 0; i < mNumberOfBrakes; i++) {
         if (fabs(mBrakeCurrentFeedback[i]) >= mBrakeCurrentFeedbackLimits[i]) {
-            CMN_LOG_RUN_WARNING << "CheckState: brake " << i
+            CMN_LOG_RUN_WARNING << "CheckState: " << this->mName << ", brake " << i
                                 << " power: " << mBrakeCurrentFeedback[i]
                                 << " > limit: " << mBrakeCurrentFeedbackLimits[i] << std::endl;
             current_safety_violation = true;
