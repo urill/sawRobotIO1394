@@ -1,6 +1,18 @@
 Change log
 ==========
 
+1.1.1 (2015-05-15)
+==================
+
+* API changes:
+  * None
+* Deprecated features:
+  * None
+* New features:
+  * None
+* Bug fixes:
+  * In current calibration example, preload encoders to avoid encoder bit overflow
+
 1.1.0 (2015-04-28)
 ==================
 
@@ -10,6 +22,7 @@ Change log
   * Requires mechatronics library Amp1394 version 1.1 or higher.
   * Removed encoder bits to position offset, now assumes the offset if preloaded on FPGA
 * Deprecated features:
+  * None
 * New features:
   * Added `Error`, `Warning` and `Status` events with `std::string` payload.
   * Preload encoders when component starts.
@@ -17,6 +30,7 @@ Change log
   * Added detection of encoder bit overflow.
   * C++ exceptions are now caught and trigger cisstMultiTask events `Error`s.
 * Bug fixes:
+  * None
 
 
 1.0.1 (2014-12-30)
