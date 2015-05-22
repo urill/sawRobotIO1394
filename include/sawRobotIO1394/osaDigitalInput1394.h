@@ -52,6 +52,12 @@ namespace sawRobotIO1394 {
         bool mTriggerRelease;        // Boolean Flag for Release Trigger Setting
         double mDebounceThreshold;   // 0, no debounce required otherwise time in seconds
 
+        // ZC: hysteresis
+        double mTestConfidence;
+        double mTestLow;
+        double mTestHigh;
+        double mTestWeight;
+
         // State data
         AmpIO_UInt32 mDigitalInputBits; // BitMask for this input. From DigitalInput Stream.
         bool mValue;                    // Current read value

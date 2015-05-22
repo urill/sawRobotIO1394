@@ -491,11 +491,11 @@ void osaRobot1394::CheckState(void)
         vctBoolVec newErrors(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance));
         if (newErrors.NotEqual(mPotsToEncodersErrorFlag)) {
             mPotsToEncodersErrorFlag.Assign(newErrors);
-            std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, pots: ";
+            std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n pots: ";
             errorMessage.append(mPotPosition.ToString());
-            errorMessage.append(", encoders: ");
+            errorMessage.append(", \n encoders: ");
             errorMessage.append(mJointPosition.ToString());
-            errorMessage.append(", mask: ");
+            errorMessage.append(", \n mask: ");
             errorMessage.append(mPotsToEncodersErrorFlag.ToString());
             cmnThrow(osaRuntimeError1394(errorMessage));
         }
