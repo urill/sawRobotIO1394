@@ -76,17 +76,23 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mPreviousEncoderOverflow.SetSize(mNumberOfActuators);
     mPreviousEncoderOverflow.SetAll(false);
     mEncoderPositionBits.SetSize(mNumberOfActuators);
+    mEncoderPositionBitsPrev.SetSize(mNumberOfActuators);
+    mEncoderPositionBitsChanged.SetSize(mNumberOfActuators);
     mEncoderVelocityBits.SetSize(mNumberOfActuators);
     mEncoderVelocityBitsNow.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsCommand.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsFeedback.SetSize(mNumberOfActuators);
+
     mActuatorTimestamp.SetSize(mNumberOfActuators);
+    mActuatorTimestampChange.SetSize(mNumberOfActuators);
+    mActuatorTimestampChange.SetAll(0.0);
     mPotVoltage.SetSize(mNumberOfActuators);
     mPotPosition.SetSize(mNumberOfActuators);
     mEncoderPosition.SetSize(mNumberOfActuators);
     mEncoderPositionPrev.SetSize(mNumberOfActuators);
     mEncoderVelocity.SetSize(mNumberOfActuators);
     mEncoderVelocityDxDt.SetSize(mNumberOfActuators);
+    mEncoderVelocitySoftware.SetSize(mNumberOfActuators);
     mJointPosition.SetSize(mNumberOfJoints);
     mJointVelocity.SetSize(mNumberOfJoints);
     mJointTorque.SetSize(mNumberOfJoints);
@@ -387,7 +393,64 @@ void osaRobot1394::ConvertState(void)
         if (cnter < 100)
             mEncoderVelocity[i] = mEncoderVelocityDxDt[i];
     }
-    mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
+
+    // using iterator for efficiency and going over all actuators
+    const vctIntVec::const_iterator end = mEncoderPositionBits.end();
+    vctIntVec::const_iterator currentEncoder, previousEncoder;
+    vctIntVec::iterator lastChangeEncoder;
+    vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
+    vctDoubleVec::iterator lastChangeTimestamp, velocity;
+    for (currentEncoder = mEncoderPositionBits.begin(),
+         previousEncoder = mEncoderPositionBitsPrev.begin(),
+         lastChangeEncoder = mEncoderPositionBitsChanged.begin(),
+         currentTimestamp = mActuatorTimestamp.begin(),
+         bitsToPos = mBitsToPositionScales.begin(),
+         lastChangeTimestamp = mActuatorTimestampChange.begin(),
+         velocity = mEncoderVelocitySoftware.begin();
+         // end
+         currentEncoder != end;
+         // increment
+         ++currentEncoder,
+         ++previousEncoder,
+         ++lastChangeEncoder,
+         ++currentTimestamp,
+         ++bitsToPos,
+         ++lastChangeTimestamp,
+         ++velocity) {
+        // first see if there has been any change
+        const int difference = (*currentEncoder) - (*previousEncoder);
+        if (difference == 0) {
+            // no change
+            *velocity *= 0.98; // slowly decrease velocity since we don't know anything
+            *lastChangeTimestamp += (*currentTimestamp);
+        } else {
+            // posible changes
+            // if we only have one bit change compute velocity since last change
+            if ((difference == 1) || (difference == -1)) {
+                *velocity = ((*currentEncoder) - (*lastChangeEncoder)) / ((*lastChangeTimestamp) + (*currentTimestamp))
+                            * (*bitsToPos);
+            } else if (difference > 1) {
+                // we know all but 1 bit difference happened in last Dt, other bit change happened between now and last change
+                *velocity = ((difference - 1.0) / (*currentTimestamp) + 1.0 / ((*lastChangeTimestamp) + (*currentTimestamp)))
+                            * (*bitsToPos);
+            } else {
+                *velocity = ((difference + 1.0) / (*currentTimestamp) - 1.0 / ((*lastChangeTimestamp) + (*currentTimestamp)))
+                            * (*bitsToPos);
+            }
+            // keep record of this change
+            *lastChangeEncoder = *previousEncoder; // value before the last change
+            *lastChangeTimestamp = 0.0;
+        }
+    }
+
+    // finally save previous encoder bits position
+    mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
+
+    // This needs to be reviewed and we need to provide a better mechanism to choose one way or
+    // another to compute the joint velocities (used by PID and displayed in Qt widget).
+
+    // mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
+    mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocitySoftware);
 
     // Effort computation
     ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
@@ -625,6 +688,10 @@ void osaRobot1394::SetEncoderPositionBits(const vctIntVec & bits)
     for (size_t i = 0; i < mNumberOfActuators; i++) {
         mActuatorInfo[i].Board->WriteEncoderPreload(mActuatorInfo[i].Axis, bits[i]);
     }
+    // initialize previous bits value
+    mEncoderPositionBitsPrev.Assign(bits);
+    mEncoderPositionBitsChanged.Assign(bits);
+    mActuatorTimestampChange.SetAll(0.0);
 }
 
 void osaRobot1394::SetSingleEncoderPosition(const int index, const double pos)
@@ -635,6 +702,11 @@ void osaRobot1394::SetSingleEncoderPosition(const int index, const double pos)
 void osaRobot1394::SetSingleEncoderPositionBits(const int index, const int bits)
 {
     mActuatorInfo[index].Board->WriteEncoderPreload(mActuatorInfo[index].Axis, bits);
+
+    // initialize previous bits value
+    mEncoderPositionBitsPrev.Element(index) = bits;
+    mEncoderPositionBitsChanged.Element(index) = bits;
+    mActuatorTimestampChange.Element(index) = 0.0;
 }
 
 void osaRobot1394::ClipActuatorEffort(vctDoubleVec & efforts)
@@ -818,6 +890,10 @@ const vctDoubleVec & osaRobot1394::EncoderPosition(void) const {
 
 const vctDoubleVec & osaRobot1394::EncoderVelocity(void) const {
     return mEncoderVelocity;
+}
+
+const vctDoubleVec & osaRobot1394::EncoderVelocitySoftware(void) const {
+    return mEncoderVelocitySoftware;
 }
 
 osaRobot1394Configuration osaRobot1394::GetConfiguration(void) const {

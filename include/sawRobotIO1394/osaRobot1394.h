@@ -134,6 +134,7 @@ class osaRobot1394
         const vctDoubleVec & BrakeTimeStamp(void) const;
         const vctDoubleVec & EncoderPosition(void) const;
         const vctDoubleVec & EncoderVelocity(void) const;
+        const vctDoubleVec & EncoderVelocitySoftware(void) const;
         /**}**/
 
         /** \name Parameter Accessors
@@ -271,6 +272,8 @@ class osaRobot1394
         vctIntVec
             mPotBits,
             mEncoderPositionBits,
+            mEncoderPositionBitsPrev,
+            mEncoderPositionBitsChanged, // position last time encoder changed
             mEncoderVelocityBits,     // latched velocity
             mEncoderVelocityBitsNow,  // current counting velocity bits
             mEncoderDPositionBits,
@@ -284,6 +287,7 @@ class osaRobot1394
 
         vctDoubleVec
             mActuatorTimestamp,
+            mActuatorTimestampChange, // cumulated time since last encoder changed
             mBrakeTimestamp,
             mPotVoltage,
             mPotPosition,
@@ -293,6 +297,7 @@ class osaRobot1394
             mEncoderVelocityDxDt,
             mEncoderDPosition,
             mEncoderDTime,
+            mEncoderVelocitySoftware,
             mJointPosition,
             mJointVelocity,
             mJointTorque,

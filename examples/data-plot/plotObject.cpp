@@ -1,11 +1,11 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
-/*
 
+/*
   Author(s):  Anton Deguet
   Created on: 2014-01-09
 
-  (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -59,6 +59,10 @@ plotObject::plotObject(sawRobotIO1394::osaPort1394 * port,
     mEncoderDxFilteredSignal->SetColor(vct3(7.0, 7.0, 0.0));
     std::cout << "yellow: encoder-dx-filtered" << std::endl;
 
+    mEncoderSoftware = mVelocityScale->AddSignal("encoder-software");
+    mEncoderSoftware->SetColor(vct3(0.5, 0.5, 1.0));
+    std::cout << "blue: - encoder-software" << std::endl;
+
     mPotDxSignal = mVelocityScale->AddSignal("pot-dx");
     mPotDxSignal->SetColor(vct3(1.0, 1.0, 1.0));
     std::cout << "white: pot-dx" << std::endl;
@@ -86,7 +90,7 @@ void plotObject::timerEvent(QTimerEvent * CMN_UNUSED(event))
 
     // encoder dt
     mEncoderDtSignal->AppendPoint(vct2(mElapsedTime,
-                                       mRobot->EncoderVelocity()[mActuatorIndex] + 1.0));
+                                       mRobot->EncoderVelocity()[mActuatorIndex]));
     // encoder velocity dx / dt
     mEncoderDx.ForceAssign(mRobot->EncoderPosition());
     mEncoderDx.Subtract(mPreviousEncoderPosition);
@@ -103,6 +107,10 @@ void plotObject::timerEvent(QTimerEvent * CMN_UNUSED(event))
     // apply filter
     mFilterElementwiseProduct.ElementwiseProductOf(mSavitzkyGolayCoeff, mHistory);
     mEncoderDxFilteredSignal->AppendPoint(vct2(mElapsedTime, mFilterElementwiseProduct.SumOfElements()));
+
+    // software based on encoder
+    mEncoderSoftware->AppendPoint(vct2(mElapsedTime,
+                                       -mRobot->EncoderVelocitySoftware()[mActuatorIndex]));
 
     // pot velocity dx / dt
     mPotDx.ForceAssign(mRobot->PotPosition());

@@ -61,10 +61,10 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mActuatorTemperature, "ActuatorTemperature");
     mStateTableRead->AddData(mActuatorPowerStatus, "ActuatorPowerStatus");
     mStateTableRead->AddData(mActuatorPowerEnabled, "ActuatorPowerEnabled");
-    mStateTableRead->AddData(mEncoderPositionBits, "PosRaw");
+    mStateTableRead->AddData(mEncoderPositionBits, "PositionEncoderRaw");
     mStateTableRead->AddData(mJointPosition, "PositionJoint");
     mStateTableRead->AddData(mPotsToEncodersError, "PotsToEncoderError");
-    mStateTableRead->AddData(mEncoderVelocityBits, "VelRaw");
+    mStateTableRead->AddData(mEncoderVelocityBits, "VelocityEncoderRaw");
     mStateTableRead->AddData(mEncoderVelocity, "Vel");
     mStateTableRead->AddData(mJointTorque, "Effortjoint");
     mStateTableRead->AddData(mPotBits, "AnalogInRaw");
