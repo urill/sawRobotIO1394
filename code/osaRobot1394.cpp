@@ -86,6 +86,8 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mActuatorTimestamp.SetSize(mNumberOfActuators);
     mActuatorTimestampChange.SetSize(mNumberOfActuators);
     mActuatorTimestampChange.SetAll(0.0);
+    mVelocitySlopeToZero.SetSize(mNumberOfActuators);
+    mVelocitySlopeToZero.SetAll(0.0);
     mPotVoltage.SetSize(mNumberOfActuators);
     mPotPosition.SetSize(mNumberOfActuators);
     mEncoderPosition.SetSize(mNumberOfActuators);
@@ -395,17 +397,19 @@ void osaRobot1394::ConvertState(void)
     }
 
     // using iterator for efficiency and going over all actuators
+    const double timeToZeroVelocity = 1.0 * cmn_s;
     const vctIntVec::const_iterator end = mEncoderPositionBits.end();
     vctIntVec::const_iterator currentEncoder, previousEncoder;
     vctIntVec::iterator lastChangeEncoder;
     vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
-    vctDoubleVec::iterator lastChangeTimestamp, velocity;
+    vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
     for (currentEncoder = mEncoderPositionBits.begin(),
          previousEncoder = mEncoderPositionBitsPrev.begin(),
          lastChangeEncoder = mEncoderPositionBitsChanged.begin(),
          currentTimestamp = mActuatorTimestamp.begin(),
          bitsToPos = mBitsToPositionScales.begin(),
          lastChangeTimestamp = mActuatorTimestampChange.begin(),
+         slope = mVelocitySlopeToZero.begin(),
          velocity = mEncoderVelocitySoftware.begin();
          // end
          currentEncoder != end;
@@ -416,12 +420,16 @@ void osaRobot1394::ConvertState(void)
          ++currentTimestamp,
          ++bitsToPos,
          ++lastChangeTimestamp,
+         ++slope,
          ++velocity) {
         // first see if there has been any change
         const int difference = (*currentEncoder) - (*previousEncoder);
         if (difference == 0) {
-            // no change
-            *velocity *= 0.98; // slowly decrease velocity since we don't know anything
+            if (*lastChangeTimestamp < timeToZeroVelocity) {
+                *velocity -= (*slope) * (*currentTimestamp);
+            } else {
+                *velocity = 0.0;
+            }
             *lastChangeTimestamp += (*currentTimestamp);
         } else {
             // posible changes
@@ -440,6 +448,7 @@ void osaRobot1394::ConvertState(void)
             // keep record of this change
             *lastChangeEncoder = *previousEncoder; // value before the last change
             *lastChangeTimestamp = 0.0;
+            *slope = (*velocity) / (timeToZeroVelocity);
         }
     }
 
@@ -692,6 +701,7 @@ void osaRobot1394::SetEncoderPositionBits(const vctIntVec & bits)
     mEncoderPositionBitsPrev.Assign(bits);
     mEncoderPositionBitsChanged.Assign(bits);
     mActuatorTimestampChange.SetAll(0.0);
+    mVelocitySlopeToZero.SetAll(0.0);
 }
 
 void osaRobot1394::SetSingleEncoderPosition(const int index, const double pos)
@@ -707,6 +717,7 @@ void osaRobot1394::SetSingleEncoderPositionBits(const int index, const int bits)
     mEncoderPositionBitsPrev.Element(index) = bits;
     mEncoderPositionBitsChanged.Element(index) = bits;
     mActuatorTimestampChange.Element(index) = 0.0;
+    mVelocitySlopeToZero.Element(index) = 0.0;
 }
 
 void osaRobot1394::ClipActuatorEffort(vctDoubleVec & efforts)

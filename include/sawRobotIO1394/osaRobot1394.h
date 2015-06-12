@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Zihan Chen, Peter Kazanzides
+  Author(s):  Zihan Chen, Peter Kazanzides, Anton Deguet
   Created on: 2011-06-10
 
   (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
@@ -288,6 +288,7 @@ class osaRobot1394
         vctDoubleVec
             mActuatorTimestamp,
             mActuatorTimestampChange, // cumulated time since last encoder changed
+            mVelocitySlopeToZero, // slope used to reduced velocity to zero when no encoder count change
             mBrakeTimestamp,
             mPotVoltage,
             mPotPosition,
