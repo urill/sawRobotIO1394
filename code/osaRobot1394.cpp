@@ -446,7 +446,7 @@ void osaRobot1394::ConvertState(void)
                             * (*bitsToPos);
             }
             // keep record of this change
-            *lastChangeEncoder = *previousEncoder; // value before the last change
+            *lastChangeEncoder = *currentEncoder; // value before the last change
             *lastChangeTimestamp = 0.0;
             *slope = (*velocity) / (timeToZeroVelocity);
         }
