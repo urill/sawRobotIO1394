@@ -273,7 +273,6 @@ class osaRobot1394
             mPotBits,
             mEncoderPositionBits,
             mEncoderPositionBitsPrev,
-            mEncoderPositionBitsChanged, // position last time encoder changed
             mEncoderVelocityBits,     // latched velocity
             mEncoderVelocityBitsNow,  // current counting velocity bits
             mEncoderDPositionBits,
