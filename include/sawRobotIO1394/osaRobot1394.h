@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Zihan Chen, Peter Kazanzides
+  Author(s):  Zihan Chen, Peter Kazanzides, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -134,6 +134,7 @@ class osaRobot1394
         const vctDoubleVec & BrakeTimeStamp(void) const;
         const vctDoubleVec & EncoderPosition(void) const;
         const vctDoubleVec & EncoderVelocity(void) const;
+        const vctDoubleVec & EncoderVelocitySoftware(void) const;
         /**}**/
 
         /** \name Parameter Accessors
@@ -142,6 +143,7 @@ class osaRobot1394
         std::string Name(void) const;
         size_t NumberOfJoints(void) const;
         size_t NumberOfActuators(void) const;
+        size_t SerialNumber(void) const;
         size_t NumberOfBrakes(void) const;
         void GetJointTypes(prmJointTypeVec & jointTypes) const;
         void GetJointEffortCommandLimits(vctDoubleVec & limits) const;
@@ -199,6 +201,7 @@ class osaRobot1394
         size_t mNumberOfActuators;
         size_t mNumberOfJoints;
         size_t mNumberOfBrakes;
+        size_t mSerialNumber;
 
         // state of brakes
         bool mBrakeReleasing;
@@ -260,13 +263,17 @@ class osaRobot1394
             mActuatorPowerStatus,
             mBrakePowerStatus,
             mActuatorPowerEnabled,
+            mPotsToEncodersErrorFlag,
             mBrakePowerEnabled,
+            mPreviousEncoderOverflow,
+            mEncoderOverflow,
             mDigitalInputs,
             mEncoderChannelsA;
 
         vctIntVec
             mPotBits,
             mEncoderPositionBits,
+            mEncoderPositionBitsPrev,
             mEncoderVelocityBits,     // latched velocity
             mEncoderVelocityBitsNow,  // current counting velocity bits
             mEncoderDPositionBits,
@@ -280,6 +287,8 @@ class osaRobot1394
 
         vctDoubleVec
             mActuatorTimestamp,
+            mActuatorTimestampChange, // cumulated time since last encoder changed
+            mVelocitySlopeToZero, // slope used to reduced velocity to zero when no encoder count change
             mBrakeTimestamp,
             mPotVoltage,
             mPotPosition,
@@ -289,6 +298,7 @@ class osaRobot1394
             mEncoderVelocityDxDt,
             mEncoderDPosition,
             mEncoderDTime,
+            mEncoderVelocitySoftware,
             mJointPosition,
             mJointVelocity,
             mJointTorque,

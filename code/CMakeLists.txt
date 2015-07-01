@@ -44,14 +44,15 @@ if (cisst_FOUND_AS_REQUIRED)
   # create/configure file for find_package (sawRobotIO1394)
   set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include"
                                   "${sawRobotIO1394_BINARY_DIR}/include"
-                                  "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib"
+                                  "${CMAKE_CURRENT_BINARY_DIR}/Amp1394")
   set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
   set (sawRobotIO1394_LIBRARIES sawRobotIO1394)
   set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
 
   # Set the version number
   set (sawRobotIO1394_VERSION_MAJOR "1")
-  set (sawRobotIO1394_VERSION_MINOR "0")
+  set (sawRobotIO1394_VERSION_MINOR "1")
   set (sawRobotIO1394_VERSION_PATCH "1")
   set (sawRobotIO1394_VERSION "${sawRobotIO1394_VERSION_MAJOR}.${sawRobotIO1394_VERSION_MINOR}.${sawRobotIO1394_VERSION_PATCH}")
 

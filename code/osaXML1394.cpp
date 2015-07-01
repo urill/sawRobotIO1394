@@ -37,6 +37,9 @@ namespace sawRobotIO1394 {
             // Store the robot in the config if it's succesfully parsed
             if (osaXML1394ConfigureRobot(xmlConfig, i + 1, robot)) {
                 config.Robots.push_back(robot);
+            } else {
+                CMN_LOG_INIT_WARNING << "ConfigurePort: failed to configure robot from file \""
+                                     << filename << "\"" << std::endl;
             }
         }
 
@@ -86,6 +89,7 @@ namespace sawRobotIO1394 {
         sprintf(path, "Robot[%d]/@Name", robotIndex);
         good &= osaXML1394GetValue(xmlConfig, context, path, robot.Name);
 
+
         sprintf(path, "Robot[%d]/@NumOfActuator", robotIndex);
         good &= osaXML1394GetValue(xmlConfig, context, path, robot.NumberOfActuators);
 
@@ -100,12 +104,18 @@ namespace sawRobotIO1394 {
             } else if (type == std::string("robot")) {
                 robot.OnlyIO = false;
             } else {
-                CMN_LOG_INIT_ERROR << "osaXML1394ConfigureRobot: Type must be \"io-only\" or \"robot\", not " << type << std::endl;
+                CMN_LOG_INIT_ERROR << "osaXML1394ConfigureRobot: Type must be \"io-only\" or \"robot\", not "
+                                   << type << std::endl;
+                good = false;
             }
         } else {
             // default is robot
             robot.OnlyIO = false;
         }
+
+        sprintf(path, "Robot[%d]/@SN", robotIndex);
+        robot.SerialNumber = 0;
+        good &= osaXML1394GetValue(xmlConfig, context, path, robot.SerialNumber, false); // not required
 
         for (int i = 0; i < robot.NumberOfActuators; i++) {
             osaActuator1394Configuration actuator;
@@ -214,10 +224,6 @@ namespace sawRobotIO1394 {
             good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToPositionScale, !robot.OnlyIO);
             actuator.Encoder.BitsToPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Offset", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToPositionOffset, !robot.OnlyIO);
-            actuator.Encoder.BitsToPositionOffset *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
-
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Scale", robotIndex, actuatorIndex);
             good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDPositionScale, !robot.OnlyIO);
             actuator.Encoder.BitsToDPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
@@ -289,7 +295,6 @@ namespace sawRobotIO1394 {
         if (!osaXML1394ConfigureCoupling(xmlConfig, robotIndex, robot)) {
             return false;
         }
-
         return good;
     }
 

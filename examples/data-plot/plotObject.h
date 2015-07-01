@@ -1,11 +1,11 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-    */
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
-/*
 
+/*
   Author(s):  Anton Deguet
   Created on: 2014-01-09
 
-  (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -52,6 +52,7 @@ protected:
     vctPlot2DBase::Signal * mEncoderDtSignal;
     vctPlot2DBase::Signal * mEncoderDxSignal;
     vctPlot2DBase::Signal * mEncoderDxFilteredSignal;
+    vctPlot2DBase::Signal * mEncoderSoftware;
     vctPlot2DBase::Signal * mPotDxSignal;
 
     sawRobotIO1394::osaPort1394 * mPort;

@@ -47,6 +47,12 @@ void osaDigitalInput1394::Configure(const osaDigitalInput1394Configuration & con
     // Set the value to un-pressed
     mValue = !mPressedValue;
     mPreviousValue = mValue;
+
+    // ZC: HEAD
+    mTestConfidence = 0;
+    mTestLow = 0.2;
+    mTestHigh = 0.8;
+    mTestWeight = 0.98;
 }
 
 void osaDigitalInput1394::SetBoard(AmpIO * board)
@@ -67,6 +73,14 @@ void osaDigitalInput1394::PollState(void)
 
     // If the masked bit is low, set the value to the pressed value
     bool value = (mDigitalInputBits & mBitMask) ? (!mPressedValue) : (mPressedValue);
+
+    // ZC: hack for quick testing
+    if (Name() == "HEAD") {
+      mTestConfidence = mTestWeight * mTestConfidence + (1 - mTestWeight) * value;
+      if (mPreviousValue == true && mTestConfidence < mTestLow) mValue = false;
+      else if (mPreviousValue == false && mTestConfidence > mTestHigh) mValue = true;
+      return;
+    }
 
     // No debounce needed
     if (mDebounceThreshold == 0.0) {

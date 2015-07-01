@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -28,7 +28,8 @@ mtsRobot1394::mtsRobot1394(const cmnGenericObject & owner,
     osaRobot1394(config, 100),
     OwnerServices(owner.Services()),
     mStateTableRead(0),
-    mStateTableWrite(0)
+    mStateTableWrite(0),
+    mFirstWatchdog(true)
 {
 }
 
@@ -61,10 +62,10 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mActuatorTemperature, "ActuatorTemperature");
     mStateTableRead->AddData(mActuatorPowerStatus, "ActuatorPowerStatus");
     mStateTableRead->AddData(mActuatorPowerEnabled, "ActuatorPowerEnabled");
-    mStateTableRead->AddData(mEncoderPositionBits, "PosRaw");
+    mStateTableRead->AddData(mEncoderPositionBits, "PositionEncoderRaw");
     mStateTableRead->AddData(mJointPosition, "PositionJoint");
     mStateTableRead->AddData(mPotsToEncodersError, "PotsToEncoderError");
-    mStateTableRead->AddData(mEncoderVelocityBits, "VelRaw");
+    mStateTableRead->AddData(mEncoderVelocityBits, "VelocityEncoderRaw");
     mStateTableRead->AddData(mEncoderVelocity, "Vel");
     mStateTableRead->AddData(mJointTorque, "Effortjoint");
     mStateTableRead->AddData(mPotBits, "AnalogInRaw");
@@ -123,6 +124,10 @@ void mtsRobot1394::GetNumberOfJoints(int & numberOfJoints) const {
     numberOfJoints = this->NumberOfJoints();
 }
 
+void mtsRobot1394::GetSerialNumber(int & serialNumber) const {
+    serialNumber = this->SerialNumber();
+}
+
 void mtsRobot1394::SetTorqueJoint(const prmForceTorqueJointSet & efforts) {
     this->SetJointEffort(efforts.ForceTorque());
 }
@@ -149,6 +154,8 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    "GetNumberOfActuators");
     robotInterface->AddCommandRead(&mtsRobot1394::GetNumberOfJoints, this,
                                    "GetNumberOfJoints");
+    robotInterface->AddCommandRead(&mtsRobot1394::GetSerialNumber, this,
+                                   "GetSerialNumber");
     robotInterface->AddCommandReadState(*mStateTableRead, this->mValid,
                                         "IsValid");
 
@@ -290,6 +297,10 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
     robotInterface->AddEventWrite(EventTriggers.WatchdogStatus, "WatchdogStatus", false);
 
+    robotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
+    robotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
+    robotInterface->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
+
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
                                       "EnableBoardsPower");
@@ -335,9 +346,20 @@ void mtsRobot1394::CheckState(void)
 
     if (mPreviousPowerStatus != mPowerStatus) {
         EventTriggers.PowerStatus(mPowerStatus);
+        if (!mPowerStatus) {
+            MessageEvents.Error("IO: " + this->Name() + " power off");
+        }
     }
 
     if (mPreviousWatchdogStatus != mWatchdogStatus) {
         EventTriggers.WatchdogStatus(mWatchdogStatus);
+        if (!mWatchdogStatus) {
+            if (mFirstWatchdog) {
+                MessageEvents.Status("IO: " + this->Name() + " watchdog triggered");
+                mFirstWatchdog = false;
+            } else {
+                MessageEvents.Error("IO: " + this->Name() + " watchdog triggered");
+            }
+        }
     }
 }

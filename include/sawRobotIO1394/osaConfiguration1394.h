@@ -66,7 +66,6 @@ namespace sawRobotIO1394 {
 
     struct osaEncoder1394Configuration {
         double BitsToPositionScale;
-        double BitsToPositionOffset;
         double BitsToDPositionScale;
         double BitsToDPositionOffset;
         double BitsToDTimeScale;
@@ -107,6 +106,7 @@ namespace sawRobotIO1394 {
         std::string Name;
         int NumberOfActuators;
         int NumberOfJoints;
+        int SerialNumber;
         int NumberOfBrakes;
         bool OnlyIO;
         bool HasActuatorToJointCoupling;
