@@ -473,7 +473,9 @@ void osaRobot1394::ConvertState(void)
     // another to compute the joint velocities (used by PID and displayed in Qt widget).
 
     // mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
-    mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocitySoftware);
+    if (mConfiguration.HasActuatorToJointCoupling) {
+        mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocitySoftware);
+    }
 
     // Effort computation
     ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
@@ -532,7 +534,7 @@ void osaRobot1394::CheckState(void)
          ++board) {
         AmpIO_UInt32 safetyAmpDisable = board->second->GetSafetyAmpDisable();
         if (safetyAmpDisable) {
-            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety ampdisable tripped." + mActuatorTimestamp.ToString()));
+            cmnThrow(osaRuntimeError1394(this->Name() + ": hardware current safety amp disable tripped." + mActuatorTimestamp.ToString()));
         }
     }
 
