@@ -37,6 +37,7 @@ namespace sawRobotIO1394 {
         const std::string & Name(void) const;
         const bool & Value(void) const;
         void SetValue(const bool & newValue);
+        void DownUpDown(void);
 
     protected:
         AmpIO * mBoard;              // Board Assignment

@@ -45,6 +45,8 @@ void mtsDigitalOutput1394::SetupProvidedInterface(mtsInterfaceProvided * interfa
     interfaceProvided->AddCommandReadState(stateTable, this->mValue, "GetValue");
     interfaceProvided->AddCommandWrite(&osaDigitalOutput1394::SetValue, thisBase,
                                        "SetValue");
+    interfaceProvided->AddCommandVoid(&osaDigitalOutput1394::DownUpDown, thisBase,
+                                      "DownUpDown");
 }
 
 void mtsDigitalOutput1394::CheckState(void)

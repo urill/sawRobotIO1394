@@ -82,3 +82,10 @@ void osaDigitalOutput1394::SetValue(const bool & newValue)
     }
     mBoard->WriteDigitalOutput(0x0f, mDigitalOutputBits);
 }
+
+void osaDigitalOutput1394::DownUpDown(void)
+{
+    SetValue(false);
+    SetValue(true);
+    SetValue(false);
+}
