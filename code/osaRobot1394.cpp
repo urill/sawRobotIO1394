@@ -756,7 +756,10 @@ void osaRobot1394::ClipBrakeCurrent(vctDoubleVec & currents)
 void osaRobot1394::SetJointEffort(const vctDoubleVec & efforts)
 {
     vctDoubleVec actuator_efforts(mNumberOfActuators);
-    actuator_efforts = mConfiguration.JointToActuatorEffort * efforts;
+    if (mConfiguration.HasActuatorToJointCoupling)
+        actuator_efforts.ProductOf(mConfiguration.JointToActuatorEffort, efforts);
+    else
+        actuator_efforts.Assign(efforts);
     this->SetActuatorEffort(actuator_efforts);
 }
 
@@ -859,7 +862,10 @@ void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
         break;
 
     case POTENTIOMETER_ON_JOINTS:
-        actuatorPosition.ProductOf(mConfiguration.JointToActuatorPosition, mPotPosition);
+        if (mConfiguration.HasActuatorToJointCoupling)
+            actuatorPosition.ProductOf(mConfiguration.JointToActuatorPosition, mPotPosition);
+        else
+            actuatorPosition.Assign(mPotPosition);
         SetEncoderPosition(actuatorPosition);
         break;
 
