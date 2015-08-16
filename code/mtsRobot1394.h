@@ -70,8 +70,6 @@ namespace sawRobotIO1394 {
         void GetNumberOfJoints(int & num_joints) const;
         void GetSerialNumber(int & serialNumber) const;
         void SetTorqueJoint(const prmForceTorqueJointSet & jointTorques);
-        void EnableSafetyRelay(void);
-        void DisableSafetyRelay(void);
         void ResetSingleEncoder(const int & index);
 
     protected:

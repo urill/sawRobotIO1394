@@ -635,6 +635,8 @@ void osaRobot1394::DisablePower(void)
 
     // disable all boards
     this->DisableBoardPower();
+
+    mPreviousPowerStatus = false;
 }
 
 void osaRobot1394::DisableBoardPower(void)
@@ -647,12 +649,13 @@ void osaRobot1394::DisableBoardPower(void)
     }
 }
 
-void osaRobot1394::SetSafetyRelay(const bool & enabled)
+void osaRobot1394::WriteSafetyRelay(const bool & enabled)
 {
     for (unique_board_iterator board = mUniqueBoards.begin();
          board != mUniqueBoards.end();
          ++board) {
-        board->second->SetSafetyRelay(enabled);
+        AmpIO * boardPointer = board->second;
+        boardPointer->WriteSafetyRelay(enabled);
     }
 }
 

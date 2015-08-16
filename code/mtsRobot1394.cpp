@@ -132,14 +132,6 @@ void mtsRobot1394::SetTorqueJoint(const prmForceTorqueJointSet & efforts) {
     this->SetJointEffort(efforts.ForceTorque());
 }
 
-void mtsRobot1394::EnableSafetyRelay(void) {
-    this->SetSafetyRelay(true);
-}
-
-void mtsRobot1394::DisableSafetyRelay(void) {
-    this->SetSafetyRelay(false);
-}
-
 void mtsRobot1394::ResetSingleEncoder(const int & index) {
     this->SetSingleEncoderPosition(index, 0.0);
 }
@@ -164,10 +156,6 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    "EnablePower");
     robotInterface->AddCommandVoid(&osaRobot1394::DisablePower, thisBase,
                                    "DisablePower");
-    robotInterface->AddCommandVoid(&mtsRobot1394::EnableSafetyRelay, this,
-                                   "EnableSafetyRelay");
-    robotInterface->AddCommandVoid(&mtsRobot1394::DisableSafetyRelay, this,
-                                   "DisableSafetyRelay");
 
     robotInterface->AddCommandWrite(&osaRobot1394::SetWatchdogPeriod, thisBase,
                                     "SetWatchdogPeriod");
@@ -347,7 +335,8 @@ void mtsRobot1394::CheckState(void)
     if (mPreviousPowerStatus != mPowerStatus) {
         EventTriggers.PowerStatus(mPowerStatus);
         if (!mPowerStatus) {
-            MessageEvents.Error("IO: " + this->Name() + " power off");
+            MessageEvents.Error("IO: " + this->Name() + " lost power");
+            mPreviousPowerStatus = false;
         }
     }
 

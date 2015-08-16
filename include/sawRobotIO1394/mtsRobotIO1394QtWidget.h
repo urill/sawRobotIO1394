@@ -90,7 +90,6 @@ protected:
         mtsFunctionRead IsValid;
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;
-        mtsFunctionVoid DisableSafetyRelay;
 
         mtsFunctionRead GetPosition;
         mtsFunctionRead GetVelocity;

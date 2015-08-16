@@ -84,7 +84,7 @@ class osaRobot1394
         void EnableBoardsPower(void);
         void DisablePower(void);
         void DisableBoardPower(void);
-        void SetSafetyRelay(const bool & enabled);
+        void WriteSafetyRelay(const bool & enabled);
         void SetWatchdogPeriod(const double & periodInSeconds);
 
         void SetActuatorPower(const bool & enabled);

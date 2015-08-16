@@ -131,7 +131,6 @@ void mtsRobotIO1394QtWidget::Cleanup(void)
 {
     this->hide();
     Robot.DisablePower();
-    Robot.DisableSafetyRelay();
     Actuators.DisableBoardsPower();
 }
 
@@ -389,7 +388,6 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("IsValid", Robot.IsValid);
         robotInterface->AddFunction("EnablePower", Robot.EnablePower);
         robotInterface->AddFunction("DisablePower", Robot.DisablePower);
-        robotInterface->AddFunction("DisableSafetyRelay", Robot.DisableSafetyRelay);
 
         robotInterface->AddFunction("GetPosition", Robot.GetPosition);
         robotInterface->AddFunction("GetVelocity", Robot.GetVelocity);
