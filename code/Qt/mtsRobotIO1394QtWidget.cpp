@@ -281,7 +281,7 @@ void mtsRobotIO1394QtWidget::SlotWatchdogPeriod(double period_ms)
     WatchdogPeriodInSeconds = period_ms * cmn_ms;
     mtsExecutionResult result = Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
     if(!result.IsOK()){
-        CMN_LOG_CLASS_RUN_WARNING << "slot_qdsbWatchdogPeriod: command failed \""
+        CMN_LOG_CLASS_RUN_WARNING << "SlotWatchdogPeriod: command failed \""
                                   << result << "\"" << std::endl;
     }
 }
@@ -374,7 +374,7 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         UpdateRobotInfo();
     }
 
-    // ZC: FIX turn of if pid loop exists
+    // ZC: FIX turn off if pid loop exists
     Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
 }
 

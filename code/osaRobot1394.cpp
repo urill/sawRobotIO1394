@@ -35,7 +35,8 @@ http://www.cisst.org/cisst/license.txt.
 using namespace sawRobotIO1394;
 
 osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
-                           const size_t maxConsecutiveCurrentSafetyViolations):
+                           const size_t maxConsecutiveCurrentSafetyViolations,
+                           const size_t maxConsecutivePotsToEncodersViolations):
     // IO Structures
     mActuatorInfo(),
     mUniqueBoards(),
@@ -47,7 +48,9 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
     mPreviousWatchdogStatus(false),
     mSafetyRelay(false),
     mCurrentSafetyViolationsCounter(0),
-    mCurrentSafetyViolationsMaximum(maxConsecutiveCurrentSafetyViolations)
+    mCurrentSafetyViolationsMaximum(maxConsecutiveCurrentSafetyViolations),
+    mPotsToEncodersViolationsCounter(0),
+    mPotsToEncodersViolationsMaximum(maxConsecutivePotsToEncodersViolations)
 {
     this->Configure(config);
 }
@@ -498,13 +501,13 @@ void osaRobot1394::CheckState(void)
     mEncoderPositionPrev.Assign(mEncoderPosition);
 
     // Perform safety checks
-    bool current_safety_violation = false;
+    bool currentSafetyViolation = false;
     for (size_t i = 0; i < mNumberOfActuators; i++) {
         if (fabs(mActuatorCurrentFeedback[i]) >= mActuatorCurrentFeedbackLimits[i]) {
             CMN_LOG_RUN_WARNING << "CheckState: " << this->mName << ", actuator " << i
                                 << " power: " << mActuatorCurrentFeedback[i]
                                 << " > limit: " << mActuatorCurrentFeedbackLimits[i] << std::endl;
-            current_safety_violation = true;
+            currentSafetyViolation = true;
         }
     }
 
@@ -513,11 +516,11 @@ void osaRobot1394::CheckState(void)
             CMN_LOG_RUN_WARNING << "CheckState: " << this->mName << ", brake " << i
                                 << " power: " << mBrakeCurrentFeedback[i]
                                 << " > limit: " << mBrakeCurrentFeedbackLimits[i] << std::endl;
-            current_safety_violation = true;
+            currentSafetyViolation = true;
         }
     }
 
-    if (current_safety_violation) {
+    if (currentSafetyViolation) {
         mCurrentSafetyViolationsCounter++;
     } else {
         mCurrentSafetyViolationsCounter = 0;
@@ -579,15 +582,19 @@ void osaRobot1394::CheckState(void)
         }
     }
     if (errorFound) {
+        mPotsToEncodersViolationsCounter++;
+    } else {
+        mPotsToEncodersViolationsCounter = 0;
+    }
+
+    if (mPotsToEncodersViolationsCounter > mPotsToEncodersViolationsMaximum) {
         this->DisablePower();
         vctBoolVec newErrors(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance));
         if (newErrors.NotEqual(mPotsToEncodersErrorFlag)) {
             mPotsToEncodersErrorFlag.Assign(newErrors);
-            std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n pots: ";
-            errorMessage.append(mPotPosition.ToString());
-            errorMessage.append(", \n encoders: ");
-            errorMessage.append(mJointPosition.ToString());
-            errorMessage.append(", \n mask: ");
+            std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n errors: ";
+            errorMessage.append(mPotsToEncodersError.ToString());
+            errorMessage.append(", \n mask (0 is error): ");
             errorMessage.append(mPotsToEncodersErrorFlag.ToString());
             cmnThrow(osaRuntimeError1394(errorMessage));
         }

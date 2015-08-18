@@ -54,7 +54,8 @@ class osaRobot1394
         /** \name Lifecycle
          *\{**/
         osaRobot1394(const osaRobot1394Configuration & config,
-                     const size_t max_consecutive_current_safety_violations = 100);
+                     const size_t maxConsecutiveCurrentSafetyViolations = 100,
+                     const size_t maxConsecutivePotsToEncodersViolations = 200);
 
         void Configure(const osaRobot1394Configuration & config);
 
@@ -319,6 +320,10 @@ class osaRobot1394
         size_t
             mCurrentSafetyViolationsCounter,
             mCurrentSafetyViolationsMaximum;
+
+        size_t
+            mPotsToEncodersViolationsCounter,
+            mPotsToEncodersViolationsMaximum;
     };
 
 } // namespace sawRobotIO1394
