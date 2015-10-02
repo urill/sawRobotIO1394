@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-11-06
 
-  (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -48,6 +48,9 @@ void osaDigitalOutput1394::SetBoard(AmpIO * board)
         cmnThrow(osaRuntimeError1394(this->Name() + ": invalid board pointer."));
     }
     mBoard = board;
+    mBoard->WriteDoutControl(mBitID,
+                             mBoard->GetDoutCounts(mConfiguration.HighDuration),
+                             mBoard->GetDoutCounts(mConfiguration.LowDuration));
 }
 
 void osaDigitalOutput1394::PollState(void)
@@ -83,9 +86,11 @@ void osaDigitalOutput1394::SetValue(const bool & newValue)
     mBoard->WriteDigitalOutput(0x0f, mDigitalOutputBits);
 }
 
-void osaDigitalOutput1394::DownUpDown(void)
+void osaDigitalOutput1394::SetPWMDutyCycle(const double & dutyCycle)
 {
-    SetValue(false);
-    SetValue(true);
-    SetValue(false);
+    if ((dutyCycle > 0.0) && (dutyCycle < 1.0)) { 
+        mBoard->WritePWM(mBitID, mConfiguration.PWMFrequency, dutyCycle);
+    } else {
+        mBoard->WriteDoutControl(mBitID, 0, 0);
+    }
 }

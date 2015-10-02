@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-11-06
 
-  (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,7 +26,7 @@ using namespace sawRobotIO1394;
 
 
 mtsDigitalOutput1394::mtsDigitalOutput1394(const cmnGenericObject & owner,
-                                         const osaDigitalOutput1394Configuration & config):
+                                           const osaDigitalOutput1394Configuration & config):
     osaDigitalOutput1394(config),
     OwnerServices(owner.Services())
 {
@@ -45,8 +45,10 @@ void mtsDigitalOutput1394::SetupProvidedInterface(mtsInterfaceProvided * interfa
     interfaceProvided->AddCommandReadState(stateTable, this->mValue, "GetValue");
     interfaceProvided->AddCommandWrite(&osaDigitalOutput1394::SetValue, thisBase,
                                        "SetValue");
-    interfaceProvided->AddCommandVoid(&osaDigitalOutput1394::DownUpDown, thisBase,
-                                      "DownUpDown");
+    if (mConfiguration.IsPWM) {
+        interfaceProvided->AddCommandWrite(&osaDigitalOutput1394::SetPWMDutyCycle, thisBase,
+                                           "SetPWMDutyCycle");
+    }
 }
 
 void mtsDigitalOutput1394::CheckState(void)

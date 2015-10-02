@@ -5,7 +5,7 @@
   Author(s):  Jonathan Bohren, Anton Deguet
   Created on: 2013-06-29
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -135,6 +135,10 @@ namespace sawRobotIO1394 {
         std::string Name;
         int BoardID;
         int BitID;
+        double HighDuration;
+        double LowDuration;
+        bool IsPWM;
+        double PWMFrequency;
     };
 
     struct osaPort1394Configuration {

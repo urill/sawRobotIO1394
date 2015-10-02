@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2014-11-06
 
-  (C) Copyright 2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2014-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -37,7 +37,7 @@ namespace sawRobotIO1394 {
         const std::string & Name(void) const;
         const bool & Value(void) const;
         void SetValue(const bool & newValue);
-        void DownUpDown(void);
+        void SetPWMDutyCycle(const double & dutyCycle);
 
     protected:
         AmpIO * mBoard;              // Board Assignment

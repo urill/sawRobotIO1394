@@ -5,7 +5,7 @@
   Author(s):  Jonathan Bohren
   Created on: 2013-06-29
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -26,6 +26,25 @@ namespace sawRobotIO1394 {
     {
         cmnXMLPath xmlConfig;
         xmlConfig.SetInputSource(filename);
+        
+        // get an check version number
+        int version;
+        bool versionFound = osaXML1394GetValue(xmlConfig, "Config", "@Version", version);
+        if (!versionFound) {
+            CMN_LOG_INIT_ERROR << "Configure: Config/Version is missing in file: "
+                               << filename << std::endl
+                               << "Make sure you generate your XML files with the latest config generator." << std::endl;
+            return;
+        } else {
+            const int minimumVersion = 2;
+            if (version < minimumVersion) {
+                CMN_LOG_INIT_ERROR << "Configure: Config/Version must be at least " << minimumVersion
+                                   << ", version found is " << version << std::endl
+                                   << "File: " << filename << std::endl
+                                   << "Make sure you generate your XML files with the latest config generator." << std::endl;
+                return;
+            }
+        }
 
         // Get the number of robot elements
         int numRobots = 0;
@@ -88,7 +107,6 @@ namespace sawRobotIO1394 {
 
         sprintf(path, "Robot[%d]/@Name", robotIndex);
         good &= osaXML1394GetValue(xmlConfig, context, path, robot.Name);
-
 
         sprintf(path, "Robot[%d]/@NumOfActuator", robotIndex);
         good &= osaXML1394GetValue(xmlConfig, context, path, robot.NumberOfActuators);
@@ -424,7 +442,7 @@ namespace sawRobotIO1394 {
 
         int pressed_value = 0;
         sprintf(path, "DigitalIn[%i]/@Pressed", inputIndex);
-        xmlConfig.GetXMLValue(context,path, pressed_value);
+        xmlConfig.GetXMLValue(context, path, pressed_value);
         digitalInput.PressedValue = bool(pressed_value);
 
         std::string trigger_modes;
@@ -474,7 +492,12 @@ namespace sawRobotIO1394 {
         const char * context = "Config";
         bool tagsFound = true;
 
-        //Check there is digital output entry. Return boolean result for success/fail.
+        // defaults
+        digitalOutput.IsPWM = false;
+        digitalOutput.HighDuration = 0.0;
+        digitalOutput.LowDuration = 0.0;
+
+        // Check there is digital output entry. Return boolean result for success/fail.
         sprintf(path,"DigitalOut[%i]/@Name", outputIndex);
         tagsFound &= xmlConfig.GetXMLValue(context, path, digitalOutput.Name);
         sprintf(path,"DigitalOut[%i]/@BoardID", outputIndex);
@@ -485,6 +508,20 @@ namespace sawRobotIO1394 {
         if (!tagsFound) {
             CMN_LOG_INIT_ERROR << "Configuration for " << path << " failed. Stopping config." << std::endl;
             return false;
+        }
+
+        // look for high/low duration
+        double temp;
+        sprintf(path,"DigitalOut[%i]/@HighDuration", outputIndex);
+        tagsFound = xmlConfig.GetXMLValue(context, path, digitalOutput.HighDuration);
+        sprintf(path,"DigitalOut[%i]/@LowDuration", outputIndex);
+        tagsFound = xmlConfig.GetXMLValue(context, path, digitalOutput.LowDuration);
+
+        // look for PWM settings
+        sprintf(path,"DigitalOut[%i]/@Frequency", outputIndex);
+        tagsFound = xmlConfig.GetXMLValue(context, path, digitalOutput.PWMFrequency);
+        if (tagsFound) {
+            digitalOutput.IsPWM = true;
         }
         return true;
     }

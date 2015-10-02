@@ -55,7 +55,7 @@ void mtsDigitalInput1394::CheckState(void)
     // Check if value has changed
     if (mValue != mPreviousValue) {
         // Check if the value is equal to the value when the digital input is considered pressed
-        if (mValue == mPressedValue) {
+        if (mValue) {
             // Emit a press event
             if (mTriggerPress) {
                 Button(pressed);
