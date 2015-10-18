@@ -1,6 +1,21 @@
 Change log
 ==========
 
+1.2.0 (2015-10-18)
+==================
+
+* API changes:
+  * Updated XML config file version to 2 for fix in digital inputs
+* Deprecated features:
+  * None
+* New features:
+  * Improved velocity estimation
+  * Added commands to support PWM (used for SUJ lift motor and MUX)
+* Bug fixes:
+  * Encoder to pots safety check now looks for multiple consecutive failures to avoid intempestive errors
+  * XML value "pressed" was used to negate values twice for events but once for state table
+  * Fixed issue when power was lost on error that prevented powering back on
+
 1.1.1 (2015-05-15)
 ==================
 
