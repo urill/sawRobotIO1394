@@ -71,6 +71,7 @@ namespace sawRobotIO1394 {
         void GetSerialNumber(int & serialNumber) const;
         void SetTorqueJoint(const prmForceTorqueJointSet & jointTorques);
         void ResetSingleEncoder(const int & index);
+        void SetCoupling(const prmActuatorJointCoupling & coupling);
 
     protected:
         mtsStateTable * mStateTableRead;
@@ -86,6 +87,7 @@ namespace sawRobotIO1394 {
         struct {
             mtsFunctionWrite PowerStatus;
             mtsFunctionWrite WatchdogStatus;
+            mtsFunctionWrite Coupling;
         } EventTriggers;
 
     public:

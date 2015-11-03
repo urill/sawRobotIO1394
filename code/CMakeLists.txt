@@ -56,12 +56,6 @@ if (cisst_FOUND_AS_REQUIRED)
   set (sawRobotIO1394_VERSION_PATCH "0")
   set (sawRobotIO1394_VERSION "${sawRobotIO1394_VERSION_MAJOR}.${sawRobotIO1394_VERSION_MINOR}.${sawRobotIO1394_VERSION_PATCH}")
 
-  # create data type using the data generator
-  cisst_data_generator (sawRobotIO1394
-                        "${sawRobotIO1394_BINARY_DIR}/include" # where to save the file
-                        "sawRobotIO1394/"                      # sub directory for include
-                        prmActuatorJointCoupling.cdg)
-
   # Generate sawRobotIO1394Revision.h
   configure_file ("${sawRobotIO1394_SOURCE_DIR}/code/sawRobotIO1394Revision.h.in"
                   "${sawRobotIO1394_BINARY_DIR}/include/sawRobotIO1394/sawRobotIO1394Revision.h")
@@ -89,10 +83,7 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsDigitalInput1394.cpp
                mtsDigitalOutput1394.h
                mtsDigitalOutput1394.cpp
-               mtsRobotIO1394.cpp
-               ${sawRobotIO1394_CISST_DG_SRCS}
-               ${sawRobotIO1394_CISST_DG_HDRS})
-
+               mtsRobotIO1394.cpp)
 
   set_property (TARGET sawRobotIO1394 PROPERTY FOLDER "sawRobotIO1394")
   target_link_libraries (sawRobotIO1394 Amp1394)

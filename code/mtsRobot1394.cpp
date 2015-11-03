@@ -136,6 +136,12 @@ void mtsRobot1394::ResetSingleEncoder(const int & index) {
     this->SetSingleEncoderPosition(index, 0.0);
 }
 
+void mtsRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
+{
+    osaRobot1394::SetCoupling(coupling);
+    EventTriggers.Coupling(coupling);
+}
+
 void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    mtsInterfaceProvided * actuatorInterface)
 {
@@ -151,7 +157,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableRead, this->mValid,
                                         "IsValid");
 
-    robotInterface->AddCommandWrite(&osaRobot1394::SetCoupling, thisBase,
+    robotInterface->AddCommandWrite(&mtsRobot1394::SetCoupling, this,
                                     "SetCoupling");
 
     // Enable // Disable
@@ -287,6 +293,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     // Events
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
     robotInterface->AddEventWrite(EventTriggers.WatchdogStatus, "WatchdogStatus", false);
+    robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
 
     robotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
     robotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
