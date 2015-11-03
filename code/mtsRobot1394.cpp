@@ -151,6 +151,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableRead, this->mValid,
                                         "IsValid");
 
+    robotInterface->AddCommandWrite(&osaRobot1394::SetCoupling, thisBase,
+                                    "SetCoupling");
+
     // Enable // Disable
     robotInterface->AddCommandVoid(&osaRobot1394::EnablePower, thisBase,
                                    "EnablePower");
