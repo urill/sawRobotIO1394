@@ -183,7 +183,7 @@ bool mtsRobotIO1394::SetupRobot(mtsRobot1394 * robot)
     mtsStateTable * stateTableWrite;
 
     // Configure StateTable for this Robot
-    if (!robot->SetupStateTables(this->StateTable.GetHistoryLength(),
+    if (!robot->SetupStateTables(2000, // hard coded number of elements in state tables
                                  stateTableRead, stateTableWrite)) {
         CMN_LOG_CLASS_INIT_ERROR << "SetupRobot: unable to setup state tables" << std::endl;
         return false;
