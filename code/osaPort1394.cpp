@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -16,11 +16,7 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#ifdef _WIN32
-#include "Eth1394Port.h"
-#else
 #include "FirewirePort.h"
-#endif
 #include "AmpIO.h"
 
 #include <sawRobotIO1394/osaPort1394.h>
@@ -32,11 +28,7 @@ using namespace sawRobotIO1394;
 osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
 {
     // Construct handle to firewire port
-#ifdef _WIN32
-    mPort = new Eth1394Port(portNumber, messageStream);
-#else
     mPort = new FirewirePort(portNumber, messageStream);
-#endif
 
     // Check number of port users
     if (mPort->NumberOfUsers() > 1) {

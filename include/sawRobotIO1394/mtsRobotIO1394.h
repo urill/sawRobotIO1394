@@ -6,7 +6,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -25,6 +25,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <vector>
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <sawRobotIO1394/sawRobotIO1394Export.h>
 
 namespace sawRobotIO1394 {
     class osaPort1394;
@@ -33,7 +34,7 @@ namespace sawRobotIO1394 {
     class mtsDigitalOutput1394;
 }
 
-class mtsRobotIO1394 : public mtsTaskPeriodic {
+class CISST_EXPORT mtsRobotIO1394 : public mtsTaskPeriodic {
 
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 public:

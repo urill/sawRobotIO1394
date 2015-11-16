@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen
   Created on: 2012-07-20
 
-  (C) Copyright 2012-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2012-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -29,12 +29,13 @@ http://www.cisst.org/cisst/license.txt.
 #include <QCheckBox>
 #include <QPushButton>
 #include <QDoubleSpinBox>
+#include <sawRobotIO1394/sawRobotIO1394ExportQt.h>
 
 /*!
   \todo maybe rename this class to mtsRobotIO1394{Robot,DigitalInputs,Log}QtWidget and create using mtsRobotIO1394FactoryQtWidget
   \todo cisst Qt convention is now to start with the Qt prefix, i.e. mtsQtWidgetRobotIO1394 ...
   */
-class mtsRobotIO1394QtWidget: public QWidget, public mtsComponent
+class CISST_EXPORT mtsRobotIO1394QtWidget: public QWidget, public mtsComponent
 {
     Q_OBJECT;
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);

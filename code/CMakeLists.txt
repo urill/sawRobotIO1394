@@ -34,7 +34,7 @@ if (cisst_FOUND_AS_REQUIRED)
     set (sawRobotIO1394_CONFIG_FILE_DIR "${sawRobotIO1394_BINARY_DIR}")
   endif ()
 
-  # Compile lib Amp1394 and examples within this project, this relies on svn:externals
+  # Compile lib Amp1394 and examples within this project
   add_subdirectory (Amp1394)
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
 
@@ -47,7 +47,7 @@ if (cisst_FOUND_AS_REQUIRED)
                                   "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib"
                                   "${CMAKE_CURRENT_BINARY_DIR}/Amp1394")
   set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
-  set (sawRobotIO1394_LIBRARIES sawRobotIO1394)
+  #set (sawRobotIO1394_LIBRARIES sawRobotIO1394 ${Amp1394_LIBRARIES})
   set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
 
   # Set the version number
@@ -76,6 +76,7 @@ if (cisst_FOUND_AS_REQUIRED)
                osaDigitalOutput1394.cpp
                osaPort1394.cpp
                osaXML1394.cpp
+               ${sawRobotIO1394_HEADER_DIR}/sawRobotIO1394Export.h
                ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394.h
                mtsRobot1394.h
                mtsRobot1394.cpp
@@ -86,6 +87,7 @@ if (cisst_FOUND_AS_REQUIRED)
                mtsRobotIO1394.cpp)
 
   set_property (TARGET sawRobotIO1394 PROPERTY FOLDER "sawRobotIO1394")
+  #target_link_libraries (sawRobotIO1394 ${Amp1394_LIBRARIES})
   target_link_libraries (sawRobotIO1394 Amp1394)
 
   # link rtai lib (may need to add Xenomai support)

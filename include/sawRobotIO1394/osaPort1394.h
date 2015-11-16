@@ -33,13 +33,14 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/osaRobot1394.h>
 #include <sawRobotIO1394/osaDigitalInput1394.h>
 #include <sawRobotIO1394/osaDigitalOutput1394.h>
+#include <sawRobotIO1394/sawRobotIO1394Export.h>
 
 class AmpIO;
 class FirewirePort;
 
 namespace sawRobotIO1394 {
 
-    class osaPort1394 {
+    class CISST_EXPORT osaPort1394 {
         /**
          * IO1394 Port Abstraction Layer
          * This class handles allocation, interfacing, and power-control for the QLA

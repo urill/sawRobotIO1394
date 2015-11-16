@@ -27,8 +27,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <QtGui>
 
 #include <sawRobotIO1394/mtsRobotIO1394QtWidget.h>
+#include <sawRobotIO1394/sawRobotIO1394ExportQt.h>
 
-class mtsRobotIO1394QtWidgetFactory: public mtsComponent
+class CISST_EXPORT mtsRobotIO1394QtWidgetFactory: public mtsComponent
 {
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 

@@ -5,7 +5,7 @@
   Author(s):  Jonathan Bohren
   Created on: 2013-06-29
 
-  (C) Copyright 2013 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnXMLPath.h>
 #include <cisstVector/vctDynamicMatrixTypes.h>
 #include <sawRobotIO1394/osaConfiguration1394.h>
+#include <sawRobotIO1394/sawRobotIO1394Export.h>
 
 namespace sawRobotIO1394 {
 
@@ -36,31 +37,31 @@ namespace sawRobotIO1394 {
           return true;
     }
 
-    void osaXML1394ConfigurePort(const std::string & filename,
-                                 osaPort1394Configuration & config);
+    void CISST_EXPORT osaXML1394ConfigurePort(const std::string & filename,
+                                              osaPort1394Configuration & config);
 
-    bool osaXML1394ConfigureRobot(cmnXMLPath & xmlConfig,
-                                  const int robotIndex,
-                                  osaRobot1394Configuration & robot);
+    bool CISST_EXPORT osaXML1394ConfigureRobot(cmnXMLPath & xmlConfig,
+                                               const int robotIndex,
+                                               osaRobot1394Configuration & robot);
 
-    bool osaXML1394ConfigureCoupling(cmnXMLPath & xmlConfig,
-                                     const int robotIndex,
-                                     osaRobot1394Configuration & robot);
+    bool CISST_EXPORT osaXML1394ConfigureCoupling(cmnXMLPath & xmlConfig,
+                                                  const int robotIndex,
+                                                  osaRobot1394Configuration & robot);
 
-    bool osaXML1394ConfigureCouplingMatrix(cmnXMLPath & xmlConfig,
-                                           const int robotIndex,
-                                           const char * couplingString,
-                                           int numRows,
-                                           int numCols,
-                                           vctDoubleMat & resultMatrix);
+    bool CISST_EXPORT osaXML1394ConfigureCouplingMatrix(cmnXMLPath & xmlConfig,
+                                                        const int robotIndex,
+                                                        const char * couplingString,
+                                                        int numRows,
+                                                        int numCols,
+                                                        vctDoubleMat & resultMatrix);
 
-    bool osaXML1394ConfigureDigitalInput(cmnXMLPath & xmlConfig,
-                                         const int inputIndex,
-                                         osaDigitalInput1394Configuration & digitalInput);
+    bool CISST_EXPORT osaXML1394ConfigureDigitalInput(cmnXMLPath & xmlConfig,
+                                                      const int inputIndex,
+                                                      osaDigitalInput1394Configuration & digitalInput);
 
-    bool osaXML1394ConfigureDigitalOutput(cmnXMLPath & xmlConfig,
-                                          const int outputIndex,
-                                          osaDigitalOutput1394Configuration & digitalOutput);
+    bool CISST_EXPORT osaXML1394ConfigureDigitalOutput(cmnXMLPath & xmlConfig,
+                                                       const int outputIndex,
+                                                       osaDigitalOutput1394Configuration & digitalOutput);
 
 } // namespace sawRobotIO1394
 

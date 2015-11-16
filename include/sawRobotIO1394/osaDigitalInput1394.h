@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -21,10 +21,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/osaConfiguration1394.h>
 #include "AmpIO.h"
+#include <sawRobotIO1394/sawRobotIO1394Export.h>
 
 namespace sawRobotIO1394 {
 
-    class osaDigitalInput1394 {
+    class CISST_EXPORT osaDigitalInput1394 {
     public:
         osaDigitalInput1394(const osaDigitalInput1394Configuration & config);
 

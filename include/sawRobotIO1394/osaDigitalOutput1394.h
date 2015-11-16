@@ -21,10 +21,11 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/osaConfiguration1394.h>
 #include "AmpIO.h"
+#include <sawRobotIO1394/sawRobotIO1394Export.h>
 
 namespace sawRobotIO1394 {
 
-    class osaDigitalOutput1394 {
+    class CISST_EXPORT osaDigitalOutput1394 {
     public:
         osaDigitalOutput1394(const osaDigitalOutput1394Configuration & config);
 

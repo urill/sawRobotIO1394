@@ -33,6 +33,7 @@ http://www.cisst.org/cisst/license.txt.
 #endif
 
 #include <sawRobotIO1394/osaConfiguration1394.h>
+#include <sawRobotIO1394/sawRobotIO1394Export.h>
 
 class AmpIO;
 
@@ -44,7 +45,7 @@ namespace sawRobotIO1394 {
      * conversion as well as safety monitoring for the QLA robot control
      * architecture.
      **/
-class osaRobot1394
+class CISST_EXPORT osaRobot1394
 {
     public:
         //! Watchdog counts per ms (note counter width, e.g. 16 bits)

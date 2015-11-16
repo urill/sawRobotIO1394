@@ -1,6 +1,5 @@
 #
-# (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights
-# Reserved.
+# (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -41,6 +40,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif (CISST_HAS_QT4)
 
   add_library (sawRobotIO1394Qt
+               ${sawRobotIO1394_HEADER_DIR}/sawRobotIO1394ExportQt.h
                ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394QtWidget.h
                mtsRobotIO1394QtWidget.cpp
 		${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394QtWidgetFactory.h
