@@ -21,7 +21,6 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <vector>
 #include <map>
-#include <stdint.h>
 
 #ifndef SAW_ROBOT_IO_1394_WO_CISST
 #include <cisstVector/vctDynamicVectorTypes.h>
