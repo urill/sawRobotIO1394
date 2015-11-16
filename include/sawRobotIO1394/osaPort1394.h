@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -103,6 +103,8 @@ namespace sawRobotIO1394 {
         std::map<std::string, osaRobot1394*> mRobotsByName;
         typedef std::vector<osaRobot1394*>::iterator robot_iterator;
         typedef std::vector<osaRobot1394*>::const_iterator robot_const_iterator;
+        typedef std::map<std::string, osaRobot1394*>::iterator robotByName_iterator;
+        typedef std::map<std::string, osaRobot1394*>::const_iterator robotByName_const_iterator;
 
         std::vector<osaDigitalInput1394*> mDigitalInputs;
         std::map<std::string, osaDigitalInput1394*> mDigitalInputsByName;

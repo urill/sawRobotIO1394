@@ -16,7 +16,11 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
+#ifdef _WIN32
+#include "Eth1394Port.h"
+#else
 #include "FirewirePort.h"
+#endif
 #include "AmpIO.h"
 
 #include <sawRobotIO1394/osaPort1394.h>
@@ -28,7 +32,11 @@ using namespace sawRobotIO1394;
 osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
 {
     // Construct handle to firewire port
+#ifdef _WIN32
+    mPort = new Eth1394Port(portNumber, messageStream);
+#else
     mPort = new FirewirePort(portNumber, messageStream);
+#endif
 
     // Check number of port users
     if (mPort->NumberOfUsers() > 1) {
@@ -119,12 +127,14 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
 
 osaRobot1394 * osaPort1394::Robot(const std::string & name)
 {
-    return mRobotsByName.at(name);
+    robotByName_iterator it = mRobotsByName.find(name);
+    return (it == mRobotsByName.end() ? 0 : it->second);
 }
 
 const osaRobot1394 * osaPort1394::Robot(const std::string & name) const
 {
-    return mRobotsByName.at(name);
+    robotByName_const_iterator it = mRobotsByName.find(name);
+    return (it == mRobotsByName.end() ? 0 : it->second);
 }
 
 osaRobot1394 * osaPort1394::Robot(const int i)
