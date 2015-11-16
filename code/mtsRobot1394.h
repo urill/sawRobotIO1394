@@ -73,6 +73,9 @@ namespace sawRobotIO1394 {
         void ResetSingleEncoder(const int & index);
         void SetCoupling(const prmActuatorJointCoupling & coupling);
 
+        /*! \name Bias Calibration */
+        void CalibrateEncoderOffsetsFromPots(const int & numberOfSamples);
+
     protected:
         mtsStateTable * mStateTableRead;
         mtsStateTable * mStateTableWrite;
@@ -89,6 +92,11 @@ namespace sawRobotIO1394 {
             mtsFunctionWrite WatchdogStatus;
             mtsFunctionWrite Coupling;
         } EventTriggers;
+
+        int mSamplesForCalibrateEncoderOffsetsFromPots;
+        int mSamplesForCalibrateEncoderOffsetsFromPotsRequested;
+        mtsStateTable::Accessor<vctDoubleVec> * mPotPositionAccessor;
+        mtsStateTable::Accessor<prmPositionJointGet> * mPositionActuatorGetAccessor;
 
     public:
         struct {

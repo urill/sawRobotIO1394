@@ -565,8 +565,8 @@ void osaRobot1394::CheckState(void)
     }
 
     // Check if encoders and potentiometers agree
-    bool errorFound = false;
     if (mUsePotsForSafetyCheck) {
+        bool errorFound = false;
         switch (mPotType) {
         case POTENTIOMETER_UNDEFINED:
             break;
@@ -585,23 +585,24 @@ void osaRobot1394::CheckState(void)
         default:
             break;
         }
-    }
-    if (errorFound) {
-        mPotsToEncodersViolationsCounter++;
-    } else {
-        mPotsToEncodersViolationsCounter = 0;
-    }
+   
+        if (errorFound) {
+            mPotsToEncodersViolationsCounter++;
+        } else {
+            mPotsToEncodersViolationsCounter = 0;
+        }
 
-    if (mPotsToEncodersViolationsCounter > mPotsToEncodersViolationsMaximum) {
-        this->DisablePower();
-        vctBoolVec newErrors(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance));
-        if (newErrors.NotEqual(mPotsToEncodersErrorFlag)) {
-            mPotsToEncodersErrorFlag.Assign(newErrors);
-            std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n errors: ";
-            errorMessage.append(mPotsToEncodersError.ToString());
-            errorMessage.append(", \n mask (0 is error): ");
-            errorMessage.append(mPotsToEncodersErrorFlag.ToString());
-            cmnThrow(osaRuntimeError1394(errorMessage));
+        if (mPotsToEncodersViolationsCounter > mPotsToEncodersViolationsMaximum) {
+            this->DisablePower();
+            vctBoolVec newErrors(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance));
+            if (newErrors.NotEqual(mPotsToEncodersErrorFlag)) {
+                mPotsToEncodersErrorFlag.Assign(newErrors);
+                std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n errors: ";
+                errorMessage.append(mPotsToEncodersError.ToString());
+                errorMessage.append(", \n mask (0 is error): ");
+                errorMessage.append(mPotsToEncodersErrorFlag.ToString());
+                cmnThrow(osaRuntimeError1394(errorMessage));
+            }
         }
     }
 
@@ -918,8 +919,7 @@ void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
     switch(mPotType) {
 
     case POTENTIOMETER_UNDEFINED:
-        // TODO: Return error of some kind?
-        // CMN_LOG_CLASS_INIT_ERROR << "ResetEncoderOffsetUsingPotPosSI: can't set encoder offset, potentiometer's position undefined";
+        cmnThrow("osaRobot1394::CalibrateEncoderOffsetsFromPots: can't set encoder offset, potentiometer's position undefined");
         break;
 
     case POTENTIOMETER_ON_JOINTS:
