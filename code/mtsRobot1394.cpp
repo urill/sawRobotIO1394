@@ -139,8 +139,7 @@ void mtsRobot1394::ResetSingleEncoder(const int & index) {
 void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    mtsInterfaceProvided * actuatorInterface)
 {
-    osaRobot1394 * thisBase = dynamic_cast<osaRobot1394 *>(this);
-    CMN_ASSERT(thisBase);
+    osaRobot1394 * thisBase = static_cast<osaRobot1394 *>(this);
 
     robotInterface->AddCommandRead(&mtsRobot1394::GetNumberOfActuators, this,
                                    "GetNumberOfActuators");
@@ -220,7 +219,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandWrite(&osaRobot1394::SetPotsToEncodersTolerance, thisBase,
                                     "SetPotsToEncodersTolerance", mPotsToEncodersTolerance);
 
-    robotInterface->AddCommandWrite(&osaRobot1394::SetBrakePower, this,
+    robotInterface->AddCommandWrite<osaRobot1394, vctBoolVec>(&osaRobot1394::SetBrakePower, thisBase,
                                     "SetBrakeAmpEnable", mBrakePowerEnabled); // vector[bool]
     robotInterface->AddCommandReadState(*mStateTableRead, mBrakePowerEnabled,
                                         "GetBrakeAmpEnable"); // vector[bool]
@@ -294,7 +293,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                       "EnableBoardsPower");
     actuatorInterface->AddCommandVoid(&osaRobot1394::DisableBoardPower, thisBase,
                                       "DisableBoardsPower");
-    actuatorInterface->AddCommandWrite(&osaRobot1394::SetActuatorPower, this,
+    actuatorInterface->AddCommandWrite<osaRobot1394, vctBoolVec>(&osaRobot1394::SetActuatorPower, thisBase,
                                        "SetAmpEnable", mActuatorPowerEnabled); // vector[bool]
     actuatorInterface->AddCommandWrite(&mtsRobot1394::ResetSingleEncoder, this,
                                        "ResetSingleEncoder"); // int
