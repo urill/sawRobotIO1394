@@ -311,6 +311,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
     robotInterface->AddEventWrite(EventTriggers.WatchdogStatus, "WatchdogStatus", false);
     robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
+    robotInterface->AddEventWrite(EventTriggers.BiasEncoder, "BiasEncoder", 0);
 
     robotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
     robotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
@@ -380,9 +381,11 @@ void mtsRobot1394::CheckState(void)
     }
 
     // if nb samples > 0, need to countdown
-    if (mSamplesForCalibrateEncoderOffsetsFromPots) {
+    if (mSamplesForCalibrateEncoderOffsetsFromPots > 0) {
         // if count down is at 1, compute average of encoders and potentiometers
-        if (mSamplesForCalibrateEncoderOffsetsFromPots == 1) {
+        if (mSamplesForCalibrateEncoderOffsetsFromPots > 1) {
+            mSamplesForCalibrateEncoderOffsetsFromPots--;
+        } else {
             // data read from state table
             vctDoubleVec potentiometers(mNumberOfActuators, 0.0);
             mtsGenericObjectProxy<vctDoubleVec> newPot;
@@ -391,7 +394,6 @@ void mtsRobot1394::CheckState(void)
             vctDoubleVec encoderDelta(mNumberOfActuators);
             prmPositionJointGet newEnc;
             newEnc.Position().SetSize(mNumberOfActuators);
-            
 
             int nbElements = 0;
             mtsStateIndex index = mStateTableRead->GetIndexReader();
@@ -413,7 +415,7 @@ void mtsRobot1394::CheckState(void)
                 // check if index is still valid, would happen if reached size of state table
                 validIndex = mStateTableRead->ValidateReadIndex(index);
             }
-            
+
             // compute average
             potentiometers.Divide(nbElements);
 
@@ -436,10 +438,8 @@ void mtsRobot1394::CheckState(void)
                 SetEncoderPosition(potentiometers);
                 break;
             }
-
+            EventTriggers.BiasEncoder(nbElements);
             mSamplesForCalibrateEncoderOffsetsFromPots = 0; // not needed anymore
-        } else {
-            mSamplesForCalibrateEncoderOffsetsFromPots--;
         }
     }
 }
