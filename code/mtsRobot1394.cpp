@@ -29,7 +29,8 @@ mtsRobot1394::mtsRobot1394(const cmnGenericObject & owner,
     OwnerServices(owner.Services()),
     mStateTableRead(0),
     mStateTableWrite(0),
-    mFirstWatchdog(true)
+    mFirstWatchdog(true),
+    mSamplesForCalibrateEncoderOffsetsFromPots(0)
 {
 }
 
@@ -95,6 +96,16 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mBrakeCurrentFeedback, "BrakeFeedbackCurrent");
     mStateTableRead->AddData(mBrakeTemperature, "BrakeTemperature");
 
+    mtsStateTable::AccessorBase * accessorBase;
+    accessorBase = mStateTableRead->GetAccessor(mPotPosition);
+    CMN_ASSERT(accessorBase);
+    mPotPositionAccessor = dynamic_cast<mtsStateTable::Accessor<vctDoubleVec>* >(accessorBase);
+    CMN_ASSERT(mPotPositionAccessor);
+    accessorBase = mStateTableRead->GetAccessor(mPositionActuatorGet);
+    CMN_ASSERT(accessorBase);
+    mPositionActuatorGetAccessor = dynamic_cast<mtsStateTable::Accessor<prmPositionJointGet>*>(accessorBase);
+    CMN_ASSERT(mPositionActuatorGetAccessor);
+
     stateTableRead = mStateTableRead;
     stateTableWrite = mStateTableWrite;
     return true;
@@ -136,6 +147,18 @@ void mtsRobot1394::ResetSingleEncoder(const int & index) {
     this->SetSingleEncoderPosition(index, 0.0);
 }
 
+void mtsRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
+{
+    osaRobot1394::SetCoupling(coupling);
+    EventTriggers.Coupling(coupling);
+}
+
+void mtsRobot1394::CalibrateEncoderOffsetsFromPots(const int & numberOfSamples)
+{
+    mSamplesForCalibrateEncoderOffsetsFromPots = numberOfSamples + 1;
+    mSamplesForCalibrateEncoderOffsetsFromPotsRequested = numberOfSamples;
+}
+
 void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    mtsInterfaceProvided * actuatorInterface)
 {
@@ -149,6 +172,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    "GetSerialNumber");
     robotInterface->AddCommandReadState(*mStateTableRead, this->mValid,
                                         "IsValid");
+
+    robotInterface->AddCommandWrite(&mtsRobot1394::SetCoupling, this,
+                                    "SetCoupling");
 
     // Enable // Disable
     robotInterface->AddCommandVoid(&osaRobot1394::EnablePower, thisBase,
@@ -275,14 +301,16 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     //
     robotInterface->AddCommandReadState(*mStateTableRead, mPositionActuatorGet,
                                         "GetPositionActuator"); // prmPositionJointGet
-    robotInterface->AddCommandVoid(&osaRobot1394::CalibrateEncoderOffsetsFromPots,
-                                   thisBase, "BiasEncoder");
+    robotInterface->AddCommandWrite(&mtsRobot1394::CalibrateEncoderOffsetsFromPots,
+                                    this, "BiasEncoder");
     robotInterface->AddCommandWrite(&mtsRobot1394::ResetSingleEncoder, this,
                                     "ResetSingleEncoder"); // int
 
     // Events
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
     robotInterface->AddEventWrite(EventTriggers.WatchdogStatus, "WatchdogStatus", false);
+    robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
+    robotInterface->AddEventWrite(EventTriggers.BiasEncoder, "BiasEncoder", 0);
 
     robotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
     robotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
@@ -348,6 +376,69 @@ void mtsRobot1394::CheckState(void)
             } else {
                 MessageEvents.Error("IO: " + this->Name() + " watchdog triggered");
             }
+        }
+    }
+
+    // if nb samples > 0, need to countdown
+    if (mSamplesForCalibrateEncoderOffsetsFromPots > 0) {
+        // if count down is at 1, compute average of encoders and potentiometers
+        if (mSamplesForCalibrateEncoderOffsetsFromPots > 1) {
+            mSamplesForCalibrateEncoderOffsetsFromPots--;
+        } else {
+            // data read from state table
+            vctDoubleVec potentiometers(mNumberOfActuators, 0.0);
+            mtsGenericObjectProxy<vctDoubleVec> newPot;
+            newPot.Data.SetSize(mNumberOfActuators);
+            vctDoubleVec encoderRef(mNumberOfActuators, 0.0);
+            vctDoubleVec encoderDelta(mNumberOfActuators);
+            prmPositionJointGet newEnc;
+            newEnc.Position().SetSize(mNumberOfActuators);
+
+            int nbElements = 0;
+            mtsStateIndex index = mStateTableRead->GetIndexReader();
+            bool validIndex = true;
+            while (validIndex && (nbElements < mSamplesForCalibrateEncoderOffsetsFromPotsRequested)) {
+                mPotPositionAccessor->Get(index, newPot);
+                mPositionActuatorGetAccessor->Get(index, newEnc);
+                if (nbElements == 0) {
+                    // find reference encoder value
+                    encoderRef.Assign(newEnc.Position());
+                } else {
+                    // correct pot using encoder delta
+                    encoderDelta.DifferenceOf(newEnc.Position(), encoderRef);
+                    newPot.Data.Subtract(encoderDelta);
+                    potentiometers.Add(newPot.Data);
+                }
+                ++nbElements;
+                --index;
+                // check if index is still valid, would happen if reached size of state table
+                validIndex = mStateTableRead->ValidateReadIndex(index);
+            }
+
+            // compute average
+            potentiometers.Divide(nbElements);
+
+            // determine where pots are
+            vctDoubleVec actuatorPosition(mNumberOfActuators);
+            switch(mPotType) {
+            case POTENTIOMETER_UNDEFINED:
+                cmnThrow("mtsRobot1394::CheckState: can't set encoder offset, potentiometer's position undefined");
+                break;
+            case POTENTIOMETER_ON_JOINTS:
+                if (mConfiguration.HasActuatorToJointCoupling) {
+                    actuatorPosition.ProductOf(mConfiguration.Coupling.JointToActuatorPosition(),
+                                               potentiometers);
+                } else {
+                    actuatorPosition.Assign(potentiometers);
+                }
+                SetEncoderPosition(actuatorPosition);
+                break;
+            case POTENTIOMETER_ON_ACTUATORS:
+                SetEncoderPosition(potentiometers);
+                break;
+            }
+            EventTriggers.BiasEncoder(nbElements);
+            mSamplesForCalibrateEncoderOffsetsFromPots = 0; // not needed anymore
         }
     }
 }

@@ -116,7 +116,7 @@ protected:
         mtsFunctionWrite SetEncoderPosition;
         mtsFunctionWrite SetWatchdogPeriod;
 
-        mtsFunctionVoid BiasEncoder;
+        mtsFunctionWrite BiasEncoder;
     } Robot;
 
     struct ActuatorStruct {

@@ -22,6 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef SAW_ROBOT_IO_1394_WO_CISST
 #include <cisstVector/vctDynamicMatrixTypes.h>
 #include <cisstParameterTypes/prmJointType.h>
+#include <cisstParameterTypes/prmActuatorJointCoupling.h>
 #include <sawRobotIO1394/sawRobotIO1394Revision.h>
 
 #else // ifndef SAW_ROBOT_IO_1394_WO_CISST
@@ -115,10 +116,7 @@ namespace sawRobotIO1394 {
 
         std::vector<osaActuator1394Configuration> Actuators;
 
-        vctDoubleMat ActuatorToJointPosition;
-        vctDoubleMat JointToActuatorPosition;
-        vctDoubleMat ActuatorToJointEffort;
-        vctDoubleMat JointToActuatorEffort;
+        prmActuatorJointCoupling Coupling;
     };
 
     struct osaDigitalInput1394Configuration {

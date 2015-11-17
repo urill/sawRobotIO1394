@@ -254,7 +254,8 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
 
     // Compute effort command limits
     if (mConfiguration.HasActuatorToJointCoupling) {
-        mJointEffortCommandLimits.ProductOf(mConfiguration.ActuatorToJointEffort, mActuatorEffortCommandLimits);
+        mJointEffortCommandLimits.ProductOf(mConfiguration.Coupling.ActuatorToJointEffort(),
+                                            mActuatorEffortCommandLimits);
     } else {
         mJointEffortCommandLimits.Assign(mActuatorEffortCommandLimits);
     }
@@ -394,7 +395,8 @@ void osaRobot1394::ConvertState(void)
     // Perform read conversions
     EncoderBitsToPosition(mEncoderPositionBits, mEncoderPosition);
     if (mConfiguration.HasActuatorToJointCoupling) {
-        mJointPosition.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderPosition);
+        mJointPosition.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
+                                 mEncoderPosition);
     } else {
         mJointPosition.Assign(mEncoderPosition);
     }
@@ -412,7 +414,8 @@ void osaRobot1394::ConvertState(void)
     }
 
     if (mConfiguration.HasActuatorToJointCoupling) {
-        mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
+        mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
+                                 mEncoderVelocity);
     } else {
         mJointVelocity.Assign(mEncoderVelocity);
     }
@@ -477,14 +480,16 @@ void osaRobot1394::ConvertState(void)
 
     // mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
     if (mConfiguration.HasActuatorToJointCoupling) {
-        mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocitySoftware);
+        mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
+                                 mEncoderVelocitySoftware);
     }
 
     // Effort computation
     ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
     ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
     if (mConfiguration.HasActuatorToJointCoupling) {
-        mJointTorque.ProductOf(mConfiguration.ActuatorToJointEffort, mActuatorEffortFeedback);
+        mJointTorque.ProductOf(mConfiguration.Coupling.ActuatorToJointEffort(),
+                               mActuatorEffortFeedback);
     } else {
         mJointTorque.Assign(mActuatorEffortFeedback);
     }
@@ -560,8 +565,8 @@ void osaRobot1394::CheckState(void)
     }
 
     // Check if encoders and potentiometers agree
-    bool errorFound = false;
     if (mUsePotsForSafetyCheck) {
+        bool errorFound = false;
         switch (mPotType) {
         case POTENTIOMETER_UNDEFINED:
             break;
@@ -580,23 +585,24 @@ void osaRobot1394::CheckState(void)
         default:
             break;
         }
-    }
-    if (errorFound) {
-        mPotsToEncodersViolationsCounter++;
-    } else {
-        mPotsToEncodersViolationsCounter = 0;
-    }
+   
+        if (errorFound) {
+            mPotsToEncodersViolationsCounter++;
+        } else {
+            mPotsToEncodersViolationsCounter = 0;
+        }
 
-    if (mPotsToEncodersViolationsCounter > mPotsToEncodersViolationsMaximum) {
-        this->DisablePower();
-        vctBoolVec newErrors(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance));
-        if (newErrors.NotEqual(mPotsToEncodersErrorFlag)) {
-            mPotsToEncodersErrorFlag.Assign(newErrors);
-            std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n errors: ";
-            errorMessage.append(mPotsToEncodersError.ToString());
-            errorMessage.append(", \n mask (0 is error): ");
-            errorMessage.append(mPotsToEncodersErrorFlag.ToString());
-            cmnThrow(osaRuntimeError1394(errorMessage));
+        if (mPotsToEncodersViolationsCounter > mPotsToEncodersViolationsMaximum) {
+            this->DisablePower();
+            vctBoolVec newErrors(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance));
+            if (newErrors.NotEqual(mPotsToEncodersErrorFlag)) {
+                mPotsToEncodersErrorFlag.Assign(newErrors);
+                std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n errors: ";
+                errorMessage.append(mPotsToEncodersError.ToString());
+                errorMessage.append(", \n mask (0 is error): ");
+                errorMessage.append(mPotsToEncodersErrorFlag.ToString());
+                cmnThrow(osaRuntimeError1394(errorMessage));
+            }
         }
     }
 
@@ -610,6 +616,51 @@ void osaRobot1394::CheckState(void)
             cmnThrow(osaRuntimeError1394(errorMessage));
         }
     }
+}
+
+void osaRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
+{
+    // check sizes
+    if ((coupling.ActuatorToJointPosition().rows() != mNumberOfJoints) ||
+        (coupling.ActuatorToJointPosition().cols() != mNumberOfActuators)) {
+        cmnThrow("SetCoupling: invalid size for ActuatorToJointPosition");
+    }
+
+    if ((coupling.JointToActuatorPosition().rows() != mNumberOfActuators) ||
+        (coupling.JointToActuatorPosition().cols() != mNumberOfJoints)) {
+        cmnThrow("SetCoupling: invalid size for JointToActuatorPosition");
+    }
+
+    if ((coupling.ActuatorToJointEffort().rows() != mNumberOfJoints) ||
+        (coupling.ActuatorToJointEffort().cols() != mNumberOfActuators)) {
+        cmnThrow("SetCoupling: invalid size for ActuatorToJointEffort");
+    }
+
+    if ((coupling.JointToActuatorEffort().rows() != mNumberOfActuators) ||
+        (coupling.JointToActuatorEffort().cols() != mNumberOfJoints)) {
+        cmnThrow("SetCoupling: invalid size for JointToActuatorEffort");
+    }
+
+    // check for identity using inverse
+    const vctDoubleMat identity = vctDoubleMat::Eye(mNumberOfActuators);
+    vctDoubleMat product;
+    product.SetSize(mNumberOfActuators, mNumberOfActuators);
+    product.ProductOf(coupling.ActuatorToJointPosition(),
+                      coupling.JointToActuatorPosition());
+    if (!product.AlmostEqual(identity, 0.001)) {
+        cmnThrow("SetCoupling: product of position coupling matrices not identity");
+    }
+    product.ProductOf(coupling.ActuatorToJointEffort(),
+                      coupling.JointToActuatorEffort());
+    if (!product.AlmostEqual(identity, 0.001)) {
+        cmnThrow("ConfigureCoupling: product of torque coupling matrices not identity");
+    }
+
+    // finally assign values
+    mConfiguration.Coupling.ActuatorToJointPosition().ForceAssign(coupling.ActuatorToJointPosition());
+    mConfiguration.Coupling.JointToActuatorPosition().ForceAssign(coupling.JointToActuatorPosition());
+    mConfiguration.Coupling.ActuatorToJointEffort().ForceAssign(coupling.ActuatorToJointEffort());
+    mConfiguration.Coupling.JointToActuatorEffort().ForceAssign(coupling.JointToActuatorEffort());
 }
 
 void osaRobot1394::EnablePower(void)
@@ -765,12 +816,13 @@ void osaRobot1394::ClipBrakeCurrent(vctDoubleVec & currents)
 
 void osaRobot1394::SetJointEffort(const vctDoubleVec & efforts)
 {
-    vctDoubleVec actuator_efforts(mNumberOfActuators);
-    if (mConfiguration.HasActuatorToJointCoupling)
-        actuator_efforts.ProductOf(mConfiguration.JointToActuatorEffort, efforts);
-    else
-        actuator_efforts.Assign(efforts);
-    this->SetActuatorEffort(actuator_efforts);
+    vctDoubleVec actuatorEfforts(mNumberOfActuators);
+    if (mConfiguration.HasActuatorToJointCoupling) {
+        actuatorEfforts.ProductOf(mConfiguration.Coupling.JointToActuatorEffort(), efforts);
+    } else {
+        actuatorEfforts.Assign(efforts);
+    }
+    this->SetActuatorEffort(actuatorEfforts);
 }
 
 void osaRobot1394::SetActuatorEffort(const vctDoubleVec & efforts)
@@ -867,15 +919,16 @@ void osaRobot1394::CalibrateEncoderOffsetsFromPots(void)
     switch(mPotType) {
 
     case POTENTIOMETER_UNDEFINED:
-        // TODO: Return error of some kind?
-        // CMN_LOG_CLASS_INIT_ERROR << "ResetEncoderOffsetUsingPotPosSI: can't set encoder offset, potentiometer's position undefined";
+        cmnThrow("osaRobot1394::CalibrateEncoderOffsetsFromPots: can't set encoder offset, potentiometer's position undefined");
         break;
 
     case POTENTIOMETER_ON_JOINTS:
-        if (mConfiguration.HasActuatorToJointCoupling)
-            actuatorPosition.ProductOf(mConfiguration.JointToActuatorPosition, mPotPosition);
-        else
+        if (mConfiguration.HasActuatorToJointCoupling) {
+            actuatorPosition.ProductOf(mConfiguration.Coupling.JointToActuatorPosition(),
+                                       mPotPosition);
+        } else {
             actuatorPosition.Assign(mPotPosition);
+        }
         SetEncoderPosition(actuatorPosition);
         break;
 

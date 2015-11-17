@@ -71,6 +71,10 @@ namespace sawRobotIO1394 {
         void GetSerialNumber(int & serialNumber) const;
         void SetTorqueJoint(const prmForceTorqueJointSet & jointTorques);
         void ResetSingleEncoder(const int & index);
+        void SetCoupling(const prmActuatorJointCoupling & coupling);
+
+        /*! \name Bias Calibration */
+        void CalibrateEncoderOffsetsFromPots(const int & numberOfSamples);
 
     protected:
         mtsStateTable * mStateTableRead;
@@ -86,7 +90,14 @@ namespace sawRobotIO1394 {
         struct {
             mtsFunctionWrite PowerStatus;
             mtsFunctionWrite WatchdogStatus;
+            mtsFunctionWrite Coupling;
+            mtsFunctionWrite BiasEncoder;
         } EventTriggers;
+
+        int mSamplesForCalibrateEncoderOffsetsFromPots;
+        int mSamplesForCalibrateEncoderOffsetsFromPotsRequested;
+        mtsStateTable::Accessor<vctDoubleVec> * mPotPositionAccessor;
+        mtsStateTable::Accessor<prmPositionJointGet> * mPositionActuatorGetAccessor;
 
     public:
         struct {

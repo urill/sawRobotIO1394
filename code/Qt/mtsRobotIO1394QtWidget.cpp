@@ -265,7 +265,7 @@ void mtsRobotIO1394QtWidget::SlotResetEncodersAll()
 
 void mtsRobotIO1394QtWidget::SlotBiasEncodersAll()
 {
-    mtsExecutionResult result = Robot.BiasEncoder();
+    mtsExecutionResult result = Robot.BiasEncoder(1000);
     if (!result.IsOK()) {
         CMN_LOG_CLASS_RUN_WARNING << "slot_qpbBiasEncAll: command failed \"" << result << "\"" << std::endl;
     }

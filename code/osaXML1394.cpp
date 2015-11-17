@@ -331,26 +331,26 @@ namespace sawRobotIO1394 {
         if (robot.HasActuatorToJointCoupling) {
             bool parse_success = true;
 
-            robot.ActuatorToJointPosition.SetSize(robot.NumberOfJoints, robot.NumberOfActuators, 0.0);
-            robot.JointToActuatorPosition.SetSize(robot.NumberOfActuators, robot.NumberOfJoints, 0.0);
-            robot.ActuatorToJointEffort.SetSize(robot.NumberOfJoints, robot.NumberOfActuators, 0.0);
-            robot.JointToActuatorEffort.SetSize(robot.NumberOfActuators, robot.NumberOfJoints, 0.0);
+            robot.Coupling.ActuatorToJointPosition().SetSize(robot.NumberOfJoints, robot.NumberOfActuators, 0.0);
+            robot.Coupling.JointToActuatorPosition().SetSize(robot.NumberOfActuators, robot.NumberOfJoints, 0.0);
+            robot.Coupling.ActuatorToJointEffort().SetSize(robot.NumberOfJoints, robot.NumberOfActuators, 0.0);
+            robot.Coupling.JointToActuatorEffort().SetSize(robot.NumberOfActuators, robot.NumberOfJoints, 0.0);
 
             parse_success &= osaXML1394ConfigureCouplingMatrix(xmlConfig, robotIndex, "ActuatorToJointPosition",
                                                                robot.NumberOfJoints, robot.NumberOfActuators,
-                                                               robot.ActuatorToJointPosition);
+                                                               robot.Coupling.ActuatorToJointPosition());
 
             parse_success &= osaXML1394ConfigureCouplingMatrix(xmlConfig, robotIndex, "JointToActuatorPosition",
                                                                robot.NumberOfActuators, robot.NumberOfJoints,
-                                                               robot.JointToActuatorPosition);
+                                                               robot.Coupling.JointToActuatorPosition());
 
             parse_success &= osaXML1394ConfigureCouplingMatrix(xmlConfig, robotIndex, "ActuatorToJointTorque",
                                                                robot.NumberOfJoints, robot.NumberOfActuators,
-                                                               robot.ActuatorToJointEffort);
+                                                               robot.Coupling.ActuatorToJointEffort());
 
             parse_success &= osaXML1394ConfigureCouplingMatrix(xmlConfig, robotIndex, "JointToActuatorTorque",
                                                                robot.NumberOfActuators, robot.NumberOfJoints,
-                                                               robot.JointToActuatorEffort);
+                                                               robot.Coupling.JointToActuatorEffort());
             // Still need to do proper alignment and such for joint/actuator situ for each matrix.
             if (!parse_success) {
                 return false;
@@ -362,7 +362,8 @@ namespace sawRobotIO1394 {
             identity.ForceAssign(vctDoubleMat::Eye(robot.NumberOfActuators));
 
             product.SetSize(robot.NumberOfActuators, robot.NumberOfActuators);
-            product.ProductOf(robot.ActuatorToJointPosition, robot.JointToActuatorPosition);
+            product.ProductOf(robot.Coupling.ActuatorToJointPosition(),
+                              robot.Coupling.JointToActuatorPosition());
 
             if (!product.AlmostEqual(identity, 0.001)) {
                 CMN_LOG_INIT_ERROR << "ConfigureCoupling: product of position coupling matrices not identity:"
@@ -370,7 +371,8 @@ namespace sawRobotIO1394 {
                 return false;
             }
 
-            product.ProductOf(robot.ActuatorToJointEffort, robot.JointToActuatorEffort);
+            product.ProductOf(robot.Coupling.ActuatorToJointEffort(),
+                              robot.Coupling.JointToActuatorEffort());
             if (!product.AlmostEqual(identity, 0.001)) {
                 CMN_LOG_INIT_ERROR << "ConfigureCoupling: product of torque coupling matrices not identity:"
                                   << std::endl << product << std::endl;
