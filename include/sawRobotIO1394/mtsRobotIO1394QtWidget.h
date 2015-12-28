@@ -87,6 +87,7 @@ protected:
     double WatchdogPeriodInSeconds;
 
     struct RobotStruct {
+        mtsFunctionRead GetSerialNumber;
         mtsFunctionRead GetPeriodStatistics;
         mtsFunctionRead IsValid;
         mtsFunctionVoid EnablePower;
@@ -134,6 +135,7 @@ protected:
 private:
     mtsIntervalStatistics IntervalStatistics;
 
+    int SerialNumber;
     size_t NumberOfActuators;
     size_t NumberOfBrakes;
 
@@ -173,6 +175,7 @@ private:
     QPushButton * QPBBiasEncAll;
     QDoubleSpinBox * QSBWatchdogPeriod;
     QCheckBox * QCBEnableDirectControl;
+    QLabel * QLSerialNumber;
 
     // GUI: timing
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;

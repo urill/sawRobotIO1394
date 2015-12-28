@@ -44,6 +44,7 @@ mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName
     mtsComponent(componentName),
     DirectControl(false),
     TimerPeriodInMilliseconds(periodInSeconds * 1000), // Qt timers are in milliseconds
+    SerialNumber(0),
     NumberOfActuators(numberOfActuators),
     NumberOfBrakes(numberOfBrakes)
 {
@@ -52,7 +53,9 @@ mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const std::string & componentName
 }
 
 mtsRobotIO1394QtWidget::mtsRobotIO1394QtWidget(const mtsComponentConstructorNameAndUInt &arg):
-    mtsComponent(arg.Name), NumberOfActuators(arg.Arg)
+    mtsComponent(arg.Name),
+    SerialNumber(0),
+    NumberOfActuators(arg.Arg)
 {
     Init();
 }
@@ -122,6 +125,14 @@ void mtsRobotIO1394QtWidget::Startup(void)
             }
         }
     }
+    // get serial number
+    result = Robot.GetSerialNumber(SerialNumber);
+    if (!result) {
+        CMN_LOG_CLASS_INIT_ERROR << "Startup: Robot interface isn't connected properly, unable to get serial number.  Function call returned: "
+                                 << result << std::endl;
+    }
+    QLSerialNumber->setText(QString::number(SerialNumber));
+
     if (!parent()) {
         show();
     }
@@ -384,6 +395,7 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
     // Required Interface
     mtsInterfaceRequired * robotInterface = AddInterfaceRequired("Robot");
     if (robotInterface) {
+        robotInterface->AddFunction("GetSerialNumber", Robot.GetSerialNumber);
         robotInterface->AddFunction("GetPeriodStatistics", Robot.GetPeriodStatistics);
         robotInterface->AddFunction("IsValid", Robot.IsValid);
         robotInterface->AddFunction("EnablePower", Robot.EnablePower);
@@ -519,6 +531,14 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     currentLayout->addWidget(currentTitle);
     QCBEnableDirectControl = new QCheckBox("Direct control");
     currentLayout->addWidget(QCBEnableDirectControl);
+    currentLayout->addStretch();
+    QLabel * serialTitle = new QLabel("Serial Number");
+    serialTitle->setFont(font);
+    serialTitle->setAlignment(Qt::AlignCenter);
+    currentLayout->addWidget(serialTitle);
+    QLSerialNumber = new QLabel("-----");
+    QLSerialNumber->setAlignment(Qt::AlignCenter);
+    currentLayout->addWidget(QLSerialNumber);
     currentLayout->addStretch();
     currentFrame->setLayout(currentLayout);
     currentFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
