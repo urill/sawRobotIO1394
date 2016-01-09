@@ -1,6 +1,20 @@
 Change log
 ==========
 
+1.3.0 (2016-01-08)
+==================
+
+* API changes:
+  * None
+* Deprecated features:
+  * None
+* New features:
+  * Added serial number display in Qt widget
+  * Added command/event to change actuator coupling on the fly
+  * Added command to bias encoders based on pots using multiple samples (averaging pot noise)
+* Bug fixes:
+  * Minor fixes to support older C++ compilers
+
 1.2.0 (2015-10-18)
 ==================
 

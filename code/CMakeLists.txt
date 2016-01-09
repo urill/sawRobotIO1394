@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2012-2015 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2012-2016 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -17,7 +17,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstMultiTask
      cisstParameterTypes)
 
-find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.0.6 REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
 if (cisst_FOUND_AS_REQUIRED)
 
@@ -52,7 +52,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # Set the version number
   set (sawRobotIO1394_VERSION_MAJOR "1")
-  set (sawRobotIO1394_VERSION_MINOR "2")
+  set (sawRobotIO1394_VERSION_MINOR "3")
   set (sawRobotIO1394_VERSION_PATCH "0")
   set (sawRobotIO1394_VERSION "${sawRobotIO1394_VERSION_MAJOR}.${sawRobotIO1394_VERSION_MINOR}.${sawRobotIO1394_VERSION_PATCH}")
 
