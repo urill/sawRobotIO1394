@@ -126,8 +126,12 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
         Configuration.GetDigitalInputNames(DigitalInputNames);
 
         mButtonsWidget = new prmQtWidgetEventButtonsComponent("Digital inputs");
-        // each board has 4 digital inputs
-        mButtonsWidget->SetNumberOfColumns(4);
+        // adapt width to number of IOs
+        if (NumberOfDigitalInputs > 32) {
+            mButtonsWidget->SetNumberOfColumns(6);
+        } else {
+            mButtonsWidget->SetNumberOfColumns(4);
+        }
 
         // add all the interfaces
         for (int i = 0; i < NumberOfDigitalInputs; ++i) {
