@@ -1,5 +1,5 @@
 #
-# (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2013-2016 Johns Hopkins University (JHU), All Rights Reserved.
 #
 # --- begin cisst license - do not edit ---
 #
@@ -9,10 +9,15 @@
 #
 # --- end cisst license ---
 
+cmake_minimum_required (VERSION 2.8)
+
 # create a list of required cisst libraries
 set (REQUIRED_CISST_LIBRARIES cisstCommon
+                              cisstCommonXML
                               cisstVector
-                              cisstOSAbstraction)
+                              cisstOSAbstraction
+			      cisstMultiTask
+			      cisstParameterTypes)
 
 # find cisst and make sure the required libraries have been compiled
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
@@ -29,7 +34,7 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # sawRobotIO1394 has been compiled within cisst, we should find it automatically
-  cisst_find_saw_component (sawRobotIO1394 REQUIRED)
+  find_package (sawRobotIO1394 REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 

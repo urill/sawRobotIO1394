@@ -513,7 +513,6 @@ namespace sawRobotIO1394 {
         }
 
         // look for high/low duration
-        double temp;
         sprintf(path,"DigitalOut[%i]/@HighDuration", outputIndex);
         tagsFound = xmlConfig.GetXMLValue(context, path, digitalOutput.HighDuration);
         sprintf(path,"DigitalOut[%i]/@LowDuration", outputIndex);

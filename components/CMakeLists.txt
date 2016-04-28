@@ -9,6 +9,10 @@
 #
 # --- end cisst license ---
 
+cmake_minimum_required (VERSION 2.8)
+
+project (sawRobotIO1394)
+
 set (REQUIRED_CISST_LIBRARIES
      cisstCommon
      cisstCommonXML
@@ -27,7 +31,8 @@ if (cisst_FOUND_AS_REQUIRED)
   # catkin/ROS paths
   cisst_is_catkin_build (sawRobotIO1394_IS_CATKIN_BUILT)
   if (sawRobotIO1394_IS_CATKIN_BUILT)
-    set (sawRobotIO1394_CONFIG_FILE_DIR "${CATKIN_DEVEL_PREFIX}/cmake")
+    set (sawRobotIO1394_CONFIG_FILE_DIR
+         "${CATKIN_DEVEL_PREFIX}/share/sawRobotIO1394/cmake")
     set (LIBRARY_OUTPUT_PATH "${sawRobotIO1394_BINARY_DIR}/lib")
     set (EXECUTABLE_OUTPUT_PATH "${CATKIN_DEVEL_PREFIX}/bin")
   else ()
@@ -35,17 +40,17 @@ if (cisst_FOUND_AS_REQUIRED)
   endif ()
 
   # Compile lib Amp1394 and examples within this project
-  add_subdirectory (Amp1394)
-  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib")
+  add_subdirectory (code/Amp1394)
+  include_directories ("${sawRobotIO1394_SOURCE_DIR}/code/Amp1394/lib")
 
   # Allow c++ code to find local header files
-  include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+  include_directories (${sawRobotIO1394_SOURCE_DIR})
 
   # create/configure file for find_package (sawRobotIO1394)
   set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include"
                                   "${sawRobotIO1394_BINARY_DIR}/include"
-                                  "${CMAKE_CURRENT_SOURCE_DIR}/Amp1394/lib"
-                                  "${CMAKE_CURRENT_BINARY_DIR}/Amp1394")
+                                  "${sawRobotIO1394_SOURCE_DIR}/code/Amp1394/lib"
+                                  "${sawRobotIO1394_BINARY_DIR}/code/Amp1394")
   set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
   #set (sawRobotIO1394_LIBRARIES sawRobotIO1394 ${Amp1394_LIBRARIES})
   set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
@@ -71,20 +76,20 @@ if (cisst_FOUND_AS_REQUIRED)
                ${sawRobotIO1394_HEADER_DIR}/osaDigitalInput1394.h
                ${sawRobotIO1394_HEADER_DIR}/osaDigitalOutput1394.h
                ${sawRobotIO1394_HEADER_DIR}/osaXML1394.h
-               osaRobot1394.cpp
-               osaDigitalInput1394.cpp
-               osaDigitalOutput1394.cpp
-               osaPort1394.cpp
-               osaXML1394.cpp
+               code/osaRobot1394.cpp
+               code/osaDigitalInput1394.cpp
+               code/osaDigitalOutput1394.cpp
+               code/osaPort1394.cpp
+               code/osaXML1394.cpp
                ${sawRobotIO1394_HEADER_DIR}/sawRobotIO1394Export.h
                ${sawRobotIO1394_HEADER_DIR}/mtsRobotIO1394.h
-               mtsRobot1394.h
-               mtsRobot1394.cpp
-               mtsDigitalInput1394.h
-               mtsDigitalInput1394.cpp
-               mtsDigitalOutput1394.h
-               mtsDigitalOutput1394.cpp
-               mtsRobotIO1394.cpp)
+               code/mtsRobot1394.h
+               code/mtsRobot1394.cpp
+               code/mtsDigitalInput1394.h
+               code/mtsDigitalInput1394.cpp
+               code/mtsDigitalOutput1394.h
+               code/mtsDigitalOutput1394.cpp
+               code/mtsRobotIO1394.cpp)
 
   set_property (TARGET sawRobotIO1394 PROPERTY FOLDER "sawRobotIO1394")
   #target_link_libraries (sawRobotIO1394 ${Amp1394_LIBRARIES})
@@ -100,13 +105,16 @@ if (cisst_FOUND_AS_REQUIRED)
 
   if (CISST_HAS_QT)
     # add Qt code
-    add_subdirectory (Qt)
+    add_subdirectory (code/Qt)
     set (sawRobotIO1394_LIBRARIES ${sawRobotIO1394_LIBRARIES} ${sawRobotIO1394Qt_LIBRARIES})
   endif (CISST_HAS_QT)
 
-  configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/sawRobotIO1394Config.cmake.in"
-                  "${sawRobotIO1394_CONFIG_FILE_DIR}/sawRobotIO1394Config.cmake"
-                   @ONLY@)
+  set (sawRobotIO1394_CMAKE_CONFIG_FILE
+       "${sawRobotIO1394_CONFIG_FILE_DIR}/sawRobotIO1394Config.cmake")
+
+  configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/sawRobotIO1394Config.cmake.in"
+                  "${sawRobotIO1394_CMAKE_CONFIG_FILE}"
+                   @ONLY)
 
   cisst_add_config_version ("${sawRobotIO1394_CONFIG_FILE_DIR}/sawRobotIO1394ConfigVersion.cmake"
                             VERSION ${sawRobotIO1394_VERSION}
@@ -125,7 +133,7 @@ if (cisst_FOUND_AS_REQUIRED)
            LIBRARY DESTINATION lib
            ARCHIVE DESTINATION lib)
 
-  install (FILES "${sawRobotIO1394_BINARY_DIR}/sawRobotIO1394Config.cmake"
-           DESTINATION "${CISST_CMAKE_INSTALL_SUFFIX}/saw")
+  install (FILES "${sawRobotIO1394_CMAKE_CONFIG_FILE}"
+           DESTINATION "share/sawRobotIO1394")
 
 endif(cisst_FOUND_AS_REQUIRED)
