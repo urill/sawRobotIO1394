@@ -91,7 +91,6 @@ if (cisst_FOUND_AS_REQUIRED)
                code/mtsRobotIO1394.cpp)
 
   set_property (TARGET sawRobotIO1394 PROPERTY FOLDER "sawRobotIO1394")
-  #target_link_libraries (sawRobotIO1394 ${Amp1394_LIBRARIES})
   target_link_libraries (sawRobotIO1394 Amp1394)
 
   # link rtai lib (may need to add Xenomai support)
