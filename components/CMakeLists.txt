@@ -52,7 +52,6 @@ if (cisst_FOUND_AS_REQUIRED)
                                   "${sawRobotIO1394_SOURCE_DIR}/code/Amp1394/lib"
                                   "${sawRobotIO1394_BINARY_DIR}/code/Amp1394")
   set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
-  #set (sawRobotIO1394_LIBRARIES sawRobotIO1394 ${Amp1394_LIBRARIES})
   set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
 
   # Set the version number
