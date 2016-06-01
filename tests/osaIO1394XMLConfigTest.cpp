@@ -94,21 +94,21 @@ void osaIO1394XMLConfigTest::TestConfigure(void)
     CPPUNIT_ASSERT(robot.HasActuatorToJointCoupling == true);
     CPPUNIT_ASSERT(robot.PotLocation == sawRobotIO1394::POTENTIOMETER_ON_ACTUATORS);
 
-    CPPUNIT_ASSERT(robot.ActuatorToJointPosition.rows() == 4);
-    CPPUNIT_ASSERT(robot.JointToActuatorPosition.rows() == 4);
-    CPPUNIT_ASSERT(robot.ActuatorToJointEffort.rows() == 4);
-    CPPUNIT_ASSERT(robot.JointToActuatorEffort.rows() == 4);
-    CPPUNIT_ASSERT(robot.ActuatorToJointPosition.cols() == 4);
-    CPPUNIT_ASSERT(robot.JointToActuatorPosition.cols() == 4);
-    CPPUNIT_ASSERT(robot.ActuatorToJointEffort.cols() == 4);
-    CPPUNIT_ASSERT(robot.JointToActuatorEffort.cols() == 4);
+    CPPUNIT_ASSERT(robot.Coupling.ActuatorToJointPosition().rows() == 4);
+    CPPUNIT_ASSERT(robot.Coupling.JointToActuatorPosition().rows() == 4);
+    CPPUNIT_ASSERT(robot.Coupling.ActuatorToJointEffort().rows() == 4);
+    CPPUNIT_ASSERT(robot.Coupling.JointToActuatorEffort().rows() == 4);
+    CPPUNIT_ASSERT(robot.Coupling.ActuatorToJointPosition().cols() == 4);
+    CPPUNIT_ASSERT(robot.Coupling.JointToActuatorPosition().cols() == 4);
+    CPPUNIT_ASSERT(robot.Coupling.ActuatorToJointEffort().cols() == 4);
+    CPPUNIT_ASSERT(robot.Coupling.JointToActuatorEffort().cols() == 4);
 
     vctDoubleMat actuator_to_joint_position(4, 4, VCT_ROW_MAJOR);
     actuator_to_joint_position.Assign(0.0, 1.0, 0.0, 0.0,
                                       1.0, 0.0, 0.0, 0.0,
                                       0.0, 0.0, 1.0, 1.0,
                                       0.0, 0.0, 0.0, 1.0);
-    CPPUNIT_ASSERT(robot.ActuatorToJointPosition.AlmostEqual(actuator_to_joint_position));
+    CPPUNIT_ASSERT(robot.Coupling.ActuatorToJointPosition().AlmostEqual(actuator_to_joint_position));
 }
 
 
