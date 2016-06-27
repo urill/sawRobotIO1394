@@ -41,7 +41,8 @@ if (cisst_FOUND_AS_REQUIRED)
 
   # Compile lib Amp1394 and examples within this project
   add_subdirectory (code/Amp1394)
-  include_directories ("${sawRobotIO1394_SOURCE_DIR}/code/Amp1394/lib")
+  set (CMAKE_PREFIX_PATH "${sawRobotIO1394_BINARY_DIR}/code/Amp1394" ${CMAKE_PREFIX_PATH})
+  find_package(Amp1394 REQUIRED)
 
   # Allow c++ code to find local header files
   include_directories (${sawRobotIO1394_SOURCE_DIR})
@@ -49,10 +50,9 @@ if (cisst_FOUND_AS_REQUIRED)
   # create/configure file for find_package (sawRobotIO1394)
   set (sawRobotIO1394_INCLUDE_DIR "${sawRobotIO1394_SOURCE_DIR}/include"
                                   "${sawRobotIO1394_BINARY_DIR}/include"
-                                  "${sawRobotIO1394_SOURCE_DIR}/code/Amp1394/lib"
-                                  "${sawRobotIO1394_BINARY_DIR}/code/Amp1394")
-  set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
-  set (sawRobotIO1394_LIBRARIES sawRobotIO1394 Amp1394 raw1394)
+                                  ${Amp1394_INCLUDE_DIR})
+  set (sawRobotIO1394_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}" ${Amp1394_LIBRARY_DIR})
+  set (sawRobotIO1394_LIBRARIES sawRobotIO1394 ${Amp1394_LIBRARIES})
 
   # Set the version number
   set (sawRobotIO1394_VERSION_MAJOR "1")
@@ -66,6 +66,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
   include_directories (${sawRobotIO1394_INCLUDE_DIR})
   set (sawRobotIO1394_HEADER_DIR "${sawRobotIO1394_SOURCE_DIR}/include/sawRobotIO1394")
+  link_directories (${Amp1394_LIBRARY_DIR})
 
   # create the library
   add_library (sawRobotIO1394

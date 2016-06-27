@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -16,7 +16,13 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
+#include <Amp1394/AmpIORevision.h>
+#if Amp1394_HAS_RAW1394
 #include "FirewirePort.h"
+#endif
+#if Amp1394_HAS_PCAP
+#include "Eth1394Port.h"
+#endif
 #include "AmpIO.h"
 
 #include <sawRobotIO1394/osaPort1394.h>
@@ -28,7 +34,11 @@ using namespace sawRobotIO1394;
 osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
 {
     // Construct handle to firewire port
+#if Amp1394_HAS_RAW1394
     mPort = new FirewirePort(portNumber, messageStream);
+#else
+    mPort = new Eth1394Port(portNumber, messageStream);
+#endif
 
     // Check number of port users
     if (mPort->NumberOfUsers() > 1) {

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -36,7 +36,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/sawRobotIO1394Export.h>
 
 class AmpIO;
-class FirewirePort;
+class BasePort;
 
 namespace sawRobotIO1394 {
 
@@ -93,7 +93,7 @@ namespace sawRobotIO1394 {
     protected:
 
         //! Board Objects
-        FirewirePort * mPort;
+        BasePort * mPort;
 
         std::map<int, AmpIO*> mBoards;
         typedef std::map<int, AmpIO*>::iterator board_iterator;
