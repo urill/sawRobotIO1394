@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -29,14 +29,12 @@ http://www.cisst.org/cisst/license.txt.
 #include "MinimalPrm.h"
 #endif
 
+#include <sawRobotIO1394/sawRobotIO1394ForwardDeclarations.h>
 #include <sawRobotIO1394/osaConfiguration1394.h>
 #include <sawRobotIO1394/osaRobot1394.h>
 #include <sawRobotIO1394/osaDigitalInput1394.h>
 #include <sawRobotIO1394/osaDigitalOutput1394.h>
 #include <sawRobotIO1394/sawRobotIO1394Export.h>
-
-class AmpIO;
-class FirewirePort;
 
 namespace sawRobotIO1394 {
 
@@ -52,6 +50,9 @@ namespace sawRobotIO1394 {
 
         osaPort1394(int portNumber, std::ostream & messageStream = std::cerr);
         ~osaPort1394();
+
+        //! Set Firewire protocol
+        void SetProtocol(const sawRobotIO1394::ProtocolType & protocol);
 
         //! Configure the port using the specified configuration file. This method is not
         //  used by the mtsRobotIO1394 SAW component.

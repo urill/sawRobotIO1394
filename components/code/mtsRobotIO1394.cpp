@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
- Author(s):  Zihan Chen, Peter Kazanzides
- Created on: 2012-07-31
+  Author(s):  Zihan Chen, Peter Kazanzides
+  Created on: 2012-07-31
 
- (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
  --- begin cisst license - do not edit ---
 
@@ -58,6 +58,11 @@ mtsRobotIO1394::~mtsRobotIO1394()
     // delete port and message stream
     delete mPort;
     delete MessageStream;
+}
+
+void mtsRobotIO1394::SetProtocol(const sawRobotIO1394::ProtocolType & protocol) 
+{
+    mPort->SetProtocol(protocol);
 }
 
 void mtsRobotIO1394::Init(const int portNumber)

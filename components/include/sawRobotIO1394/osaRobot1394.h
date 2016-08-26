@@ -32,10 +32,9 @@ http://www.cisst.org/cisst/license.txt.
 #include "MinimalPrm.h"
 #endif
 
+#include <sawRobotIO1394/sawRobotIO1394ForwardDeclarations.h>
 #include <sawRobotIO1394/osaConfiguration1394.h>
 #include <sawRobotIO1394/sawRobotIO1394Export.h>
-
-class AmpIO;
 
 namespace sawRobotIO1394 {
 

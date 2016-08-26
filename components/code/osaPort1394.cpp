@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -35,6 +35,23 @@ osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
         std::ostringstream oss;
         oss << "osaIO1394Port: Found more than one user on firewire port: " << portNumber;
         cmnThrow(osaRuntimeError1394(oss.str()));
+    }
+}
+
+void osaPort1394::SetProtocol(const ProtocolType & protocol)
+{
+    switch (protocol) {
+    case PROTOCOL_SEQ_RW:
+        mPort->SetProtocol(FirewirePort::PROTOCOL_SEQ_RW);
+        break;
+    case PROTOCOL_SEQ_R_BC_W:
+        mPort->SetProtocol(FirewirePort::PROTOCOL_SEQ_R_BC_W);
+        break;
+    case PROTOCOL_BC_QRW:
+        mPort->SetProtocol(FirewirePort::PROTOCOL_BC_QRW);
+        break;
+    default:
+        break;
     }
 }
 
