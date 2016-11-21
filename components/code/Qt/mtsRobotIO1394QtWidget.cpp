@@ -482,7 +482,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     watchdogLayout->addWidget(watchdogTitle);
     QHBoxLayout * watchdogSetLayout = new QHBoxLayout;
     {
-        QLabel * wdogLabel = new QLabel("Wdog period (ms)");
+        QLabel * wdogLabel = new QLabel("Period (ms)");
         QSBWatchdogPeriod = new QDoubleSpinBox;
         QSBWatchdogPeriod->setMaximum(340.0); // max wdog_period = 340 ms
         QSBWatchdogPeriod->setMinimum(0.0);
@@ -496,7 +496,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     QLSafetyRelay = new QLabel("Safety relay ON");
     QLSafetyRelay->setAlignment(Qt::AlignCenter);
     watchdogLayout->addWidget(QLSafetyRelay);
-    QLWatchdog = new QLabel("Watchdog Timeout FALSE");
+    QLWatchdog = new QLabel("Timeout FALSE");
     QLWatchdog->setAlignment(Qt::AlignCenter);
     QLWatchdog->setStyleSheet("QLabel { background-color: green }");
     watchdogLayout->addWidget(QLWatchdog);
@@ -780,11 +780,11 @@ void mtsRobotIO1394QtWidget::WatchdogStatusEventHandler(const bool & status)
 void mtsRobotIO1394QtWidget::SlotWatchdogStatus(bool status)
 {
     if (status) {
-        QLWatchdog->setText("Watchdog Timeout TRUE");
+        QLWatchdog->setText("Timeout TRUE");
         QLWatchdog->setStyleSheet("QLabel { background-color: red }");
         QLWatchdogLastTimeout->setText(QString("Last timeout: " + QTime::currentTime().toString("hh:mm:ss")));
     } else {
-        QLWatchdog->setText("Watchdog Timeout FALSE");
+        QLWatchdog->setText("Timeout FALSE");
         QLWatchdog->setStyleSheet("QLabel { background-color: green }");
     }
 }
