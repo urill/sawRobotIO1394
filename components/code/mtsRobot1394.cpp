@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Zihan Chen, Peter Kazanzides
+  Author(s):  Zihan Chen, Peter Kazanzides, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -149,7 +149,18 @@ void mtsRobot1394::ResetSingleEncoder(const int & index) {
 
 void mtsRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
 {
+    // set coupling in base class
     osaRobot1394::SetCoupling(coupling);
+    // start state table and get new data
+    StartReadStateTable();
+    {
+        PollValidity();
+        PollState();
+        ConvertState();
+        CheckState();
+    }
+    AdvanceReadStateTable();
+    // finally let users the coupling has changed
     EventTriggers.Coupling(coupling);
 }
 
