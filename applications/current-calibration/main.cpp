@@ -32,90 +32,23 @@ http://www.cisst.org/cisst/license.txt.
 
 using namespace sawRobotIO1394;
 const double WatchdogPeriod = 100.0 * cmn_ms;
+enum PowerType {ALL,BOARD,ACTUATOR,BRAKE};
+bool brakes;
+osaRobot1394 * robot;
+osaPort1394 * port;
+vctDoubleVec zeros;
+size_t numberOfAxis = 0;
 
-int main(int argc, char * argv[])
-{
-    cmnCommandLineOptions options;
-    int portNumber = 0;
-    std::string configFile;
-    options.AddOptionOneValue("c", "config",
-                              "configuration file",
-                              cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
-    options.AddOptionOneValue("p", "port",
-                              "firewire port number(s)",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &portNumber);
-    options.AddOptionNoValue("b", "brakes",
-                             "calibrate current feedback on brakes instead of actuators",
-                              cmnCommandLineOptions::OPTIONAL_OPTION);
+// Struct to hold sample readings
+struct Samples {
+    vctDoubleVec averageAllSamples;
+    vctDoubleVec stdDeviation;
+    size_t validSamples;
+    size_t totalSamples;
+    vctDoubleVec averageValidSamples;
+};
 
-    std::string errorMessage;
-    if (!options.Parse(argc, argv, errorMessage)) {
-        std::cerr << "Error: " << errorMessage << std::endl;
-        options.PrintUsage(std::cerr);
-        return -1;
-    }
-
-    if (!cmnPath::Exists(configFile)) {
-        std::cerr << "Can't find file \"" << configFile << "\"." << std::endl;
-        return -1;
-    }
-    std::cout << "Configuration file: " << configFile << std::endl
-              << "Port: " << portNumber << std::endl;
-
-    std::cout << "Make sure:" << std::endl
-              << " - your computer is connected to the firewire controller." << std::endl
-              << " - the arm corresponding to the configuration file \"" << configFile << "\" is connected to the controller." << std::endl
-              << " - the E-Stop is closed, i.e. will let the controller power on." << std::endl
-              << " - you have no other device connected to the firewire chain." << std::endl
-              << " - you have no other program trying to communicate with the controller." << std::endl
-              << std::endl
-              << "Press any key to start." << std::endl;
-    cmnGetChar();
-
-    std::cout << "Loading config file ..." << std::endl;
-    osaPort1394Configuration config;
-    osaXML1394ConfigurePort(configFile, config);
-
-    std::cout << "Creating robot ..." << std::endl;
-    if (config.Robots.size() == 0) {
-        std::cerr << "Error: the config file doesn't define a robot." << std::endl;
-        return -1;
-    }
-    if (config.Robots.size() != 1) {
-        std::cerr << "Error: the config file defines more than one robot." << std::endl;
-        return -1;
-    }
-    osaRobot1394 * robot = new osaRobot1394(config.Robots[0]);
-    size_t numberOfAxis = 0;
-    bool brakes = false;
-    if (options.IsSet("brakes")) {
-        brakes = true;
-        numberOfAxis = robot->NumberOfBrakes();
-    } else {
-        brakes = false;
-        numberOfAxis = robot->NumberOfActuators();
-    }
-    vctDoubleVec zeros;
-    zeros.SetSize(numberOfAxis);
-    zeros.SetAll(0.0);
-
-    std::cout << "Creating port ..." << std::endl;
-    osaPort1394 * port = new osaPort1394(portNumber);
-    port->AddRobot(robot);
-
-    // make sure we have at least one set of pots values
-    try {
-        port->Read();
-    } catch (const std::runtime_error & e) {
-        std::cerr << "Caught exception: " << e.what() << std::endl;
-    }
-    // preload encoders
-    robot->CalibrateEncoderOffsetsFromPots();
-
-    std::cout << std::endl
-              << "Ready to power?  Press any key to start." << std::endl;
-    cmnGetChar();
-
+bool enablePower(PowerType type){
     std::cout << "Enabling power ..." << std::endl;
     robot->SetWatchdogPeriod(300.0 * cmn_ms);
     if (brakes) {
@@ -123,7 +56,18 @@ int main(int argc, char * argv[])
     } else {
         robot->SetActuatorCurrent(zeros);
     }
-    robot->EnablePower();
+
+    switch(type){
+        case ALL        :   robot->EnablePower();
+                            break;
+        case BOARD      :   robot->EnableBoardsPower();
+                            break;
+        case ACTUATOR   :   robot->SetActuatorPower(true);
+                            break;
+        case BRAKE      :   robot->SetBrakePower(true);
+                            break;
+    }
+
     port->Write();
 
     // wait a bit to make sure current stabilizes, 500 * 10 ms = 5 seconds
@@ -142,25 +86,27 @@ int main(int argc, char * argv[])
     if (!robot->PowerStatus()) {
         std::cerr << "Error: unable to power on controllers, make sure E-Stop is ok." << std::endl;
         delete port;
-        return -1;
+        return false;
     }
-    if (brakes) {
+    if (brakes && (type==ALL || type==BRAKE)) {
         if (!robot->BrakePowerStatus().All()) {
             std::cerr << "Error: failed to turn on brake power: " << robot->BrakePowerStatus() << std::endl;
             delete port;
-            return -1;
+            return false;
         }
-    } else {
+    } else if (!brakes && (type==ALL || type==ACTUATOR)){
         if (!robot->ActuatorPowerStatus().All()) {
             std::cerr << "Error: failed to turn on actuator power: " << robot->ActuatorPowerStatus() << std::endl;
             delete port;
-            return -1;
+            return false;
         }
     }
-    std::cout << "Status: power seems fine." << std::endl
-              << "Starting calibration ..." << std::endl;
 
-    // collect samples
+    return true;
+}
+
+Samples collectSamples(){
+        // collect samples
     const size_t totalSamples = 50000;
     std::vector<vctDoubleVec> samples;
     samples.resize(totalSamples);
@@ -225,10 +171,120 @@ int main(int argc, char * argv[])
     averageValidSamples.Assign(sumSamples);
     averageValidSamples.Divide(validSamples);
 
+    Samples curSamples;
+    curSamples.averageAllSamples = averageAllSamples;
+    curSamples.stdDeviation = stdDeviation;
+    curSamples.validSamples = validSamples;
+    curSamples.totalSamples = totalSamples;
+    curSamples.averageValidSamples = averageValidSamples;
+    return curSamples;
+}
+
+int main(int argc, char * argv[])
+{
+    cmnCommandLineOptions options;
+    int portNumber = 0;
+    std::string configFile;
+    options.AddOptionOneValue("c", "config",
+                              "configuration file",
+                              cmnCommandLineOptions::REQUIRED_OPTION, &configFile);
+    options.AddOptionOneValue("p", "port",
+                              "firewire port number(s)",
+                              cmnCommandLineOptions::OPTIONAL_OPTION, &portNumber);
+    options.AddOptionNoValue("b", "brakes",
+                             "calibrate current feedback on brakes instead of actuators",
+                              cmnCommandLineOptions::OPTIONAL_OPTION);
+
+    std::string errorMessage;
+    if (!options.Parse(argc, argv, errorMessage)) {
+        std::cerr << "Error: " << errorMessage << std::endl;
+        options.PrintUsage(std::cerr);
+        return -1;
+    }
+
+    if (!cmnPath::Exists(configFile)) {
+        std::cerr << "Can't find file \"" << configFile << "\"." << std::endl;
+        return -1;
+    }
+    std::cout << "Configuration file: " << configFile << std::endl
+              << "Port: " << portNumber << std::endl;
+
+    std::cout << "Make sure:" << std::endl
+              << " - your computer is connected to the firewire controller." << std::endl
+              << " - the arm corresponding to the configuration file \"" << configFile << "\" is connected to the controller." << std::endl
+              << " - the E-Stop is closed, i.e. will let the controller power on." << std::endl
+              << " - you have no other device connected to the firewire chain." << std::endl
+              << " - you have no other program trying to communicate with the controller." << std::endl
+              << std::endl
+              << "Press any key to start." << std::endl;
+    cmnGetChar();
+
+    std::cout << "Loading config file ..." << std::endl;
+    osaPort1394Configuration config;
+    osaXML1394ConfigurePort(configFile, config);
+
+    std::cout << "Creating robot ..." << std::endl;
+    if (config.Robots.size() == 0) {
+        std::cerr << "Error: the config file doesn't define a robot." << std::endl;
+        return -1;
+    }
+    if (config.Robots.size() != 1) {
+        std::cerr << "Error: the config file defines more than one robot." << std::endl;
+        return -1;
+    }
+    robot = new osaRobot1394(config.Robots[0]);
+    bool brakes = false;
+    if (options.IsSet("brakes")) {
+        brakes = true;
+        numberOfAxis = robot->NumberOfBrakes();
+    } else {
+        brakes = false;
+        numberOfAxis = robot->NumberOfActuators();
+    }
+        zeros.SetSize(numberOfAxis);
+    zeros.SetAll(0.0);
+
+    std::cout << "Creating port ..." << std::endl;
+    port = new osaPort1394(portNumber);
+    port->AddRobot(robot);
+
+    // make sure we have at least one set of pots values
+    try {
+        port->Read();
+    } catch (const std::runtime_error & e) {
+        std::cerr << "Caught exception: " << e.what() << std::endl;
+    }
+    // preload encoders
+    robot->CalibrateEncoderOffsetsFromPots();
+
+    std::cout << std::endl
+              << "Ready to power?  Press any key to start." << std::endl;
+    cmnGetChar();
+
+    if (!enablePower(BOARD))
+        return -1;
+
+    std::cout << "Status: power seems fine." << std::endl
+              << "Starting calibration ..." << std::endl;
+
+    Samples samplesFbErr = collectSamples();
+
+    if (!enablePower(ALL)) 
+        return -1;
+
+    std::cout << "Status: power seems fine." << std::endl
+              << "Starting calibration ..." << std::endl;
+
+    Samples samplesCmdErr = collectSamples();
+    vctDoubleVec averageValidSamples(numberOfAxis);
+    for (size_t ind = 0; ind < numberOfAxis; ++ind){
+        averageValidSamples[ind] = samplesCmdErr.averageValidSamples[ind] - samplesFbErr.averageValidSamples[ind];
+    }
+
     // display results
-    std::cout << "Status: average current feedback in mA: " << averageAllSamples << std::endl
-              << "Status: standard deviation in mA:       " << stdDeviation << std::endl
-              << "Status: kept " << validSamples << " samples out of " << totalSamples << std::endl
+    std::cout //<< "Status: average current feedback in mA: " << samplesCmdErr.averageAllSamples << std::endl
+              //<< "Status: standard deviation in mA:       " << samplesCmdErr.stdDeviation << std::endl
+              //<< "Status: kept " << samplesCmdErr.validSamples << " samples out of " << samplesCmdErr.totalSamples << std::endl
               << "Status: new average in mA:              " << averageValidSamples << std::endl
               << std::endl
               << "Do you want to update the config file with these values? [Y/y]" << std::endl;
