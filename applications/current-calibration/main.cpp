@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2013-12-20
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -31,8 +31,9 @@ http://www.cisst.org/cisst/license.txt.
 #include <sawRobotIO1394/osaRobot1394.h>
 
 using namespace sawRobotIO1394;
+
 const double WatchdogPeriod = 100.0 * cmn_ms;
-enum PowerType {ALL,BOARD,ACTUATOR,BRAKE};
+enum PowerType {ALL, BOARD, ACTUATOR, BRAKE};
 bool brakes;
 osaRobot1394 * robot;
 osaPort1394 * port;
@@ -48,27 +49,30 @@ struct Samples {
     vctDoubleVec averageValidSamples;
 };
 
-bool enablePower(PowerType type){
-    robot->SetWatchdogPeriod(300.0 * cmn_ms);
+bool enablePower(PowerType type) {
     if (brakes) {
         robot->SetBrakeCurrent(zeros);
     } else {
         robot->SetActuatorCurrent(zeros);
     }
 
-    switch(type){
-        case ALL        :   std::cout << "Enabling power to all..." << std::endl;
-                            robot->EnablePower();
-                            break;
-        case BOARD      :   std::cout << "Enabling power to the QLA board..." << std::endl;
-                            robot->EnableBoardsPower();
-                            break;
-        case ACTUATOR   :   std::cout << "Enabling power to the actuators..." << std::endl;
-                            robot->SetActuatorPower(true);
-                            break;
-        case BRAKE      :   std::cout << "Enabling power to the brakes..." << std::endl;
-                            robot->SetBrakePower(true);
-                            break;
+    switch (type) {
+    case ALL        :
+        std::cout << "Enabling power to all..." << std::endl;
+        robot->EnablePower();
+        break;
+    case BOARD      :
+        std::cout << "Enabling power to the QLA board..." << std::endl;
+        robot->EnableBoardsPower();
+        break;
+    case ACTUATOR   :
+        std::cout << "Enabling power to the actuators..." << std::endl;
+        robot->SetActuatorPower(true);
+        break;
+    case BRAKE      :
+        std::cout << "Enabling power to the brakes..." << std::endl;
+        robot->SetBrakePower(true);
+        break;
     }
 
     port->Write();
@@ -88,28 +92,24 @@ bool enablePower(PowerType type){
     port->Read();
     if (!robot->PowerStatus()) {
         std::cerr << "Error: unable to power on controllers, make sure E-Stop is ok." << std::endl;
-        delete port;
         return false;
     }
     if (brakes && (type==ALL || type==BRAKE)) {
         if (!robot->BrakePowerStatus().All()) {
             std::cerr << "Error: failed to turn on brake power: " << robot->BrakePowerStatus() << std::endl;
-            delete port;
             return false;
         }
     } else if (!brakes && (type==ALL || type==ACTUATOR)){
         if (!robot->ActuatorPowerStatus().All()) {
             std::cerr << "Error: failed to turn on actuator power: " << robot->ActuatorPowerStatus() << std::endl;
-            delete port;
             return false;
         }
     }
-
     return true;
 }
 
-Samples collectSamples(){
-        // collect samples
+Samples collectSamples(void) {
+    // collect samples
     const size_t totalSamples = 50000;
     std::vector<vctDoubleVec> samples;
     samples.resize(totalSamples);
@@ -194,7 +194,7 @@ int main(int argc, char * argv[])
                               cmnCommandLineOptions::OPTIONAL_OPTION, &portNumber);
     options.AddOptionNoValue("b", "brakes",
                              "calibrate current feedback on brakes instead of actuators",
-                              cmnCommandLineOptions::OPTIONAL_OPTION);
+                             cmnCommandLineOptions::OPTIONAL_OPTION);
 
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
@@ -242,7 +242,7 @@ int main(int argc, char * argv[])
         brakes = false;
         numberOfAxis = robot->NumberOfActuators();
     }
-        zeros.SetSize(numberOfAxis);
+    zeros.SetSize(numberOfAxis);
     zeros.SetAll(0.0);
 
     std::cout << "Creating port ..." << std::endl;
@@ -262,21 +262,35 @@ int main(int argc, char * argv[])
               << "Ready to power?  Press any key to start." << std::endl;
     cmnGetChar();
 
-    if (!enablePower(BOARD))
+    robot->SetWatchdogPeriod(300.0 * cmn_ms);
+    if (!enablePower(BOARD)) {
+        delete port;
         return -1;
+    }
+
     std::cout << "Status: power seems fine." << std::endl
               << "Starting calibration ..." << std::endl;
     Samples samplesFbErr = collectSamples();
     // display results
-    std::cout << "Feedback current error statistics" << std::endl
+    std::cout << "Measured current error statistics" << std::endl
               << "Status: average current feedback in mA: " << samplesFbErr.averageAllSamples << std::endl
               << "Status: standard deviation in mA:       " << samplesFbErr.stdDeviation << std::endl
               << "Status: kept " << samplesFbErr.validSamples << " samples out of " << samplesFbErr.totalSamples << std::endl
               << "Status: new average in mA:              " << samplesFbErr.averageValidSamples << std::endl
               << std::endl;
 
-    if (!enablePower(ACTUATOR)) 
-        return -1;
+    if (brakes) {
+        if (!enablePower(BRAKE)) {
+            delete port;
+            return -1;
+        }
+    } else {
+        if (!enablePower(ACTUATOR)) {
+            delete port;
+            return -1;
+        }
+    }
+
     std::cout << "Status: power seems fine." << std::endl
               << "Starting calibration ..." << std::endl;
     Samples samplesCmdErr = collectSamples();
@@ -286,17 +300,22 @@ int main(int argc, char * argv[])
               << "Status: standard deviation in mA:       " << samplesCmdErr.stdDeviation << std::endl
               << "Status: kept " << samplesCmdErr.validSamples << " samples out of " << samplesCmdErr.totalSamples << std::endl
               << "Status: new average in mA:              " << samplesCmdErr.averageValidSamples << std::endl
-              << std::endl;
+              << std::endl << std::endl;
 
     // disable power
     robot->DisablePower();
 
+    // correct cmd (commanded) using corrected fb (feedback)
     vctDoubleVec averageValidSamples(numberOfAxis);
     for (size_t ind = 0; ind < numberOfAxis; ++ind){
         averageValidSamples[ind] = samplesCmdErr.averageValidSamples[ind] - samplesFbErr.averageValidSamples[ind];
     }
+
     // display results
-    std::cout << "Combined current offset: " << averageValidSamples << std::endl
+    std::cout << "Measured current offsets:" << std::endl
+              << samplesFbErr.averageValidSamples << std::endl
+              << "Command current offsets (corrected using measured current offsets):" << std::endl
+              << averageValidSamples << std::endl
               << std::endl
               << "Do you want to update the config file with these values? [Y/y]" << std::endl;
 
@@ -306,45 +325,62 @@ int main(int argc, char * argv[])
     if ((key == 'y') || (key == 'Y')) {
         cmnXMLPath xmlConfig;
         xmlConfig.SetInputSource(configFile);
-        std::string xmlQueryOffset, xmlQueryScale;
+        std::string
+            xmlQueryCmdOffset,
+            xmlQueryCmdScale,
+            xmlQueryFbOffset;
         if (brakes) {
-            xmlQueryOffset = "Robot[1]/Actuator[%d]/AnalogBrake/AmpsToBits/@Offset";
-            xmlQueryScale  = "Robot[1]/Actuator[%d]/AnalogBrake/AmpsToBits/@Scale";
+            xmlQueryCmdOffset = "Robot[1]/Actuator[%d]/AnalogBrake/AmpsToBits/@Offset";
+            xmlQueryCmdScale  = "Robot[1]/Actuator[%d]/AnalogBrake/AmpsToBits/@Scale";
         } else {
-            xmlQueryOffset = "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Offset";
-            xmlQueryScale  = "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Scale";
+            xmlQueryCmdOffset = "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Offset";
+            xmlQueryCmdScale  = "Robot[1]/Actuator[%d]/Drive/AmpsToBits/@Scale";
         }
+        xmlQueryFbOffset =  "Robot[1]/Actuator[%d]/Drive/BitsToFeedbackAmps/@Offset";
         // query previous current offset and scales
-        vctDoubleVec previousOffsets(numberOfAxis, 0.0);
-        vctDoubleVec previousScales(numberOfAxis, 0.0);
+        vctDoubleVec previousCmdOffsets(numberOfAxis, 0.0);
+        vctDoubleVec previousCmdScales(numberOfAxis, 0.0);
+        vctDoubleVec previousFbOffsets(numberOfAxis, 0.0);
         for (size_t index = 0; index < numberOfAxis; ++index) {
             char path[64];
             const char * context = "Config";
-            sprintf(path, xmlQueryOffset.c_str(), static_cast<int>(index + 1));
-            xmlConfig.GetXMLValue(context, path, previousOffsets[index]);
-            sprintf(path, xmlQueryScale.c_str(), static_cast<int>(index + 1));
-            xmlConfig.GetXMLValue(context, path, previousScales[index]);
+            sprintf(path, xmlQueryCmdOffset.c_str(), static_cast<int>(index + 1));
+            xmlConfig.GetXMLValue(context, path, previousCmdOffsets[index]);
+            sprintf(path, xmlQueryCmdScale.c_str(), static_cast<int>(index + 1));
+            xmlConfig.GetXMLValue(context, path, previousCmdScales[index]);
+            sprintf(path, xmlQueryFbOffset.c_str(), static_cast<int>(index + 1));
+            xmlConfig.GetXMLValue(context, path, previousFbOffsets[index]);
+
         }
         // compute new offsets
-        vctDoubleVec newOffsets(numberOfAxis);
-        newOffsets.Assign(averageValidSamples);
-        newOffsets.Divide(-1000.0); // convert back to Amps and negate
-        newOffsets.ElementwiseMultiply(previousScales);
-        newOffsets.Add(previousOffsets);
+        vctDoubleVec newCmdOffsets(numberOfAxis);
+        newCmdOffsets.Assign(averageValidSamples);
+        newCmdOffsets.Divide(-1000.0); // convert back to Amps and negate
+        newCmdOffsets.ElementwiseMultiply(previousCmdScales);
+        newCmdOffsets.Add(previousCmdOffsets);
+
+        vctDoubleVec newFbOffsets(numberOfAxis);
+        newFbOffsets.Assign(previousFbOffsets);
+        newFbOffsets.Subtract(samplesFbErr.averageValidSamples / 1000.0);
 
         // ask one last confirmation from user
-        std::cout << "Status: current offsets in XML configuration file: " << previousOffsets << std::endl
-                  << "Status: new current offsets:                       " << newOffsets << std::endl
+        std::cout << "Status: commanded current offsets in XML configuration file: " << previousCmdOffsets << std::endl
+                  << "Status: new commanded current offsets:                       " << newCmdOffsets << std::endl
+                  << "Status: measured current offsets in XML configuration file: " << previousFbOffsets << std::endl
+                  << "Status: new measured current offsets:                       " << newFbOffsets << std::endl
                   << std::endl
                   << "Do you want to save these values? [S/s]" << std::endl;
         key = cmnGetChar();
         if ((key == 's') || (key == 'S')) {
-            vctIntVec newOffsetsInt(newOffsets);
+            vctIntVec newCmdOffsetsInt(newCmdOffsets);
+            vctDoubleVec newFbOffsetsInt(newFbOffsets);
             for (size_t index = 0; index < numberOfAxis; ++index) {
                 char path[64];
                 const char * context = "Config";
-                sprintf(path, xmlQueryOffset.c_str(), static_cast<int>(index + 1));
-                xmlConfig.SetXMLValue(context, path, newOffsetsInt[index]);
+                sprintf(path, xmlQueryCmdOffset.c_str(), static_cast<int>(index + 1));
+                xmlConfig.SetXMLValue(context, path, newCmdOffsetsInt[index]);
+                sprintf(path, xmlQueryFbOffset.c_str(), static_cast<int>(index + 1));
+                xmlConfig.SetXMLValue(context, path, newFbOffsetsInt[index]);
             }
             std::string newConfigFile = configFile + "-new";
             xmlConfig.SaveAs(newConfigFile);
