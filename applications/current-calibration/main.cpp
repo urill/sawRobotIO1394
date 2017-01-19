@@ -49,7 +49,6 @@ struct Samples {
 };
 
 bool enablePower(PowerType type){
-    std::cout << "Enabling power ..." << std::endl;
     robot->SetWatchdogPeriod(300.0 * cmn_ms);
     if (brakes) {
         robot->SetBrakeCurrent(zeros);
@@ -58,13 +57,17 @@ bool enablePower(PowerType type){
     }
 
     switch(type){
-        case ALL        :   robot->EnablePower();
+        case ALL        :   std::cout << "Enabling power to all..." << std::endl;
+                            robot->EnablePower();
                             break;
-        case BOARD      :   robot->EnableBoardsPower();
+        case BOARD      :   std::cout << "Enabling power to the QLA board..." << std::endl;
+                            robot->EnableBoardsPower();
                             break;
-        case ACTUATOR   :   robot->SetActuatorPower(true);
+        case ACTUATOR   :   std::cout << "Enabling power to the actuators..." << std::endl;
+                            robot->SetActuatorPower(true);
                             break;
-        case BRAKE      :   robot->SetBrakePower(true);
+        case BRAKE      :   std::cout << "Enabling power to the brakes..." << std::endl;
+                            robot->SetBrakePower(true);
                             break;
     }
 
@@ -132,8 +135,6 @@ Samples collectSamples(){
         sumSamples.Add(samples[index]);
     }
 
-    // disable power
-    robot->DisablePower();
     port->Write();
 
     // compute simple average
@@ -263,29 +264,39 @@ int main(int argc, char * argv[])
 
     if (!enablePower(BOARD))
         return -1;
-
     std::cout << "Status: power seems fine." << std::endl
               << "Starting calibration ..." << std::endl;
-
     Samples samplesFbErr = collectSamples();
+    // display results
+    std::cout << "Feedback current error statistics" << std::endl
+              << "Status: average current feedback in mA: " << samplesFbErr.averageAllSamples << std::endl
+              << "Status: standard deviation in mA:       " << samplesFbErr.stdDeviation << std::endl
+              << "Status: kept " << samplesFbErr.validSamples << " samples out of " << samplesFbErr.totalSamples << std::endl
+              << "Status: new average in mA:              " << samplesFbErr.averageValidSamples << std::endl
+              << std::endl;
 
-    if (!enablePower(ALL)) 
+    if (!enablePower(ACTUATOR)) 
         return -1;
-
     std::cout << "Status: power seems fine." << std::endl
               << "Starting calibration ..." << std::endl;
-
     Samples samplesCmdErr = collectSamples();
+    // display results
+    std::cout << "Commanded current error statistics" << std::endl
+              << "Status: average current feedback in mA: " << samplesCmdErr.averageAllSamples << std::endl
+              << "Status: standard deviation in mA:       " << samplesCmdErr.stdDeviation << std::endl
+              << "Status: kept " << samplesCmdErr.validSamples << " samples out of " << samplesCmdErr.totalSamples << std::endl
+              << "Status: new average in mA:              " << samplesCmdErr.averageValidSamples << std::endl
+              << std::endl;
+
+    // disable power
+    robot->DisablePower();
+
     vctDoubleVec averageValidSamples(numberOfAxis);
     for (size_t ind = 0; ind < numberOfAxis; ++ind){
         averageValidSamples[ind] = samplesCmdErr.averageValidSamples[ind] - samplesFbErr.averageValidSamples[ind];
     }
-
     // display results
-    std::cout //<< "Status: average current feedback in mA: " << samplesCmdErr.averageAllSamples << std::endl
-              //<< "Status: standard deviation in mA:       " << samplesCmdErr.stdDeviation << std::endl
-              //<< "Status: kept " << samplesCmdErr.validSamples << " samples out of " << samplesCmdErr.totalSamples << std::endl
-              << "Status: new average in mA:              " << averageValidSamples << std::endl
+    std::cout << "Combined current offset: " << averageValidSamples << std::endl
               << std::endl
               << "Do you want to update the config file with these values? [Y/y]" << std::endl;
 
