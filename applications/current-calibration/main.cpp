@@ -234,7 +234,7 @@ int main(int argc, char * argv[])
         return -1;
     }
     robot = new osaRobot1394(config.Robots[0]);
-    bool brakes = false;
+    brakes = false;
     if (options.IsSet("brakes")) {
         brakes = true;
         numberOfAxis = robot->NumberOfBrakes();
