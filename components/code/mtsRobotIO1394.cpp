@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2012-07-31
 
-  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
  --- begin cisst license - do not edit ---
 
@@ -299,10 +299,10 @@ void mtsRobotIO1394::PostRead(void)
             (*robot)->CheckState();
         } catch (std::exception & stdException) {
             CMN_LOG_CLASS_RUN_ERROR << "PostRead: " << (*robot)->Name() << ": standard exception \"" << stdException.what() << "\"" << std::endl;
-            (*robot)->MessageEvents.Error("IO exception: " + (*robot)->Name() + ", " + stdException.what());
+            (*robot)->mInterface->SendError("IO exception: " + (*robot)->Name() + ", " + stdException.what());
         } catch (...) {
             CMN_LOG_CLASS_RUN_ERROR << "PostRead: " << (*robot)->Name() << ": unknown exception" << std::endl;
-            (*robot)->MessageEvents.Error("IO unknown exception: " + (*robot)->Name());
+            (*robot)->mInterface->SendError("IO unknown exception: " + (*robot)->Name());
         }
         (*robot)->AdvanceReadStateTable();
     }
@@ -364,7 +364,7 @@ void mtsRobotIO1394::Run(void)
             for (robots_iterator robot = mRobots.begin();
                  robot != robotsEnd;
                  ++robot) {
-                (*robot)->MessageEvents.Error(message);
+                (*robot)->mInterface->SendError(message);
             }
         }
     } else {
@@ -377,7 +377,7 @@ void mtsRobotIO1394::Run(void)
             for (robots_iterator robot = mRobots.begin();
                  robot != robotsEnd;
                  ++robot) {
-                (*robot)->MessageEvents.Status(message);
+                (*robot)->mInterface->SendStatus(message);
             }
         }
     }

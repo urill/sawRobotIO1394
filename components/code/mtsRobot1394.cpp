@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -164,6 +164,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
 {
     osaRobot1394 * thisBase = static_cast<osaRobot1394 *>(this);
 
+    this->mInterface = robotInterface;
+    robotInterface->AddMessageEvents();
+
     robotInterface->AddCommandRead(&mtsRobot1394::GetNumberOfActuators, this,
                                    "GetNumberOfActuators");
     robotInterface->AddCommandRead(&mtsRobot1394::GetNumberOfJoints, this,
@@ -312,10 +315,6 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
     robotInterface->AddEventWrite(EventTriggers.BiasEncoder, "BiasEncoder", 0);
 
-    robotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
-    robotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
-    robotInterface->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
-
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
                                       "EnableBoardsPower");
@@ -362,7 +361,7 @@ void mtsRobot1394::CheckState(void)
     if (mPreviousPowerStatus != mPowerStatus) {
         EventTriggers.PowerStatus(mPowerStatus);
         if (!mPowerStatus) {
-            MessageEvents.Error("IO: " + this->Name() + " lost power");
+            mInterface->SendError("IO: " + this->Name() + " lost power");
             mPreviousPowerStatus = false;
         }
     }
@@ -371,10 +370,10 @@ void mtsRobot1394::CheckState(void)
         EventTriggers.WatchdogStatus(mWatchdogStatus);
         if (!mWatchdogStatus) {
             if (mFirstWatchdog) {
-                MessageEvents.Status("IO: " + this->Name() + " watchdog triggered");
+                mInterface->SendStatus("IO: " + this->Name() + " watchdog triggered");
                 mFirstWatchdog = false;
             } else {
-                MessageEvents.Error("IO: " + this->Name() + " watchdog triggered");
+                mInterface->SendError("IO: " + this->Name() + " watchdog triggered");
             }
         }
     }
