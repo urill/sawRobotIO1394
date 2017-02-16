@@ -206,8 +206,23 @@ void mtsRobotIO1394QtWidget::SlotEnableAll(bool toggle)
 
 void mtsRobotIO1394QtWidget::SlotEnableDirectControl(bool toggle)
 {
+    if (toggle) {
+        int answer = QMessageBox::warning(this, tr("mtsRobotIO1394QtWidget"),
+                                          tr("In direct control mode you can potentially harm your robot,\nAre you sure you want to continue?"),
+                                          QMessageBox::No | QMessageBox::Yes);
+        if (answer == QMessageBox::No) {
+            toggle = false;
+        }
+    }
+    QCBEnableDirectControl->setChecked(toggle);
     DirectControl = toggle;
-    // if checked in DIRECT_CONTROL mode
+    // update widgets
+    QCBEnableAll->setEnabled(toggle);
+    QCBEnableAmps->setEnabled(toggle);
+    QSBWatchdogPeriod->setEnabled(toggle);
+    QPBResetEncAll->setEnabled(toggle);
+    QPBBiasEncAll->setEnabled(toggle);
+    QVWActuatorCurrentEnableEachWidget->setEnabled(toggle);
     QVWActuatorCurrentSpinBoxWidget->setEnabled(toggle);
     QVWActuatorCurrentSliderWidget->setEnabled(toggle);
     QPBResetCurrentAll->setEnabled(toggle);
