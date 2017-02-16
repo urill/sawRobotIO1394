@@ -208,7 +208,7 @@ void mtsRobotIO1394QtWidget::SlotEnableDirectControl(bool toggle)
 {
     if (toggle) {
         int answer = QMessageBox::warning(this, tr("mtsRobotIO1394QtWidget"),
-                                          tr("In direct control mode you can potentially harm your robot,\nAre you sure you want to continue?"),
+                                          tr("In direct control mode you can potentially harm your robot.\nAre you sure you want to continue?"),
                                           QMessageBox::No | QMessageBox::Yes);
         if (answer == QMessageBox::No) {
             toggle = false;
