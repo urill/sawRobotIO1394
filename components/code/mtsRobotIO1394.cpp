@@ -71,7 +71,6 @@ void mtsRobotIO1394::Init(const int portNumber)
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     try {
         mPort = new sawRobotIO1394::osaPort1394(portNumber, *MessageStream);
-        mPortExceptionFlag = false;
     } catch (std::runtime_error &err) {
         CMN_LOG_CLASS_INIT_ERROR << err.what();
         abort();
@@ -356,29 +355,13 @@ void mtsRobotIO1394::Run(void)
         message = this->Name + ": unknown exception";
     }
     if (gotException) {
-        if (!mPortExceptionFlag) {
-            mPortExceptionFlag = true;
-            CMN_LOG_CLASS_RUN_ERROR << "Run: port read, " << message << std::endl;
-            // Trigger robot events
-            const robots_iterator robotsEnd = mRobots.end();
-            for (robots_iterator robot = mRobots.begin();
-                 robot != robotsEnd;
-                 ++robot) {
-                (*robot)->mInterface->SendError(message);
-            }
-        }
-    } else {
-        if (mPortExceptionFlag) {
-            mPortExceptionFlag = false;
-            message = this->Name + ": read from port succeeded";
-            CMN_LOG_CLASS_RUN_DEBUG << "Run: " << message << std::endl;
-            // Trigger robot events
-            const robots_iterator robotsEnd = mRobots.end();
-            for (robots_iterator robot = mRobots.begin();
-                 robot != robotsEnd;
-                 ++robot) {
-                (*robot)->mInterface->SendStatus(message);
-            }
+        CMN_LOG_CLASS_RUN_ERROR << "Run: port read, " << message << std::endl;
+        // Trigger robot events
+        const robots_iterator robotsEnd = mRobots.end();
+        for (robots_iterator robot = mRobots.begin();
+             robot != robotsEnd;
+             ++robot) {
+            (*robot)->mInterface->SendError(message);
         }
     }
     this->PostRead(); // this performs all state conversions and checks
