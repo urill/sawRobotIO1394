@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Anton Deguet
   Created on: 2013-02-16
 
-  (C) Copyright 2013-2014 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -613,17 +613,17 @@ void mtsRobotIO1394QtWidget::setupUi(void)
         gridLayout->addWidget(QVRActuatorCurrentFeedbackWidget, row, 1);
         row++;
 
-        gridLayout->addWidget(new QLabel("Joint positions (deg)"), row, 0);
+        gridLayout->addWidget(new QLabel("Joint position (deg)"), row, 0);
         QVRJointPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
         gridLayout->addWidget(QVRJointPositionWidget, row, 1);
         row++;
 
-        gridLayout->addWidget(new QLabel("Actuator positions (deg)"), row, 0);
+        gridLayout->addWidget(new QLabel("Actuator position (deg)"), row, 0);
         QVRActuatorPositionWidget = new vctQtWidgetDynamicVectorDoubleRead();
         gridLayout->addWidget(QVRActuatorPositionWidget, row, 1);
         row++;
 
-        gridLayout->addWidget(new QLabel("Velocities (deg/s)"), row, 0);
+        gridLayout->addWidget(new QLabel("Actuator velocity (deg/s)"), row, 0);
         QVRActuatorVelocityWidget = new vctQtWidgetDynamicVectorDoubleRead();
         gridLayout->addWidget(QVRActuatorVelocityWidget, row, 1);
         row++;
