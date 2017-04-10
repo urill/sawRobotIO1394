@@ -125,7 +125,7 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
         DigitalInputNames.resize(NumberOfDigitalInputs);
         Configuration.GetDigitalInputNames(DigitalInputNames);
 
-        mButtonsWidget = new prmQtWidgetEventButtonsComponent("Digital inputs");
+        mButtonsWidget = new prmEventButtonQtWidgetComponent("Digital inputs");
         // adapt width to number of IOs
         if (NumberOfDigitalInputs > 32) {
             mButtonsWidget->SetNumberOfColumns(6);
