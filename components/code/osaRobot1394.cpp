@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -289,13 +289,13 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoa
         mUniqueBoards[brakeBoards[i].Board->GetBoardId()] = brakeBoards[i].Board;
     }
 
-    mIsAllBoardsFirmWareFour = true;
+    mLowestFirmWareVersion = 999999;
     for (unique_board_iterator board = mUniqueBoards.begin();
          board != mUniqueBoards.end();
          ++board) {
         AmpIO_UInt32 fversion = board->second->GetFirmwareVersion();
-        if (fversion < 4) {
-            mIsAllBoardsFirmWareFour = false;
+        if (fversion < mLowestFirmWareVersion) {
+            mLowestFirmWareVersion = fversion;
             break;
         }
     }
@@ -415,87 +415,83 @@ void osaRobot1394::ConvertState(void)
 
     // Velocity computation
     // compute both
-    EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);   // 1/dt
     mEncoderVelocityDxDt.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
     mEncoderVelocityDxDt.ElementwiseDivide(mActuatorTimestamp);              // dx/dt
 
-    for (unsigned int i = 0; i < mEncoderVelocity.size(); i++) {
-        int cnter = abs((((int32_t) mEncoderVelocityBits[i]) << 16) >> 16);
-        if (cnter < 100)
-            mEncoderVelocity[i] = mEncoderVelocityDxDt[i];
-    }
+    // if we have firmware 6 or above, FPGA performs velocity computation, much preferred
+    if (mLowestFirmWareVersion >= 6) {
+        EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);   // 1/dt
 
-    if (mConfiguration.HasActuatorToJointCoupling) {
-        mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
-                                 mEncoderVelocity);
-    } else {
-        mJointVelocity.Assign(mEncoderVelocity);
-    }
-
-    // using iterator for efficiency and going over all actuators
-    const double timeToZeroVelocity = 1.0 * cmn_s;
-    const vctIntVec::const_iterator end = mEncoderPositionBits.end();
-    vctIntVec::const_iterator currentEncoder, previousEncoder;
-    vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
-    vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
-    for (currentEncoder = mEncoderPositionBits.begin(),
-         previousEncoder = mEncoderPositionBitsPrev.begin(),
-         currentTimestamp = mActuatorTimestamp.begin(),
-         bitsToPos = mBitsToPositionScales.begin(),
-         lastChangeTimestamp = mActuatorTimestampChange.begin(),
-         slope = mVelocitySlopeToZero.begin(),
-         velocity = mEncoderVelocitySoftware.begin();
-         // end
-         currentEncoder != end;
-         // increment
-         ++currentEncoder,
-         ++previousEncoder,
-         ++currentTimestamp,
-         ++bitsToPos,
-         ++lastChangeTimestamp,
-         ++slope,
-         ++velocity) {
-        // first see if there has been any change
-        const int difference = (*currentEncoder) - (*previousEncoder);
-        if (difference == 0) {
-            if (*lastChangeTimestamp < timeToZeroVelocity) {
-                *velocity -= (*slope) * (*currentTimestamp);
-            } else {
-                *velocity = 0.0;
-            }
-            *lastChangeTimestamp += (*currentTimestamp);
+        if (mConfiguration.HasActuatorToJointCoupling) {
+            mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
+                                     mEncoderVelocity);
         } else {
-            *lastChangeTimestamp += (*currentTimestamp);
-            // if we only have one bit change compute velocity since last change
-            if ((difference == 1) || (difference == -1)) {
-                *velocity = (difference / (*lastChangeTimestamp))
-                            * (*bitsToPos);
-            } else if (difference > 1) {
-                // we know all but 1 bit difference happened in last Dt, other bit change happened between now and last change
-                *velocity = ((difference - 1.0) / (*currentTimestamp) + 1.0 / (*lastChangeTimestamp))
-                            * (*bitsToPos);
-            } else {
-                *velocity = ((difference + 1.0) / (*currentTimestamp) - 1.0 / (*lastChangeTimestamp))
-                            * (*bitsToPos);
-            }
-            // keep record of this change
-            *lastChangeTimestamp = 0.0;
-            *slope = (*velocity) / (timeToZeroVelocity);
+            mJointVelocity.Assign(mEncoderVelocity);
         }
     }
+    // if we don't have firmware 6, software hack for more stable low velocities
+    else {
+        // using iterator for efficiency and going over all actuators
+        const double timeToZeroVelocity = 1.0 * cmn_s;
+        const vctIntVec::const_iterator end = mEncoderPositionBits.end();
+        vctIntVec::const_iterator currentEncoder, previousEncoder;
+        vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
+        vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
+        for (currentEncoder = mEncoderPositionBits.begin(),
+                 previousEncoder = mEncoderPositionBitsPrev.begin(),
+                 currentTimestamp = mActuatorTimestamp.begin(),
+                 bitsToPos = mBitsToPositionScales.begin(),
+                 lastChangeTimestamp = mActuatorTimestampChange.begin(),
+                 slope = mVelocitySlopeToZero.begin(),
+                 velocity = mEncoderVelocitySoftware.begin();
+             // end
+             currentEncoder != end;
+             // increment
+             ++currentEncoder,
+                 ++previousEncoder,
+                 ++currentTimestamp,
+                 ++bitsToPos,
+                 ++lastChangeTimestamp,
+                 ++slope,
+                 ++velocity) {
+            // first see if there has been any change
+            const int difference = (*currentEncoder) - (*previousEncoder);
+            if (difference == 0) {
+                if (*lastChangeTimestamp < timeToZeroVelocity) {
+                    *velocity -= (*slope) * (*currentTimestamp);
+                } else {
+                    *velocity = 0.0;
+                }
+                *lastChangeTimestamp += (*currentTimestamp);
+            } else {
+                *lastChangeTimestamp += (*currentTimestamp);
+                // if we only have one bit change compute velocity since last change
+                if ((difference == 1) || (difference == -1)) {
+                    *velocity = (difference / (*lastChangeTimestamp))
+                        * (*bitsToPos);
+                } else if (difference > 1) {
+                    // we know all but 1 bit difference happened in last Dt, other bit change happened between now and last change
+                    *velocity = ((difference - 1.0) / (*currentTimestamp) + 1.0 / (*lastChangeTimestamp))
+                        * (*bitsToPos);
+                } else {
+                    *velocity = ((difference + 1.0) / (*currentTimestamp) - 1.0 / (*lastChangeTimestamp))
+                        * (*bitsToPos);
+                }
+                // keep record of this change
+                *lastChangeTimestamp = 0.0;
+                *slope = (*velocity) / (timeToZeroVelocity);
+            }
+        }
 
-    // finally save previous encoder bits position
-    mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
+        // finally save previous encoder bits position
+        mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
 
-    // This needs to be reviewed and we need to provide a better mechanism to choose one way or
-    // another to compute the joint velocities (used by PID and displayed in Qt widget).
-
-    // mJointVelocity.ProductOf(mConfiguration.ActuatorToJointPosition, mEncoderVelocity);
-    if (mConfiguration.HasActuatorToJointCoupling) {
-        mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
-                                 mEncoderVelocitySoftware);
-    } else {
-        mJointVelocity.Assign(mEncoderVelocitySoftware);
+        if (mConfiguration.HasActuatorToJointCoupling) {
+            mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
+                                     mEncoderVelocitySoftware);
+        } else {
+            mJointVelocity.Assign(mEncoderVelocitySoftware);
+        }
     }
 
     // Effort computation
@@ -1085,27 +1081,19 @@ void osaRobot1394::EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & dt)
 
 void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const
 {
-    int tmpbit, cnter_latch, cnter_now;
-    for (size_t i = 0; i < mEncoderVelocityBits.size() && i < vel.size(); i++)
-    {
-        if (mEncoderVelocityBits[i] == 0x8000 || mEncoderVelocityBitsNow[i] == 0x8000) {
-            vel[i] = 0.0;
-        } else {
-            // convert to signed
-            cnter_latch = ((((int32_t) mEncoderVelocityBits[i]) << 16) >> 16);
-            cnter_now = ((((int32_t) mEncoderVelocityBitsNow[i]) << 16) >> 16);
-
-            tmpbit = cnter_latch;
-            if (mIsAllBoardsFirmWareFour) {
-                if (cnter_now > cnter_latch && cnter_latch > 0) {
-                    tmpbit = cnter_now;
-                }
-                else if (cnter_now < cnter_latch && cnter_latch < 0) {
-                    tmpbit = cnter_now;
-                }
+    if (mLowestFirmWareVersion >= 6) {
+        CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
+                   || (Amp1394_VERSION_MAJOR > 1));
+        const double period = 1.0 / 3072000.0; // Clock period defined in firmware - different than system clock
+        for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
+            const int counter = bits[i];
+            // overflow value +/- 0x3fffff, sign set by direction bit
+            if (counter == 0x3fffff || counter == -0x3fffff) {
+                vel[i] = 0.0;
             }
-            if (tmpbit == 0) vel[i] = 0.0;
-            else vel[i] = mBitsToDPositionScales[i] / static_cast<double>(tmpbit);
+            else {
+                vel[i] = mBitsToPositionScales[i] / ((double) counter * period) * 4.0;
+            }
         }
     }
 }
