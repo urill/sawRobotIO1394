@@ -371,7 +371,7 @@ void osaRobot1394::PollState(void)
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
         mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
         mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
-        mEncoderVelocityBitsNow[i] = board->GetEncoderVelocity(axis, false);
+        mEncoderVelocityBitsNow[i] = board->GetEncoderVelocity(axis);
 
         mPotBits[i] = board->GetAnalogInput(axis);
 
