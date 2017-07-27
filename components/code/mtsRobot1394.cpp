@@ -164,6 +164,18 @@ void mtsRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
     EventTriggers.Coupling(coupling);
 }
 
+void mtsRobot1394::EnablePower(void)
+{
+    mUserExpectsPower = true;
+    osaRobot1394::EnablePower();
+}
+
+void mtsRobot1394::DisablePower(void)
+{
+    mUserExpectsPower = false;
+    osaRobot1394::DisablePower();
+}
+
 void mtsRobot1394::CalibrateEncoderOffsetsFromPots(const int & numberOfSamples)
 {
     mSamplesForCalibrateEncoderOffsetsFromPots = numberOfSamples + 1;
@@ -191,9 +203,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                     "SetCoupling");
 
     // Enable // Disable
-    robotInterface->AddCommandVoid(&osaRobot1394::EnablePower, thisBase,
+    robotInterface->AddCommandVoid(&mtsRobot1394::EnablePower, this,
                                    "EnablePower");
-    robotInterface->AddCommandVoid(&osaRobot1394::DisablePower, thisBase,
+    robotInterface->AddCommandVoid(&mtsRobot1394::DisablePower, this,
                                    "DisablePower");
 
     robotInterface->AddCommandWrite(&osaRobot1394::SetWatchdogPeriod, thisBase,
@@ -371,7 +383,7 @@ void mtsRobot1394::CheckState(void)
 
     if (mPreviousPowerStatus != mPowerStatus) {
         EventTriggers.PowerStatus(mPowerStatus);
-        if (!mPowerStatus) {
+        if (!mPowerStatus && mUserExpectsPower) {
             mInterface->SendError("IO: " + this->Name() + " lost power");
             mPreviousPowerStatus = false;
         }

@@ -71,6 +71,8 @@ namespace sawRobotIO1394 {
         void GetSerialNumber(int & serialNumber) const;
         void SetTorqueJoint(const prmForceTorqueJointSet & jointTorques);
         void ResetSingleEncoder(const int & index);
+        void EnablePower(void);
+        void DisablePower(void);
         void SetCoupling(const prmActuatorJointCoupling & coupling);
 
         /*! \name Bias Calibration */
@@ -80,6 +82,7 @@ namespace sawRobotIO1394 {
         mtsStateTable * mStateTableRead;
         mtsStateTable * mStateTableWrite;
         bool mFirstWatchdog;
+        bool mUserExpectsPower;
 
         prmForceTorqueJointSet mTorqueJoint;
         prmPositionJointGet mPositionJointGet;
