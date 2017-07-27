@@ -147,6 +147,6 @@ void mtsRobotIO1394QtWidgetFactory::BuildWidgets(void)
                                       NameOfRobotIO1394, DigitalInputNames[i]);
         }
     } else {
-        CMN_LOG_CLASS_INIT_ERROR << "BuildWidgets: no digital input found" << std::endl;
+        CMN_LOG_CLASS_INIT_WARNING << "BuildWidgets: no digital input found" << std::endl;
     }
 }
