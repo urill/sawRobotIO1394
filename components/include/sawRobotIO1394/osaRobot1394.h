@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -32,10 +32,9 @@ http://www.cisst.org/cisst/license.txt.
 #include "MinimalPrm.h"
 #endif
 
+#include <sawRobotIO1394/sawRobotIO1394ForwardDeclarations.h>
 #include <sawRobotIO1394/osaConfiguration1394.h>
 #include <sawRobotIO1394/sawRobotIO1394Export.h>
-
-class AmpIO;
 
 namespace sawRobotIO1394 {
 
@@ -259,7 +258,7 @@ protected:
         mPreviousWatchdogStatus,
         mIsAllBoardsFirmWareFour;
 
-    unsigned short mSafetyRelay;
+    bool mSafetyRelay;
 
     vctBoolVec
         mActuatorPowerStatus,
@@ -323,6 +322,8 @@ protected:
         mCurrentSafetyViolationsMaximum,
         mPotsToEncodersViolationsCounter,
         mPotsToEncodersViolationsMaximum;
+
+    size_t mInvalidReadCounter;
     };
 
 } // namespace sawRobotIO1394

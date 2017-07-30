@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Zihan Chen, Peter Kazanzides
+  Author(s):  Zihan Chen, Peter Kazanzides, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -149,8 +149,31 @@ void mtsRobot1394::ResetSingleEncoder(const int & index) {
 
 void mtsRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
 {
+    // set coupling in base class
     osaRobot1394::SetCoupling(coupling);
+    // start state table and get new data
+    StartReadStateTable();
+    {
+        PollValidity();
+        PollState();
+        ConvertState();
+        CheckState();
+    }
+    AdvanceReadStateTable();
+    // finally let users the coupling has changed
     EventTriggers.Coupling(coupling);
+}
+
+void mtsRobot1394::EnablePower(void)
+{
+    mUserExpectsPower = true;
+    osaRobot1394::EnablePower();
+}
+
+void mtsRobot1394::DisablePower(void)
+{
+    mUserExpectsPower = false;
+    osaRobot1394::DisablePower();
 }
 
 void mtsRobot1394::CalibrateEncoderOffsetsFromPots(const int & numberOfSamples)
@@ -163,6 +186,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                    mtsInterfaceProvided * actuatorInterface)
 {
     osaRobot1394 * thisBase = static_cast<osaRobot1394 *>(this);
+
+    this->mInterface = robotInterface;
+    robotInterface->AddMessageEvents();
 
     robotInterface->AddCommandRead(&mtsRobot1394::GetNumberOfActuators, this,
                                    "GetNumberOfActuators");
@@ -177,9 +203,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                     "SetCoupling");
 
     // Enable // Disable
-    robotInterface->AddCommandVoid(&osaRobot1394::EnablePower, thisBase,
+    robotInterface->AddCommandVoid(&mtsRobot1394::EnablePower, this,
                                    "EnablePower");
-    robotInterface->AddCommandVoid(&osaRobot1394::DisablePower, thisBase,
+    robotInterface->AddCommandVoid(&mtsRobot1394::DisablePower, this,
                                    "DisablePower");
 
     robotInterface->AddCommandWrite(&osaRobot1394::SetWatchdogPeriod, thisBase,
@@ -312,10 +338,6 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
     robotInterface->AddEventWrite(EventTriggers.BiasEncoder, "BiasEncoder", 0);
 
-    robotInterface->AddEventWrite(MessageEvents.Error, "Error", std::string(""));
-    robotInterface->AddEventWrite(MessageEvents.Warning, "Warning", std::string(""));
-    robotInterface->AddEventWrite(MessageEvents.Status, "Status", std::string(""));
-
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
                                       "EnableBoardsPower");
@@ -361,8 +383,8 @@ void mtsRobot1394::CheckState(void)
 
     if (mPreviousPowerStatus != mPowerStatus) {
         EventTriggers.PowerStatus(mPowerStatus);
-        if (!mPowerStatus) {
-            MessageEvents.Error("IO: " + this->Name() + " lost power");
+        if (!mPowerStatus && mUserExpectsPower) {
+            mInterface->SendError("IO: " + this->Name() + " lost power");
             mPreviousPowerStatus = false;
         }
     }
@@ -371,10 +393,10 @@ void mtsRobot1394::CheckState(void)
         EventTriggers.WatchdogStatus(mWatchdogStatus);
         if (!mWatchdogStatus) {
             if (mFirstWatchdog) {
-                MessageEvents.Status("IO: " + this->Name() + " watchdog triggered");
+                mInterface->SendStatus("IO: " + this->Name() + " watchdog triggered");
                 mFirstWatchdog = false;
             } else {
-                MessageEvents.Error("IO: " + this->Name() + " watchdog triggered");
+                mInterface->SendError("IO: " + this->Name() + " watchdog triggered");
             }
         }
     }

@@ -2,11 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -25,14 +24,8 @@ http://www.cisst.org/cisst/license.txt.
 #include <vector>
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <sawRobotIO1394/sawRobotIO1394ForwardDeclarations.h>
 #include <sawRobotIO1394/sawRobotIO1394Export.h>
-
-namespace sawRobotIO1394 {
-    class osaPort1394;
-    class mtsRobot1394;
-    class mtsDigitalInput1394;
-    class mtsDigitalOutput1394;
-}
 
 class CISST_EXPORT mtsRobotIO1394 : public mtsTaskPeriodic {
 
@@ -45,7 +38,6 @@ protected:
     std::ostream * MessageStream;             // Stream provided to the low level boards for messages, redirected to cmnLogger
 
     sawRobotIO1394::osaPort1394 * mPort;
-    bool mPortExceptionFlag;
 
     typedef std::vector<sawRobotIO1394::mtsRobot1394*> RobotsType;
     typedef RobotsType::iterator robots_iterator;
@@ -66,6 +58,7 @@ public:
     mtsRobotIO1394(const mtsTaskPeriodicConstructorArg & arg); // TODO: add port_num
     virtual ~mtsRobotIO1394();
 
+    void SetProtocol(const sawRobotIO1394::ProtocolType & protocol);
     void Init(const int portNumber);
 
     void Configure(const std::string & filename);

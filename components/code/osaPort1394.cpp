@@ -48,6 +48,23 @@ osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
     }
 }
 
+void osaPort1394::SetProtocol(const ProtocolType & protocol)
+{
+    switch (protocol) {
+    case PROTOCOL_SEQ_RW:
+        mPort->SetProtocol(BasePort::PROTOCOL_SEQ_RW);
+        break;
+    case PROTOCOL_SEQ_R_BC_W:
+        mPort->SetProtocol(BasePort::PROTOCOL_SEQ_R_BC_W);
+        break;
+    case PROTOCOL_BC_QRW:
+        mPort->SetProtocol(BasePort::PROTOCOL_BC_QRW);
+        break;
+    default:
+        break;
+    }
+}
+
 void osaPort1394::Configure(const osaPort1394Configuration & config)
 {
     // Add all the robots

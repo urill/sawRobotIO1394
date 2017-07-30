@@ -1,6 +1,18 @@
 Change log
 ==========
 
+1.4.0 (2016-08-31)
+==================
+
+* API changes:
+  * Added commands to set FireWire protocol (used in sawIntuitiveResearchKit console configuration JSON files)
+* Deprecated features:
+  * None
+* New features:
+  * CMake: separated components from applications/examples (catkin build 0.4 compatible)
+* Bug fixes:
+  * None
+
 1.3.0 (2016-01-08)
 ==================
 
