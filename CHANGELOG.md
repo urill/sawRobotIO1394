@@ -1,6 +1,37 @@
 Change log
 ==========
 
+1.5.0 (2017-mm-dd)
+==================
+
+* API changes:
+  * SafetyRelay now uses bool, was unsigned int
+* Deprecated features:
+  * Qt widget used to continuously set watchdog to prevent timeout, now moved to AmpIO
+  * Removed some old ROS code, see dVRK ROS for current features
+* New features:
+  * Much improved current calibration utility, calibrates current feedback and requested.  Please recalibrate for all your arms!
+  * Added read command for watchdog timeout
+  * Added read command for interval statistics (ROS conversion available too)
+  * Support for firmware based velocity estimation (requires rev 6)
+  * Check if power is lost because user requested, better message if unexpected power loss
+  * Throttle port read error messages
+  * Added console warning if not compiled in Release mode
+  * Added console warning if old firmware is found (<5)
+  * Use mtsMessage for status/warning/error in provided interface
+  * Log more information re. FPGA boards (rev, SN...) in cisstLog.txt
+  * Added simple example to collect data (used to test firmware velocities)
+  * Qt widget:
+    * when not in direct mode, hide more buttons/controls
+    * added prompt message when switching to direct mode
+    * support for inactive joints (not powered, e.g. MTM gripper)
+    * more compact layout
+* Bug fixes:
+  * Update state after the coupling matrices are changed and before advancing
+  * HasCoupling was not set to true when using write command SetCoupling
+  * Removed unused methods to compute alternate velocities
+  * Initialize pointer on ButtonsWidget in Qt factory
+
 1.4.0 (2016-08-31)
 ==================
 
