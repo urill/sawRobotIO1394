@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 #include "FirewirePort.h"
 #include "AmpIO.h"
 
+#include <cisstBuildType.h>
 #include <sawRobotIO1394/osaPort1394.h>
 #include <stdexcept>
 #include <exception>
@@ -35,6 +36,17 @@ osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
         std::ostringstream oss;
         oss << "osaIO1394Port: Found more than one user on firewire port: " << portNumber;
         cmnThrow(osaRuntimeError1394(oss.str()));
+    }
+
+    // write warning to cerr if not compiled in Release mode
+    if (std::string(CISST_BUILD_TYPE) != "Release") {
+        std::cerr << "---------------------------------------------------- " << std::endl
+                  << " Warning:                                            " << std::endl
+                  << "   It seems that \"cisst\" has not been compiled in  " << std::endl
+                  << "   Release mode.  Make sure your CMake configuration " << std::endl
+                  << "   or catkin profile is configured to compile in     " << std::endl
+                  << "   Release mode for better performance and stability " << std::endl
+                  << "---------------------------------------------------- " << std::endl;
     }
 }
 
