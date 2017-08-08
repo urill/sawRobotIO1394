@@ -257,7 +257,7 @@ protected:
         mWatchdogStatus,
         mPreviousWatchdogStatus;
 
-    uint mLowestFirmWareVersion;
+    unsigned int mLowestFirmWareVersion;
 
     unsigned short mSafetyRelay;
 
