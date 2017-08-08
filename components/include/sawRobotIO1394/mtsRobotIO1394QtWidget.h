@@ -158,7 +158,7 @@ private:
     vctBoolVec BrakeAmpStatus;
 
     bool PowerStatus;
-    unsigned short SafetyRelay;
+    bool SafetyRelay;
 
     // Interface
     double DummyValueWhenNotConnected;
