@@ -259,7 +259,7 @@ protected:
 
     unsigned int mLowestFirmWareVersion;
 
-    unsigned short mSafetyRelay;
+    bool mSafetyRelay;
 
     vctBoolVec
         mActuatorPowerStatus,

@@ -28,6 +28,7 @@ else ()
   get_filename_component (ABSOLUTE_INSTALL_DIR "${RELATIVE_INSTALL_DIR}" ABSOLUTE)
   # set directories using the install dir
   set (sawRobotIO1394_INCLUDE_DIR "${ABSOLUTE_INSTALL_DIR}/include")
+  # TODO: Following should be updated for Windows (winpcap)
   set (sawRobotIO1394_LIBRARY_DIR "${ABSOLUTE_INSTALL_DIR}/lib")
 endif ()
 

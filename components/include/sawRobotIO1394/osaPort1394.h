@@ -94,7 +94,7 @@ namespace sawRobotIO1394 {
     protected:
 
         //! Board Objects
-        FirewirePort * mPort;
+        BasePort * mPort;
 
         std::map<int, AmpIO*> mBoards;
         typedef std::map<int, AmpIO*>::iterator board_iterator;

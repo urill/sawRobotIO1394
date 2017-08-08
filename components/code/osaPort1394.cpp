@@ -16,7 +16,13 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
+#include <Amp1394/AmpIORevision.h>
+#if Amp1394_HAS_RAW1394
 #include "FirewirePort.h"
+#endif
+#if Amp1394_HAS_PCAP
+#include "Eth1394Port.h"
+#endif
 #include "AmpIO.h"
 
 #include <cisstBuildType.h>
@@ -29,7 +35,11 @@ using namespace sawRobotIO1394;
 osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
 {
     // Construct handle to firewire port
+#if Amp1394_HAS_RAW1394
     mPort = new FirewirePort(portNumber, messageStream);
+#else
+    mPort = new Eth1394Port(portNumber, messageStream);
+#endif
 
     // Check number of port users
     if (mPort->NumberOfUsers() > 1) {
@@ -54,13 +64,13 @@ void osaPort1394::SetProtocol(const ProtocolType & protocol)
 {
     switch (protocol) {
     case PROTOCOL_SEQ_RW:
-        mPort->SetProtocol(FirewirePort::PROTOCOL_SEQ_RW);
+        mPort->SetProtocol(BasePort::PROTOCOL_SEQ_RW);
         break;
     case PROTOCOL_SEQ_R_BC_W:
-        mPort->SetProtocol(FirewirePort::PROTOCOL_SEQ_R_BC_W);
+        mPort->SetProtocol(BasePort::PROTOCOL_SEQ_R_BC_W);
         break;
     case PROTOCOL_BC_QRW:
-        mPort->SetProtocol(FirewirePort::PROTOCOL_BC_QRW);
+        mPort->SetProtocol(BasePort::PROTOCOL_BC_QRW);
         break;
     default:
         break;

@@ -5,7 +5,7 @@
   Author(s):  Anton Deguet
   Created on: 2016-08-26
 
-  (C) Copyright 2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -20,7 +20,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _sawRobotIO1394ForwardDeclarations_h
 
 class AmpIO;
-class FirewirePort;
+class BasePort;
 
 namespace sawRobotIO1394 {
 
@@ -29,7 +29,7 @@ namespace sawRobotIO1394 {
     class mtsDigitalInput1394;
     class mtsDigitalOutput1394;
 
-    //! Enum redefined from AmpIO/FirewirePort
+    //! Enum redefined from AmpIO/BasePort
     typedef enum {PROTOCOL_SEQ_RW, PROTOCOL_SEQ_R_BC_W, PROTOCOL_BC_QRW} ProtocolType;
 
 } // namespace sawRobotIO1394
