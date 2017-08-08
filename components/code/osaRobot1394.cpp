@@ -96,6 +96,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mPotPosition.SetSize(mNumberOfActuators);
     mEncoderPosition.SetSize(mNumberOfActuators);
     mEncoderPositionPrev.SetSize(mNumberOfActuators);
+    mEncoderVelocityCountsPerSecond.SetSize(mNumberOfActuators);
     mEncoderVelocity.SetSize(mNumberOfActuators);
     mEncoderVelocityDxDt.SetSize(mNumberOfActuators);
     mEncoderVelocitySoftware.SetSize(mNumberOfActuators);
@@ -372,6 +373,7 @@ void osaRobot1394::PollState(void)
         mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
         mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
         mEncoderVelocityBitsNow[i] = board->GetEncoderVelocity(axis);
+        mEncoderVelocityCountsPerSecond[i] = board->GetEncoderVelocityCountsPerSecond(axis);
 
         mPotBits[i] = board->GetAnalogInput(axis);
 
@@ -418,9 +420,14 @@ void osaRobot1394::ConvertState(void)
     mEncoderVelocityDxDt.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
     mEncoderVelocityDxDt.ElementwiseDivide(mActuatorTimestamp);              // dx/dt
 
-    // if we have firmware 6 or above, FPGA performs velocity computation, much preferred
+    // If we have firmware 6 or above, FPGA performs velocity computation, much preferred.
+    // This could be changed to handle boards with different firmware versions.
     if (mLowestFirmWareVersion >= 6) {
+#ifdef NEW_ENCODER_VELOCITY
+        mEncoderVelocity.ElementwiseProductOf(mBitsToPositionScales, mEncoderVelocityCountsPerSecond);
+#else
         EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);   // 1/dt
+#endif
 
         if (mConfiguration.HasActuatorToJointCoupling) {
             mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),

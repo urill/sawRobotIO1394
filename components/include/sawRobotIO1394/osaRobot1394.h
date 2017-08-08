@@ -296,6 +296,7 @@ protected:
         mPotPosition,
         mEncoderPosition,
         mEncoderPositionPrev,
+        mEncoderVelocityCountsPerSecond,  // velocity based on FPGA measurement of time between encoder edges (period)
         mEncoderVelocity,
         mEncoderVelocityDxDt,
         mEncoderDPosition,
