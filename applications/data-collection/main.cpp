@@ -56,6 +56,8 @@ int main(int argc, char * argv[])
                               "sleep between reads",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &sleepBetweenReads);
 
+    const size_t nbIterationsToStart = 10000;
+
     std::string errorMessage;
     if (!options.Parse(argc, argv, errorMessage)) {
         std::cerr << "Error: " << errorMessage << std::endl;
@@ -76,8 +78,8 @@ int main(int argc, char * argv[])
     double * allActuatorTimeStamps = new double[numberOfIterations];
     double * allCPUTimes = new double[numberOfIterations];
     double * allPositions = new double[numberOfIterations];
-
-
+    double * allVelocities = new double[numberOfIterations];
+    double * allVelocitiesSoftware = new double[numberOfIterations];
 
     std::cout << "Loading config file ..." << std::endl;
     sawRobotIO1394::osaPort1394Configuration config;
@@ -109,10 +111,25 @@ int main(int argc, char * argv[])
 
     std::cout << "Starting data collection." << std::endl;
 
-    size_t percent = numberOfIterations / 100;
+    size_t percent = nbIterationsToStart / 100;
     size_t progress = 0;
 
+    for (size_t iter = 0;
+         iter < nbIterationsToStart;
+         ++iter) {
+        port->Read();
+        // display progress
+        progress++;
+        if (progress == percent) {
+            std::cout << "-" << std::flush;
+            progress = 0;
+        }
+    }
+
     // main loop
+    percent = numberOfIterations / 100;
+    progress = 0;
+
     for (size_t iter = 0;
          iter < numberOfIterations;
          ++iter) {
@@ -131,6 +148,12 @@ int main(int argc, char * argv[])
         // get positions, see osaRobot1394.cpp, line ~1000
         allPositions[iter] =
             robot->EncoderPosition()[actuatorIndex];
+
+        allVelocities[iter] =
+            robot->EncoderVelocity()[actuatorIndex];
+
+        allVelocitiesSoftware[iter] =
+            robot->EncoderVelocitySoftware()[actuatorIndex];
 
         // display progress
         progress++;
@@ -157,8 +180,10 @@ int main(int argc, char * argv[])
     output << "iteration,"
            << "cpu-time,"
            << "fpga-dtime,"
-           << "encoder-pos" << std::endl;
-    
+           << "encoder-pos,"
+           << "encoder-vel,"
+           << "software-vel" << std::endl;
+
     output << std::setprecision(17);
     for (size_t iter = 0;
          iter < numberOfIterations;
@@ -166,7 +191,9 @@ int main(int argc, char * argv[])
         output << allIterations[iter] << ","
                << allCPUTimes[iter] << ","
                << allActuatorTimeStamps[iter] << ","
-               << allPositions[iter] << std::endl;
+               << allPositions[iter] << ","
+               << allVelocities[iter] << ","
+               << allVelocitiesSoftware[iter] << std::endl;
     }
 
     output.close();
