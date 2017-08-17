@@ -83,7 +83,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mEncoderPositionBits.SetSize(mNumberOfActuators);
     mEncoderPositionBitsPrev.SetSize(mNumberOfActuators);
     mEncoderVelocityBits.SetSize(mNumberOfActuators);
-    mEncoderVelocityBitsNow.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsCommand.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsFeedback.SetSize(mNumberOfActuators);
 
@@ -291,14 +290,28 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoa
     }
 
     mLowestFirmWareVersion = 999999;
+    size_t boardCounter = 0;
     for (unique_board_iterator board = mUniqueBoards.begin();
          board != mUniqueBoards.end();
          ++board) {
         AmpIO_UInt32 fversion = board->second->GetFirmwareVersion();
+        std::string serialQLA = board->second->GetQLASerialNumber();
+        if (serialQLA.empty()) {
+            serialQLA = "unknown";
+        }
+        std::string serialFPGA = board->second->GetFPGASerialNumber();
+        if (serialFPGA.empty()) {
+            serialFPGA = "unknown";
+        }
         if (fversion < mLowestFirmWareVersion) {
             mLowestFirmWareVersion = fversion;
-            break;
         }
+        CMN_LOG_RUN_WARNING << "SetBoards: " << this->mName
+                            << ", board: " << boardCounter
+                            << ", firmware: " << fversion
+                            << ", FPGA serial: " << serialFPGA
+                            << ", QLA serial: " << serialQLA
+                            << std::endl; 
     }
 }
 
@@ -372,7 +385,6 @@ void osaRobot1394::PollState(void)
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
         mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
         mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
-        mEncoderVelocityBitsNow[i] = board->GetEncoderVelocity(axis);
         mEncoderVelocityCountsPerSecond[i] = board->GetEncoderVelocityCountsPerSecond(axis);
 
         mPotBits[i] = board->GetAnalogInput(axis);
@@ -404,6 +416,8 @@ void osaRobot1394::PollState(void)
 
 }
 
+#define NEW_ENCODER_VELOCITY
+
 void osaRobot1394::ConvertState(void)
 {
     // Perform read conversions
@@ -420,14 +434,73 @@ void osaRobot1394::ConvertState(void)
     mEncoderVelocityDxDt.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
     mEncoderVelocityDxDt.ElementwiseDivide(mActuatorTimestamp);              // dx/dt
 
-    // If we have firmware 6 or above, FPGA performs velocity computation, much preferred.
-    // This could be changed to handle boards with different firmware versions.
-    if (mLowestFirmWareVersion >= 6) {
-#ifdef NEW_ENCODER_VELOCITY
-        mEncoderVelocity.ElementwiseProductOf(mBitsToPositionScales, mEncoderVelocityCountsPerSecond);
-#else
+    // If we have firmware 5 or above, FPGA performs velocity computation
+    if (mLowestFirmWareVersion >= 5) {
         EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);   // 1/dt
-#endif
+    }
+
+    // In any case, compute velocities on "software"
+    // using iterator for efficiency and going over all actuators
+    const double timeToZeroVelocity = 1.0 * cmn_s;
+    const vctIntVec::const_iterator end = mEncoderPositionBits.end();
+    vctIntVec::const_iterator currentEncoder, previousEncoder;
+    vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
+    vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
+    for (currentEncoder = mEncoderPositionBits.begin(),
+             previousEncoder = mEncoderPositionBitsPrev.begin(),
+             currentTimestamp = mActuatorTimestamp.begin(),
+             bitsToPos = mBitsToPositionScales.begin(),
+             lastChangeTimestamp = mActuatorTimestampChange.begin(),
+             slope = mVelocitySlopeToZero.begin(),
+             velocity = mEncoderVelocitySoftware.begin();
+         // end
+         currentEncoder != end;
+         // increment
+         ++currentEncoder,
+             ++previousEncoder,
+             ++currentTimestamp,
+             ++bitsToPos,
+             ++lastChangeTimestamp,
+             ++slope,
+             ++velocity) {
+        // first see if there has been any change
+        const int difference = (*currentEncoder) - (*previousEncoder);
+        if (difference == 0) {
+            if (*lastChangeTimestamp < timeToZeroVelocity) {
+                *velocity -= (*slope) * (*currentTimestamp);
+            } else {
+                *velocity = 0.0;
+            }
+            *lastChangeTimestamp += (*currentTimestamp);
+        } else {
+            *lastChangeTimestamp += (*currentTimestamp);
+            // if we only have one bit change compute velocity since last change
+            if ((difference == 1) || (difference == -1)) {
+                *velocity = (difference / (*lastChangeTimestamp))
+                    * (*bitsToPos);
+            } else if (difference > 1) {
+                // we know all but 1 bit difference happened in last Dt, other bit change happened between now and last change
+                *velocity = ((difference - 1.0) / (*currentTimestamp) + 1.0 / (*lastChangeTimestamp))
+                    * (*bitsToPos);
+            } else {
+                *velocity = ((difference + 1.0) / (*currentTimestamp) - 1.0 / (*lastChangeTimestamp))
+                    * (*bitsToPos);
+            }
+            // keep record of this change
+            *lastChangeTimestamp = 0.0;
+            *slope = (*velocity) / (timeToZeroVelocity);
+        }
+    }
+    
+    // finally save previous encoder bits position
+    mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
+    
+    // We have two velocity estimations, we believe FPGA based estimation rev >= 6
+    if (mLowestFirmWareVersion >= 6) {
+        // Anton Todo
+        
+        // remove method EncoderBitsToVelocity, data member mEncoderVelocityBits
+        // check if we can remove mEncoderVelocityDxDt
 
         if (mConfiguration.HasActuatorToJointCoupling) {
             mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
@@ -435,64 +508,7 @@ void osaRobot1394::ConvertState(void)
         } else {
             mJointVelocity.Assign(mEncoderVelocity);
         }
-    }
-    // if we don't have firmware 6, software hack for more stable low velocities
-    else {
-        // using iterator for efficiency and going over all actuators
-        const double timeToZeroVelocity = 1.0 * cmn_s;
-        const vctIntVec::const_iterator end = mEncoderPositionBits.end();
-        vctIntVec::const_iterator currentEncoder, previousEncoder;
-        vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
-        vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
-        for (currentEncoder = mEncoderPositionBits.begin(),
-                 previousEncoder = mEncoderPositionBitsPrev.begin(),
-                 currentTimestamp = mActuatorTimestamp.begin(),
-                 bitsToPos = mBitsToPositionScales.begin(),
-                 lastChangeTimestamp = mActuatorTimestampChange.begin(),
-                 slope = mVelocitySlopeToZero.begin(),
-                 velocity = mEncoderVelocitySoftware.begin();
-             // end
-             currentEncoder != end;
-             // increment
-             ++currentEncoder,
-                 ++previousEncoder,
-                 ++currentTimestamp,
-                 ++bitsToPos,
-                 ++lastChangeTimestamp,
-                 ++slope,
-                 ++velocity) {
-            // first see if there has been any change
-            const int difference = (*currentEncoder) - (*previousEncoder);
-            if (difference == 0) {
-                if (*lastChangeTimestamp < timeToZeroVelocity) {
-                    *velocity -= (*slope) * (*currentTimestamp);
-                } else {
-                    *velocity = 0.0;
-                }
-                *lastChangeTimestamp += (*currentTimestamp);
-            } else {
-                *lastChangeTimestamp += (*currentTimestamp);
-                // if we only have one bit change compute velocity since last change
-                if ((difference == 1) || (difference == -1)) {
-                    *velocity = (difference / (*lastChangeTimestamp))
-                        * (*bitsToPos);
-                } else if (difference > 1) {
-                    // we know all but 1 bit difference happened in last Dt, other bit change happened between now and last change
-                    *velocity = ((difference - 1.0) / (*currentTimestamp) + 1.0 / (*lastChangeTimestamp))
-                        * (*bitsToPos);
-                } else {
-                    *velocity = ((difference + 1.0) / (*currentTimestamp) - 1.0 / (*lastChangeTimestamp))
-                        * (*bitsToPos);
-                }
-                // keep record of this change
-                *lastChangeTimestamp = 0.0;
-                *slope = (*velocity) / (timeToZeroVelocity);
-            }
-        }
-
-        // finally save previous encoder bits position
-        mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
-
+    } else {
         if (mConfiguration.HasActuatorToJointCoupling) {
             mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
                                      mEncoderVelocitySoftware);
