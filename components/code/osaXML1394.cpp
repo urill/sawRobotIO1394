@@ -36,7 +36,7 @@ namespace sawRobotIO1394 {
                                << "Make sure you generate your XML files with the latest config generator." << std::endl;
             return;
         } else {
-            const int minimumVersion = 2;
+            const int minimumVersion = 3;
             if (version < minimumVersion) {
                 CMN_LOG_INIT_ERROR << "Configure: Config/Version must be at least " << minimumVersion
                                    << ", version found is " << version << std::endl
