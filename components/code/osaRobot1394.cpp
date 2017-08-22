@@ -695,6 +695,7 @@ void osaRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
     }
 
     // finally assign values
+    mConfiguration.HasActuatorToJointCoupling = true;
     mConfiguration.Coupling.ActuatorToJointPosition().ForceAssign(coupling.ActuatorToJointPosition());
     mConfiguration.Coupling.JointToActuatorPosition().ForceAssign(coupling.JointToActuatorPosition());
     mConfiguration.Coupling.ActuatorToJointEffort().ForceAssign(coupling.ActuatorToJointEffort());
