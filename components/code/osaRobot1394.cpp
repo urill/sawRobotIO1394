@@ -306,12 +306,21 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoa
         if (fversion < mLowestFirmWareVersion) {
             mLowestFirmWareVersion = fversion;
         }
-        CMN_LOG_RUN_WARNING << "SetBoards: " << this->mName
-                            << ", board: " << boardCounter
-                            << ", firmware: " << fversion
-                            << ", FPGA serial: " << serialFPGA
-                            << ", QLA serial: " << serialQLA
-                            << std::endl; 
+        CMN_LOG_INIT_WARNING << "osaRobot1394::SetBoards: " << this->mName
+                             << ", board: " << boardCounter
+                             << ", firmware: " << fversion
+                             << ", FPGA serial: " << serialFPGA
+                             << ", QLA serial: " << serialQLA
+                             << std::endl;
+    }
+    const AmpIO_UInt32 currentFirmwareRevision = 5;
+    if (mLowestFirmWareVersion < currentFirmwareRevision) {
+        CMN_LOG_INIT_WARNING << "osaRobot1394::SetBoards" << std::endl
+                             << "----------------------------------------------------" << std::endl
+                             << " Warning:" << std::endl
+                             << "   Please upgrade all boards firmware to version " << currentFirmwareRevision << "." << std::endl
+                             << "   Lowest version found is " << mLowestFirmWareVersion << "." << std::endl
+                             << "----------------------------------------------------" << std::endl;
     }
 }
 
@@ -491,14 +500,14 @@ void osaRobot1394::ConvertState(void)
             *slope = (*velocity) / (timeToZeroVelocity);
         }
     }
-    
+
     // finally save previous encoder bits position
     mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
-    
+
     // We have two velocity estimations, we believe FPGA based estimation rev >= 6
     if (mLowestFirmWareVersion >= 6) {
         // Anton Todo
-        
+
         // remove method EncoderBitsToVelocity, data member mEncoderVelocityBits
         // check if we can remove mEncoderVelocityDxDt
 
