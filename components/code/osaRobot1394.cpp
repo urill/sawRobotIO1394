@@ -94,10 +94,8 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mPotVoltage.SetSize(mNumberOfActuators);
     mPotPosition.SetSize(mNumberOfActuators);
     mEncoderPosition.SetSize(mNumberOfActuators);
-    mEncoderPositionPrev.SetSize(mNumberOfActuators);
     mEncoderVelocityCountsPerSecond.SetSize(mNumberOfActuators);
     mEncoderVelocity.SetSize(mNumberOfActuators);
-    mEncoderVelocityDxDt.SetSize(mNumberOfActuators);
     mEncoderVelocitySoftware.SetSize(mNumberOfActuators);
     mJointPosition.SetSize(mNumberOfJoints);
     mJointVelocity.SetSize(mNumberOfJoints);
@@ -189,7 +187,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
 
         // Initialize state vectors
         mEncoderPosition[i] = 0.0;
-        mEncoderPositionPrev[i] = 0.0;
         mActuatorCurrentCommand[i] = 0.0;
         mActuatorCurrentFeedback[i] = 0.0;
 
@@ -439,9 +436,6 @@ void osaRobot1394::ConvertState(void)
     }
 
     // Velocity computation
-    // compute both
-    mEncoderVelocityDxDt.DifferenceOf(mEncoderPosition, mEncoderPositionPrev);
-    mEncoderVelocityDxDt.ElementwiseDivide(mActuatorTimestamp);              // dx/dt
 
     // If we have firmware 5 or above, FPGA performs velocity computation
     if (mLowestFirmWareVersion >= 5) {
@@ -509,7 +503,6 @@ void osaRobot1394::ConvertState(void)
         // Anton Todo
 
         // remove method EncoderBitsToVelocity, data member mEncoderVelocityBits
-        // check if we can remove mEncoderVelocityDxDt
 
         if (mConfiguration.HasActuatorToJointCoupling) {
             mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
@@ -548,9 +541,6 @@ void osaRobot1394::CheckState(void)
     if (mInvalidReadCounter > 0) {
         return;
     }
-
-    // Save EncoderPositionPrev
-    mEncoderPositionPrev.Assign(mEncoderPosition);
 
     // Perform safety checks
     bool currentSafetyViolation = false;
@@ -1097,18 +1087,6 @@ void osaRobot1394::EncoderPositionToBits(const vctDoubleVec & pos, vctIntVec & b
 void osaRobot1394::EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & pos) const {
     for (size_t i = 0; i < bits.size() && i < pos.size(); i++) {
         pos[i] = static_cast<double>(bits[i]) * mBitsToPositionScales[i];
-    }
-}
-
-void osaRobot1394::EncoderBitsToDPosition(const vctIntVec & bits, vctDoubleVec & dpos) const {
-    for (size_t i = 0; i < bits.size() && i < dpos.size(); i++) {
-        dpos[i] = static_cast<double>(bits[i]) * mBitsToDPositionScales[i] + mBitsToDPositionOffsets[i];
-    }
-}
-
-void osaRobot1394::EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & dt) const {
-    for (size_t i = 0; i < bits.size() && i < dt.size(); i++) {
-        dt[i] = static_cast<double>(bits[i]) * mBitsToDTimeScales[i] + mBitsToDTimeOffsets[i];
     }
 }
 

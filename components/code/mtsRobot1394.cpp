@@ -313,10 +313,6 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                             "EncoderRawToSI", vctIntVec(), vctDoubleVec());
     robotInterface->AddCommandQualifiedRead(&osaRobot1394::EncoderPositionToBits, thisBase,
                                             "EncoderSIToRaw", vctDoubleVec(), vctIntVec());
-    robotInterface->AddCommandQualifiedRead(&osaRobot1394::EncoderBitsToDPosition, thisBase,
-                                            "EncoderRawToDeltaPosSI", mEncoderVelocityBits, mEncoderVelocity);
-    robotInterface->AddCommandQualifiedRead(&osaRobot1394::EncoderBitsToDTime, thisBase,
-                                            "EncoderRawToDeltaPosT", mEncoderDTimeBits, mEncoderDTime);
     robotInterface->AddCommandQualifiedRead(&osaRobot1394::ActuatorCurrentToEffort, thisBase,
                                             "DriveAmpsToNm", mActuatorCurrentCommand, mActuatorEffortCommand);
     robotInterface->AddCommandQualifiedRead(&osaRobot1394::ActuatorEffortToCurrent, thisBase,

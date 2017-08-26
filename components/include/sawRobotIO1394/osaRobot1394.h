@@ -164,8 +164,6 @@ public:
     //! Conversions for encoders
     void EncoderPositionToBits(const vctDoubleVec & pos, vctIntVec & bits) const;
     void EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & pos) const;
-    void EncoderBitsToDPosition(const vctIntVec & bits, vctDoubleVec & dpos) const;
-    void EncoderBitsToDTime(const vctIntVec & bits, vctDoubleVec & dt) const;
     void EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const;
 
     //! Conversions for actuator current commands and measurements
@@ -294,12 +292,8 @@ protected:
         mPotVoltage,
         mPotPosition,
         mEncoderPosition,
-        mEncoderPositionPrev,
         mEncoderVelocityCountsPerSecond,  // velocity based on FPGA measurement of time between encoder edges (period)
         mEncoderVelocity,
-        mEncoderVelocityDxDt,
-        mEncoderDPosition,
-        mEncoderDTime,
         mEncoderVelocitySoftware,
         mJointPosition,
         mJointVelocity,
