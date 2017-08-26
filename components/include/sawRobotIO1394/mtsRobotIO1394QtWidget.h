@@ -180,23 +180,23 @@ private:
     // GUI: timing
     mtsQtWidgetIntervalStatistics * QMIntervalStatistics;
 
-    vctQtWidgetDynamicVectorBoolWrite * QVWActuatorCurrentEnableEachWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * QVWActuatorCurrentSpinBoxWidget;
-    vctQtWidgetDynamicVectorDoubleWrite * QVWActuatorCurrentSliderWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorCurrentFeedbackWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRJointPositionWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorPositionWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorVelocityWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRPotVoltsWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRPotPositionWidget;
+    vctQtWidgetDynamicVectorBoolWrite * QVWActuatorCurrentEnableEach;
+    vctQtWidgetDynamicVectorDoubleWrite * QVWActuatorCurrentSpinBox;
+    vctQtWidgetDynamicVectorDoubleWrite * QVWActuatorCurrentSlider;
+    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorCurrentFeedback;
+    vctQtWidgetDynamicVectorDoubleRead * QVRJointPosition;
+    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorPosition;
+    vctQtWidgetDynamicVectorDoubleRead * QVRActuatorVelocity;
+    vctQtWidgetDynamicVectorDoubleRead * QVRPotVolts;
+    vctQtWidgetDynamicVectorDoubleRead * QVRPotPosition;
     vctQtWidgetDynamicVectorDoubleRead * QVRActuatorAmpTemperature;
 
     // Brakes
     QPushButton * QPBBrakeRelease;
     QPushButton * QPBBrakeEngage;
-    vctQtWidgetDynamicVectorBoolWrite * QVWBrakeCurrentEnableEachWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRBrakeCurrentCommandWidget;
-    vctQtWidgetDynamicVectorDoubleRead * QVRBrakeCurrentFeedbackWidget;
+    vctQtWidgetDynamicVectorBoolWrite * QVWBrakeCurrentEnableEach;
+    vctQtWidgetDynamicVectorDoubleRead * QVRBrakeCurrentCommand;
+    vctQtWidgetDynamicVectorDoubleRead * QVRBrakeCurrentFeedback;
     vctQtWidgetDynamicVectorDoubleRead * QVRBrakeAmpTemperature;
 
     QLabel * QLAmpStatus;
