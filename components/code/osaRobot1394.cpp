@@ -290,7 +290,7 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoa
     size_t boardCounter = 0;
     for (unique_board_iterator board = mUniqueBoards.begin();
          board != mUniqueBoards.end();
-         ++board) {
+         ++board, ++boardCounter) {
         AmpIO_UInt32 fversion = board->second->GetFirmwareVersion();
         std::string serialQLA = board->second->GetQLASerialNumber();
         if (serialQLA.empty()) {
@@ -305,6 +305,7 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoa
         }
         CMN_LOG_INIT_WARNING << "osaRobot1394::SetBoards: " << this->mName
                              << ", board: " << boardCounter
+                             << ", Id: " << static_cast<int>(board->second->GetBoardId())
                              << ", firmware: " << fversion
                              << ", FPGA serial: " << serialFPGA
                              << ", QLA serial: " << serialQLA
