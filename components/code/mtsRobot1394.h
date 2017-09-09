@@ -73,6 +73,7 @@ namespace sawRobotIO1394 {
         void ResetSingleEncoder(const int & index);
         void EnablePower(void);
         void DisablePower(void);
+        void SetWatchdogPeriod(const double & periodInSeconds);
         void SetCoupling(const prmActuatorJointCoupling & coupling);
 
         /*! \name Bias Calibration */
@@ -93,6 +94,7 @@ namespace sawRobotIO1394 {
         struct {
             mtsFunctionWrite PowerStatus;
             mtsFunctionWrite WatchdogStatus;
+            mtsFunctionWrite WatchdogPeriod;
             mtsFunctionWrite Coupling;
             mtsFunctionWrite BiasEncoder;
         } EventTriggers;

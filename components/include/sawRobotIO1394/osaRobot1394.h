@@ -255,6 +255,9 @@ protected:
         mWatchdogStatus,
         mPreviousWatchdogStatus;
 
+    double
+        mWatchdogPeriod;
+
     unsigned int mLowestFirmWareVersion;
 
     bool mSafetyRelay;

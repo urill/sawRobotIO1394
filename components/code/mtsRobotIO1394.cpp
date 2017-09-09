@@ -60,13 +60,27 @@ mtsRobotIO1394::~mtsRobotIO1394()
     delete MessageStream;
 }
 
-void mtsRobotIO1394::SetProtocol(const sawRobotIO1394::ProtocolType & protocol) 
+void mtsRobotIO1394::SetProtocol(const sawRobotIO1394::ProtocolType & protocol)
 {
     mPort->SetProtocol(protocol);
 }
 
+void mtsRobotIO1394::SetWatchdogPeriod(const double & periodInSeconds)
+{
+    mWatchdogPeriod = periodInSeconds;
+    const robots_iterator robotsEnd = mRobots.end();
+    for (robots_iterator robot = mRobots.begin();
+         robot != robotsEnd;
+         ++robot) {
+        (*robot)->SetWatchdogPeriod(periodInSeconds);
+    }
+}
+
 void mtsRobotIO1394::Init(const int portNumber)
 {
+    // default watchdog period
+    mWatchdogPeriod = 15.0 * cmn_ms;
+
     // construct port
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     try {
@@ -217,6 +231,9 @@ bool mtsRobotIO1394::SetupRobot(mtsRobot1394 * robot)
 
     // Setup the MTS interfaces
     robot->SetupInterfaces(robotInterface, actuatorInterface);
+
+    // Use preferred watchdog timeout
+    robot->SetWatchdogPeriod(mWatchdogPeriod);
 
     // Add the robot to the port
     try {

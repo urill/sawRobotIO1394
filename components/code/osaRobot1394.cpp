@@ -46,6 +46,7 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
     mPreviousPowerStatus(false),
     mWatchdogStatus(false),
     mPreviousWatchdogStatus(false),
+    mWatchdogPeriod(15.0),
     mSafetyRelay(false),
     mCurrentSafetyViolationsCounter(0),
     mCurrentSafetyViolationsMaximum(maxConsecutiveCurrentSafetyViolations),
@@ -758,22 +759,25 @@ void osaRobot1394::WriteSafetyRelay(const bool & enabled)
 
 void osaRobot1394::SetWatchdogPeriod(const double & periodInSeconds)
 {
-    uint32_t periodCounts;
+    uint32_t periodCount;
     if (periodInSeconds == 0.0) {
         // Disable watchdog
-        periodCounts = 0;
+        periodCount = 0;
     } else {
         // Use at least one tick just to make sure we don't accidentaly disable
         // the truth is that the count will be so low that watchdog will
         // continuously trigger.
-        periodCounts = (periodInSeconds * 1000.0) * WATCHDOG_MS_TO_COUNT;
-        periodCounts = std::max(periodCounts, static_cast<uint32_t>(1));
+        periodCount = (periodInSeconds * 1000.0) * WATCHDOG_MS_TO_COUNT;
+        periodCount = std::max(periodCount, static_cast<uint32_t>(1));
     }
+
+    // update local copy of watchdog period based on final period count
+    mWatchdogPeriod = (periodCount / static_cast<double>(WATCHDOG_MS_TO_COUNT)) * 0.001;
 
     for (unique_board_iterator board = mUniqueBoards.begin();
          board != mUniqueBoards.end();
          ++board) {
-        board->second->WriteWatchdogPeriod(periodCounts);
+        board->second->WriteWatchdogPeriod(periodCount);
     }
 }
 

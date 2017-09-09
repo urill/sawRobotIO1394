@@ -59,7 +59,8 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mValid, "Valid");
     mStateTableRead->AddData(mPowerStatus, "PowerStatus");
     mStateTableRead->AddData(mSafetyRelay, "SafetyRelay");
-    mStateTableRead->AddData(mWatchdogStatus, "WatchdogTimeout");
+    mStateTableRead->AddData(mWatchdogStatus, "WatchdogStatus");
+    mStateTableRead->AddData(mWatchdogPeriod, "WatchdogPeriod");
     mStateTableRead->AddData(mActuatorTemperature, "ActuatorTemperature");
     mStateTableRead->AddData(mActuatorPowerStatus, "ActuatorPowerStatus");
     mStateTableRead->AddData(mActuatorPowerEnabled, "ActuatorPowerEnabled");
@@ -176,6 +177,12 @@ void mtsRobot1394::DisablePower(void)
     osaRobot1394::DisablePower();
 }
 
+void mtsRobot1394::SetWatchdogPeriod(const double & periodInSeconds)
+{
+    osaRobot1394::SetWatchdogPeriod(periodInSeconds);
+    EventTriggers.WatchdogPeriod(mWatchdogPeriod);
+}
+
 void mtsRobot1394::CalibrateEncoderOffsetsFromPots(const int & numberOfSamples)
 {
     mSamplesForCalibrateEncoderOffsetsFromPots = numberOfSamples + 1;
@@ -208,7 +215,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandVoid(&mtsRobot1394::DisablePower, this,
                                    "DisablePower");
 
-    robotInterface->AddCommandWrite(&osaRobot1394::SetWatchdogPeriod, thisBase,
+    robotInterface->AddCommandWrite(&mtsRobot1394::SetWatchdogPeriod, this,
                                     "SetWatchdogPeriod");
 
     robotInterface->AddCommandReadState(*mStateTableRead, mActuatorPowerEnabled,
@@ -223,10 +230,11 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableRead, mSafetyRelay,
                                         "GetSafetyRelay"); // unsigned short
     robotInterface->AddCommandReadState(*mStateTableRead, mWatchdogStatus,
-                                        "GetWatchdogTimeout"); // bool
+                                        "GetWatchdogStatus"); // bool
+    robotInterface->AddCommandReadState(*mStateTableRead, mWatchdogPeriod,
+                                        "GetWatchdogPeriod"); // double
     robotInterface->AddCommandReadState(*mStateTableRead, mActuatorTemperature,
                                         "GetActuatorAmpTemperature"); // vector[double]
-
 
     robotInterface->AddCommandReadState(*mStateTableRead, mEncoderChannelsA,
                                         "GetEncoderChannelA"); // vector[bool]
@@ -331,6 +339,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     // Events
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
     robotInterface->AddEventWrite(EventTriggers.WatchdogStatus, "WatchdogStatus", false);
+    robotInterface->AddEventWrite(EventTriggers.WatchdogPeriod, "WatchdogPeriod", 15.0 * cmn_ms);
     robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
     robotInterface->AddEventWrite(EventTriggers.BiasEncoder, "BiasEncoder", 0);
 

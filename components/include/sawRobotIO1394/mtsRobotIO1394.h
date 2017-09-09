@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2016 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -39,6 +39,8 @@ protected:
 
     sawRobotIO1394::osaPort1394 * mPort;
 
+    double mWatchdogPeriod; // prefered watchdog period for all boards
+
     typedef std::vector<sawRobotIO1394::mtsRobot1394*> RobotsType;
     typedef RobotsType::iterator robots_iterator;
     RobotsType mRobots;
@@ -59,6 +61,8 @@ public:
     virtual ~mtsRobotIO1394();
 
     void SetProtocol(const sawRobotIO1394::ProtocolType & protocol);
+    void SetWatchdogPeriod(const double & periodInSeconds);
+
     void Init(const int portNumber);
 
     void Configure(const std::string & filename);
