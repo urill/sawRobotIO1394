@@ -406,8 +406,10 @@ void mtsRobotIO1394QtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
         UpdateRobotInfo();
     }
 
-    // ZC: FIX turn off if pid loop exists
-    Robot.SetWatchdogPeriod(WatchdogPeriodInSeconds);
+    // refresh watchdog period
+    double watchdogPeriodInSeconds;
+    Robot.WatchdogPeriod(watchdogPeriodInSeconds);
+    QSBWatchdogPeriod->setValue(cmnInternalTo_ms(watchdogPeriodInSeconds));
 }
 
 ////------------ Private Methods ----------------
@@ -419,6 +421,7 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("GetSerialNumber", Robot.GetSerialNumber);
         robotInterface->AddFunction("GetPeriodStatistics", Robot.GetPeriodStatistics);
         robotInterface->AddFunction("IsValid", Robot.IsValid);
+        robotInterface->AddFunction("GetWatchdogPeriod", Robot.WatchdogPeriod);
         robotInterface->AddFunction("EnablePower", Robot.EnablePower);
         robotInterface->AddFunction("DisablePower", Robot.DisablePower);
 
@@ -716,8 +719,8 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     }
 
     // connect cisstMultiTask events
-    connect(this, SIGNAL(SignalPowerStatus(bool)), this, SLOT(SlotPowerStatus(bool)));
-    connect(this, SIGNAL(SignalWatchdogStatus(bool)), this, SLOT(SlotWatchdogStatus(bool)));
+    connect(this, SIGNAL(SignalPowerStatus(bool)), this, SLOT(SlotPowerStatusEvent(bool)));
+    connect(this, SIGNAL(SignalWatchdogStatus(bool)), this, SLOT(SlotWatchdogStatusEvent(bool)));
 
     // set initial value
     QCBEnableAmps->setChecked(false);
@@ -736,7 +739,7 @@ void mtsRobotIO1394QtWidget::UpdateRobotInfo(void)
     }
     if (ampStatusGood) {
         QLAmpStatus->setText("Actuators ON");
-        QLAmpStatus->setStyleSheet("QPLabel { background-color: green }");
+        QLAmpStatus->setStyleSheet("QLabel { background-color: green }");
     } else {
         QLAmpStatus->setText("Actuators OFF");
         QLAmpStatus->setStyleSheet("QLabel { background-color: red }");
@@ -786,7 +789,7 @@ void mtsRobotIO1394QtWidget::PowerStatusEventHandler(const bool & status)
     emit SignalPowerStatus(status);
 }
 
-void mtsRobotIO1394QtWidget::SlotPowerStatus(bool status)
+void mtsRobotIO1394QtWidget::SlotPowerStatusEvent(bool status)
 {
     if (status == false) {
         QCBEnableAll->setChecked(false);
@@ -798,7 +801,7 @@ void mtsRobotIO1394QtWidget::WatchdogStatusEventHandler(const bool & status)
     emit SignalWatchdogStatus(status);
 }
 
-void mtsRobotIO1394QtWidget::SlotWatchdogStatus(bool status)
+void mtsRobotIO1394QtWidget::SlotWatchdogStatusEvent(bool status)
 {
     if (status) {
         QLWatchdog->setText("Timeout TRUE");

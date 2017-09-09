@@ -90,6 +90,7 @@ protected:
         mtsFunctionRead GetSerialNumber;
         mtsFunctionRead GetPeriodStatistics;
         mtsFunctionRead IsValid;
+        mtsFunctionRead WatchdogPeriod;
         mtsFunctionVoid EnablePower;
         mtsFunctionVoid DisablePower;
 
@@ -216,8 +217,8 @@ signals:
     void SignalPowerStatus(bool status);
     void SignalWatchdogStatus(bool status);
 protected slots:
-    void SlotPowerStatus(bool status);
-    void SlotWatchdogStatus(bool status);
+    void SlotPowerStatusEvent(bool status);
+    void SlotWatchdogStatusEvent(bool status);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtWidget);
