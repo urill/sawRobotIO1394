@@ -128,6 +128,8 @@ void mtsRobotIO1394::Init(const int portNumber)
                                                "GetDigitalOutputNames");
         configurationInterface->AddCommandRead<mtsComponent>(&mtsComponent::GetName, this,
                                                              "GetName");
+        configurationInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                                    "GetPeriodStatistics"); // mtsIntervalStatistics
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to create configuration interface." << std::endl;
     }
