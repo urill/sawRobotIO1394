@@ -477,6 +477,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // Power commands
     QVBoxLayout * powerLayout = new QVBoxLayout;
+    powerLayout->setContentsMargins(2, 2, 2, 2);
     QFrame * powerFrame = new QFrame;
     QLabel * powerTitle = new QLabel("Power");
     powerTitle->setFont(font);
@@ -499,6 +500,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // watchdog commands
     QVBoxLayout * watchdogLayout = new QVBoxLayout;
+    watchdogLayout->setContentsMargins(2, 2, 2, 2);
     QFrame * watchdogFrame = new QFrame;
     QLabel * watchdogTitle = new QLabel("Watchdog");
     watchdogTitle->setFont(font);
@@ -516,7 +518,6 @@ void mtsRobotIO1394QtWidget::setupUi(void)
         watchdogSetLayout->addWidget(QSBWatchdogPeriod);
     }
     watchdogLayout->addLayout(watchdogSetLayout);
-    watchdogLayout->addSpacing(5);
     QLSafetyRelay = new QLabel("Safety relay ON");
     QLSafetyRelay->setAlignment(Qt::AlignCenter);
     watchdogLayout->addWidget(QLSafetyRelay);
@@ -533,6 +534,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // Encoder commands
     QVBoxLayout * encoderLayout = new QVBoxLayout;
+    encoderLayout->setContentsMargins(2, 2, 2, 2);
     QFrame * encoderFrame = new QFrame;
     QLabel * encoderTitle = new QLabel("Encoders");
     encoderTitle->setFont(font);
@@ -548,6 +550,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // Current comands
     QVBoxLayout * currentLayout = new QVBoxLayout;
+    currentLayout->setContentsMargins(2, 2, 2, 2);
     QFrame * currentFrame = new QFrame;
     QLabel * currentTitle = new QLabel("Current");
     currentTitle->setFont(font);
@@ -569,6 +572,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // Timing
     QVBoxLayout * timingLayout = new QVBoxLayout;
+    timingLayout->setContentsMargins(2, 2, 2, 2);
     QFrame * timingFrame = new QFrame;
     QLabel * timingTitle = new QLabel("Timing");
     timingTitle->setFont(font);
@@ -582,6 +586,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // Commands layout
     QHBoxLayout * commandLayout = new QHBoxLayout;
+    commandLayout->setContentsMargins(2, 2, 2, 2);
     commandLayout->addWidget(powerFrame);
     commandLayout->addWidget(watchdogFrame);
     commandLayout->addWidget(encoderFrame);
@@ -590,6 +595,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // Feedbacks Label
     QGridLayout * gridLayout = new QGridLayout;
+    gridLayout->setContentsMargins(2, 2, 2, 2);
     gridLayout->setSpacing(1);
     int row = 0;
 
@@ -690,6 +696,7 @@ void mtsRobotIO1394QtWidget::setupUi(void)
 
     // main layout
     QVBoxLayout * mainLayout = new QVBoxLayout;
+    mainLayout->setContentsMargins(2, 2, 2, 2);
     mainLayout->addLayout(commandLayout);
     mainLayout->addLayout(gridLayout);
     mainLayout->addStretch();
