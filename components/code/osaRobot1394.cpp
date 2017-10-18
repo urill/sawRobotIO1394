@@ -706,7 +706,6 @@ void osaRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
 void osaRobot1394::EnablePower(void)
 {
     this->EnableBoardsPower();
-    osaSleep(50.0 * cmn_ms);
     this->SetActuatorPower(true);
     this->SetBrakePower(true);
 }
