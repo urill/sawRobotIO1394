@@ -66,7 +66,6 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mActuatorPowerEnabled, "ActuatorPowerEnabled");
     mStateTableRead->AddData(mEncoderPositionBits, "PositionEncoderRaw");
     mStateTableRead->AddData(mJointPosition, "PositionJoint");
-    mStateTableRead->AddData(mPotsToEncodersError, "PotsToEncoderError");
     mStateTableRead->AddData(mEncoderVelocityBits, "VelocityEncoderRaw");
     mStateTableRead->AddData(mEncoderVelocity, "Vel");
     mStateTableRead->AddData(mJointTorque, "Effortjoint");
@@ -244,8 +243,6 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetPosition"); // vector[double]
     robotInterface->AddCommandReadState(*mStateTableRead, mJointTorque,
                                         "GetTorqueJoint"); // vector[double]
-    robotInterface->AddCommandReadState(*mStateTableRead, mPotsToEncodersError,
-                                        "GetPotsToEncodersError"); // vector[double]
 
     robotInterface->AddCommandReadState(*mStateTableRead, this->mPositionJointGet,
                                         "GetPositionJoint"); // prmPositionJointGet
@@ -273,11 +270,6 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                         "GetActuatorEffortFeedback");
     robotInterface->AddCommandReadState(*mStateTableWrite, mActuatorCurrentCommand,
                                         "GetActuatorRequestedCurrent");
-
-    robotInterface->AddCommandWrite(&osaRobot1394::UsePotsForSafetyCheck, thisBase,
-                                    "UsePotsForSafetyCheck", mUsePotsForSafetyCheck);
-    robotInterface->AddCommandWrite(&osaRobot1394::SetPotsToEncodersTolerance, thisBase,
-                                    "SetPotsToEncodersTolerance", mPotsToEncodersTolerance);
 
     robotInterface->AddCommandWrite<osaRobot1394, vctBoolVec>(&osaRobot1394::SetBrakePower, thisBase,
                                     "SetBrakeAmpEnable", mBrakePowerEnabled); // vector[bool]

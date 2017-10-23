@@ -295,6 +295,7 @@ namespace sawRobotIO1394 {
 
         // look for potentiometers position, if any
         std::string potentiometerPosition;
+        robot.PotLocation = POTENTIOMETER_UNDEFINED;
         sprintf(path,"Robot[%d]/Potentiometers/@Position", robotIndex);
         if (xmlConfig.GetXMLValue(context, path, potentiometerPosition)) {
             if (potentiometerPosition == "Actuators") {
@@ -307,6 +308,53 @@ namespace sawRobotIO1394 {
             }
         } else {
             CMN_LOG_INIT_VERBOSE << "Configure: no <Potentiometers Position=\"\"> found." << std::endl;
+        }
+
+        // load pot tolerances
+        if ((robot.PotLocation == POTENTIOMETER_ON_ACTUATORS)
+            || robot.PotLocation == POTENTIOMETER_ON_JOINTS) {
+            int numberOfPots = 0;
+            if (robot.PotLocation == POTENTIOMETER_ON_ACTUATORS) {
+                numberOfPots = robot.NumberOfActuators;
+            } else {
+                numberOfPots = robot.NumberOfJoints;
+            }
+            for (int potIndex = 0; potIndex < numberOfPots; ++potIndex) {
+                osaPotTolerance1394Configuration pot;
+                int xmlPotIndex = potIndex + 1;
+                // check that axis index is valid
+                int axis = -1;
+                sprintf(path, "Robot[%i]/Potentiometers/Tolerance[%d]/@Axis", robotIndex, xmlPotIndex);
+                good &= osaXML1394GetValue(xmlConfig, context, path, axis);
+                if (axis != potIndex) {
+                    CMN_LOG_INIT_ERROR << "Configure: invalid <Potentiometers><Tolerance Axis=\"\"> must be provided in order, for tolerance "
+                                       << potIndex << " Axis should match but found " << axis << " for robot " 
+                                       << robotIndex << std::endl;
+                    good = false;
+                }
+                // get data
+                sprintf(path, "Robot[%i]/Potentiometers/Tolerance[%d]/@Distance", robotIndex, xmlPotIndex);
+                good &= osaXML1394GetValue(xmlConfig, context, path, pot.Distance);
+                sprintf(path, "Robot[%i]/Potentiometers/Tolerance[%d]/@Latency", robotIndex, xmlPotIndex);
+                good &= osaXML1394GetValue(xmlConfig, context, path, pot.Latency);
+                std::string units;
+                sprintf(path, "Robot[%i]/Potentiometers/Tolerance[%d]/@Unit", robotIndex, xmlPotIndex);
+                good &= osaXML1394GetValue(xmlConfig, context, path, units);
+                if (units == "deg") {
+                    pot.Distance *= cmnPI_180;
+                } else if (units == "rad") {
+                    // SI ok
+                } else if (units == "mm") {
+                    pot.Distance *= cmn_mm;
+                } else if (units == "m") {
+                    pot.Distance *= cmn_m;
+                } else {
+                    CMN_LOG_INIT_ERROR << "Configure: invalid <Potentiometers><Tolerance Units=\"\"> must be rad, deg, mm, m but found \""
+                                       << units << "\" for Axis " << axis << " for robot " 
+                                       << robotIndex << std::endl;
+                    good = false;
+                }
+            }
         }
 
         // Configure Coupling

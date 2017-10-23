@@ -35,8 +35,7 @@ http://www.cisst.org/cisst/license.txt.
 using namespace sawRobotIO1394;
 
 osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
-                           const size_t maxConsecutiveCurrentSafetyViolations,
-                           const size_t maxConsecutivePotsToEncodersViolations):
+                           const size_t maxConsecutiveCurrentSafetyViolations):
     // IO Structures
     mActuatorInfo(),
     mUniqueBoards(),
@@ -50,8 +49,6 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
     mSafetyRelay(false),
     mCurrentSafetyViolationsCounter(0),
     mCurrentSafetyViolationsMaximum(maxConsecutiveCurrentSafetyViolations),
-    mPotsToEncodersViolationsCounter(0),
-    mPotsToEncodersViolationsMaximum(maxConsecutivePotsToEncodersViolations),
     mInvalidReadCounter(0)
 {
     this->Configure(config);
@@ -118,18 +115,20 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mJointEffortCommandLimits.SetSize(mNumberOfJoints);
     mActuatorCurrentCommandLimits.SetSize(mNumberOfActuators);
     mActuatorCurrentFeedbackLimits.SetSize(mNumberOfActuators);
+    std::cerr << CMN_LOG_DETAILS << " make sure values from XML are copied in vectors" << std::endl;
     if (mPotType == POTENTIOMETER_ON_ACTUATORS) {
-        mPotsToEncodersTolerance.SetSize(mNumberOfActuators);
-        mPotsToEncodersError.SetSize(mNumberOfActuators);
-        mPotsToEncodersErrorFlag.SetSize(mNumberOfActuators);
+        mPotToleranceLatency.SetSize(mNumberOfActuators);
+        mPotToleranceDistance.SetSize(mNumberOfActuators);
+        mPotErrorDuration.SetSize(mNumberOfActuators);
+        mPotValid.SetSize(mNumberOfActuators);
     } else if (mPotType == POTENTIOMETER_ON_JOINTS) {
-        mPotsToEncodersTolerance.SetSize(mNumberOfJoints);
-        mPotsToEncodersError.SetSize(mNumberOfJoints);
-        mPotsToEncodersErrorFlag.SetSize(mNumberOfJoints);
+        mPotToleranceLatency.SetSize(mNumberOfJoints);
+        mPotToleranceDistance.SetSize(mNumberOfJoints);
+        mPotErrorDuration.SetSize(mNumberOfJoints);
+        mPotValid.SetSize(mNumberOfJoints);
     }
-    mPotsToEncodersTolerance.SetAll(0.0);
-    mPotsToEncodersErrorFlag.SetAll(true);
-    mUsePotsForSafetyCheck = false;
+    mPotErrorDuration.SetAll(0.0);
+    mPotValid.SetAll(true);
 
     mBitsToPositionScales.SetSize(mNumberOfActuators);
     mBitsToDPositionScales.SetSize(mNumberOfActuators);
@@ -604,45 +603,80 @@ void osaRobot1394::CheckState(void)
     }
 
     // Check if encoders and potentiometers agree
-    if (mUsePotsForSafetyCheck) {
-        bool errorFound = false;
-        switch (mPotType) {
-        case POTENTIOMETER_UNDEFINED:
-            break;
-        case POTENTIOMETER_ON_ACTUATORS:
-            mPotsToEncodersError.DifferenceOf(mEncoderPosition, mPotPosition).AbsSelf();
-            if (!mPotsToEncodersError.LesserOrEqual(mPotsToEncodersTolerance)) {
-                errorFound = true;
+    switch (mPotType) {
+    case POTENTIOMETER_UNDEFINED:
+        break;
+    case POTENTIOMETER_ON_ACTUATORS:
+    case POTENTIOMETER_ON_JOINTS:
+        {
+            vctDynamicVectorRef<double> encoderRef;
+            if (mPotType == POTENTIOMETER_ON_ACTUATORS) {
+                encoderRef.SetRef(mEncoderPosition);
+            } else {
+                encoderRef.SetRef(mJointPosition);
             }
-            break;
-        case POTENTIOMETER_ON_JOINTS:
-            mPotsToEncodersError.DifferenceOf(mJointPosition, mPotPosition).AbsSelf();
-            if (!mPotsToEncodersError.LesserOrEqual(mPotsToEncodersTolerance)) {
-                errorFound = true;
-            }
-            break;
-        default:
-            break;
-        }
+            bool statusChanged = false;
+            bool error = false;
+            vctDoubleVec::const_iterator pot = mPotPosition.begin();
+            vctDynamicVectorRef<double>::const_iterator enc = encoderRef.begin();
+            const vctDoubleVec::const_iterator potEnd = mPotPosition.end();
+            vctDoubleVec::const_iterator potLatency = mPotToleranceLatency.begin();
+            vctDoubleVec::const_iterator potError = mPotToleranceDistance.begin();
+            vctDoubleVec::const_iterator potTimestamp = mActuatorTimestamp.begin(); // this is a bit approximative when there's coupling
+            vctDoubleVec::iterator potDuration = mPotErrorDuration.begin();
+            vctBoolVec::iterator potStatus = mPotValid.begin();
 
-        if (errorFound) {
-            mPotsToEncodersViolationsCounter++;
-        } else {
-            mPotsToEncodersViolationsCounter = 0;
-        }
-
-        if (mPotsToEncodersViolationsCounter > mPotsToEncodersViolationsMaximum) {
-            this->DisablePower();
-            vctBoolVec newErrors(mPotsToEncodersError.ElementwiseLesserOrEqual(mPotsToEncodersTolerance));
-            if (newErrors.NotEqual(mPotsToEncodersErrorFlag)) {
-                mPotsToEncodersErrorFlag.Assign(newErrors);
-                std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n errors: ";
-                errorMessage.append(mPotsToEncodersError.ToString());
-                errorMessage.append(", \n mask (0 is error): ");
-                errorMessage.append(mPotsToEncodersErrorFlag.ToString());
-                cmnThrow(osaRuntimeError1394(errorMessage));
+            for (;
+                 pot != potEnd;
+                 ++pot,
+                     ++enc,
+                     ++potLatency,
+                     ++potError,
+                     ++potTimestamp,
+                     ++potDuration,
+                     ++potStatus) {
+                // check for error
+                double error = std::abs(*pot - *enc);
+                if (error > *potError) {
+                    *potDuration += *potTimestamp;
+                    // check how long have we been off
+                    if (*potDuration > *potLatency) {
+                        // now we have a problem,
+                        this->DisablePower();
+                        // maybe it's not new, used for reporting
+                        if (*potStatus) {
+                            // this is new
+                            statusChanged = true;
+                            error = true;
+                            *potStatus = false;
+                        }
+                    }
+                } else {
+                    // back to normal, reset status if needed
+                    *potDuration = 0.0;
+                    if (! *potStatus) {
+                        statusChanged = true;
+                        *potStatus = true;
+                    }
+                }
+            }
+            // if status has changed
+            if (statusChanged) {
+                if (error) {
+                    std::cerr << "----------------- error " << std::endl;
+                    std::string errorMessage = "IO: " + this->Name() + ": inconsistency between encoders and potentiometers, \n errors: ";
+                    //errorMessage.append(mPotsToEncodersError.ToString());
+                    //errorMessage.append(", \n mask (0 is error): ");
+                    //errorMessage.append(mPotsToEncodersErrorFlag.ToString());
+                    cmnThrow(osaRuntimeError1394(errorMessage));
+                } else {
+                    std::cerr << "----------------- recovery " << std::endl;
+                }
             }
         }
+        break;
+    default:
+        break;
     }
 
     // Check for encoder overflow
@@ -901,16 +935,6 @@ void osaRobot1394::SetActuatorCurrentBits(const vctIntVec & bits)
 
     // Store commanded bits
     mActuatorCurrentBitsCommand = bits;
-}
-
-void osaRobot1394::UsePotsForSafetyCheck(const bool & usePotsForSafetyCheck)
-{
-    mUsePotsForSafetyCheck = usePotsForSafetyCheck;
-}
-
-void osaRobot1394::SetPotsToEncodersTolerance(const vctDoubleVec & tolerances)
-{
-    mPotsToEncodersTolerance = tolerances;
 }
 
 void osaRobot1394::SetBrakeCurrent(const vctDoubleVec & currents)

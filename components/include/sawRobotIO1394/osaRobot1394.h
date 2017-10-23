@@ -53,8 +53,7 @@ public:
     /** \name Lifecycle
      *\{**/
     osaRobot1394(const osaRobot1394Configuration & config,
-                 const size_t maxConsecutiveCurrentSafetyViolations = 100,
-                 const size_t maxConsecutivePotsToEncodersViolations = 200);
+                 const size_t maxConsecutiveCurrentSafetyViolations = 100);
 
     void Configure(const osaRobot1394Configuration & config);
 
@@ -104,10 +103,6 @@ public:
     void SetActuatorEffort(const vctDoubleVec & efforts);
     void SetActuatorCurrent(const vctDoubleVec & currents);
     void SetActuatorCurrentBits(const vctIntVec & bits);
-
-    //! Use potentiometers for safety
-    void UsePotsForSafetyCheck(const bool & usePotsForSafetyCheck);
-    void SetPotsToEncodersTolerance(const vctDoubleVec & tolerances);
 
     //! Brake Control
     void SetBrakeCurrent(const vctDoubleVec & currents);
@@ -266,8 +261,8 @@ protected:
         mActuatorPowerStatus,
         mBrakePowerStatus,
         mActuatorPowerEnabled,
-        mPotsToEncodersErrorFlag,
         mBrakePowerEnabled,
+        mPotValid,
         mPreviousEncoderOverflow,
         mEncoderOverflow,
         mDigitalInputs,
@@ -305,7 +300,9 @@ protected:
         mBrakeCurrentCommand,
         mActuatorEffortCommand,
         mActuatorCurrentFeedback,
-        mPotsToEncodersError,
+        mPotToleranceLatency,
+        mPotToleranceDistance,
+        mPotErrorDuration,
         mBrakeCurrentFeedback,
         mActuatorEffortFeedback,
         mActuatorTemperature,
@@ -317,9 +314,7 @@ protected:
 
     size_t
         mCurrentSafetyViolationsCounter,
-        mCurrentSafetyViolationsMaximum,
-        mPotsToEncodersViolationsCounter,
-        mPotsToEncodersViolationsMaximum;
+        mCurrentSafetyViolationsMaximum;
 
     size_t mInvalidReadCounter;
     };

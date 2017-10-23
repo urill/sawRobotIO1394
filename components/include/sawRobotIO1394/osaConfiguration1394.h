@@ -103,6 +103,12 @@ namespace sawRobotIO1394 {
         osaAnalogBrake1394Configuration * Brake; // 0 pointer for no brake
     };
 
+    struct osaPotTolerance1394Configuration {
+        int AxisID;
+        double Distance;
+        double Latency;
+    };
+
     struct osaRobot1394Configuration {
         std::string Name;
         int NumberOfActuators;
@@ -113,6 +119,7 @@ namespace sawRobotIO1394 {
         bool HasActuatorToJointCoupling;
 
         osaPot1394Location PotLocation;
+        std::vector<osaPotTolerance1394Configuration> PotTolerances;
 
         std::vector<osaActuator1394Configuration> Actuators;
 
