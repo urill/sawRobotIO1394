@@ -354,6 +354,7 @@ namespace sawRobotIO1394 {
                                        << robotIndex << std::endl;
                     good = false;
                 }
+                robot.PotTolerances.push_back(pot);
             }
         }
 

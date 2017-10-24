@@ -98,6 +98,9 @@ public:
     void SetSingleEncoderPosition(const int index, const double pos = 0);
     void SetSingleEncoderPositionBits(const int index, const int bits = 0);
 
+    //! Pots to encoder safety check
+    void UsePotsForSafetyCheck(const bool & usePotsForSafetyCheck);
+
     //! Actuator Control
     void SetJointEffort(const vctDoubleVec & efforts);
     void SetActuatorEffort(const vctDoubleVec & efforts);

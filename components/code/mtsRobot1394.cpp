@@ -271,6 +271,9 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableWrite, mActuatorCurrentCommand,
                                         "GetActuatorRequestedCurrent");
 
+    robotInterface->AddCommandWrite(&osaRobot1394::UsePotsForSafetyCheck, thisBase,
+                                    "UsePotsForSafetyCheck", mUsePotsForSafetyCheck);
+
     robotInterface->AddCommandWrite<osaRobot1394, vctBoolVec>(&osaRobot1394::SetBrakePower, thisBase,
                                     "SetBrakeAmpEnable", mBrakePowerEnabled); // vector[bool]
     robotInterface->AddCommandReadState(*mStateTableRead, mBrakePowerEnabled,
