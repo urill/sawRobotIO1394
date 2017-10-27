@@ -17,6 +17,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstCommon
      cisstCommonXML
      cisstVector
+     cisstNumerical
      cisstOSAbstraction
      cisstMultiTask
      cisstParameterTypes)

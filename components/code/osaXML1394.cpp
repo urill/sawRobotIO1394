@@ -2,10 +2,10 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  Author(s):  Jonathan Bohren
+  Author(s):  Jonathan Bohren, Anton Deguet
   Created on: 2013-06-29
 
-  (C) Copyright 2013-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2013-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -19,6 +19,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/osaXML1394.h>
 #include <cisstCommon/cmnUnits.h>
+#include <cisstNumerical/nmrInverse.h>
 
 namespace sawRobotIO1394 {
 
@@ -26,7 +27,7 @@ namespace sawRobotIO1394 {
     {
         cmnXMLPath xmlConfig;
         xmlConfig.SetInputSource(filename);
-        
+
         // get an check version number
         int version;
         bool versionFound = osaXML1394GetValue(xmlConfig, "Config", "@Version", version);
@@ -328,7 +329,7 @@ namespace sawRobotIO1394 {
                 good &= osaXML1394GetValue(xmlConfig, context, path, axis);
                 if (axis != potIndex) {
                     CMN_LOG_INIT_ERROR << "Configure: invalid <Potentiometers><Tolerance Axis=\"\"> must be provided in order, for tolerance "
-                                       << potIndex << " Axis should match but found " << axis << " for robot " 
+                                       << potIndex << " Axis should match but found " << axis << " for robot "
                                        << robotIndex << std::endl;
                     good = false;
                 }
@@ -350,7 +351,7 @@ namespace sawRobotIO1394 {
                     pot.Distance *= cmn_m;
                 } else {
                     CMN_LOG_INIT_ERROR << "Configure: invalid <Potentiometers><Tolerance Unit=\"\"> must be rad, deg, mm, m but found \""
-                                       << units << "\" for Axis " << axis << " for robot " 
+                                       << units << "\" for Axis " << axis << " for robot "
                                        << robotIndex << std::endl;
                     good = false;
                 }
@@ -379,12 +380,6 @@ namespace sawRobotIO1394 {
 
         if (robot.HasActuatorToJointCoupling) {
             bool parse_success = true;
-
-            robot.Coupling.ActuatorToJointPosition().SetSize(robot.NumberOfJoints, robot.NumberOfActuators, 0.0);
-            robot.Coupling.JointToActuatorPosition().SetSize(robot.NumberOfActuators, robot.NumberOfJoints, 0.0);
-            robot.Coupling.ActuatorToJointEffort().SetSize(robot.NumberOfJoints, robot.NumberOfActuators, 0.0);
-            robot.Coupling.JointToActuatorEffort().SetSize(robot.NumberOfActuators, robot.NumberOfJoints, 0.0);
-
             parse_success &= osaXML1394ConfigureCouplingMatrix(xmlConfig, robotIndex, "ActuatorToJointPosition",
                                                                robot.NumberOfJoints, robot.NumberOfActuators,
                                                                robot.Coupling.ActuatorToJointPosition());
@@ -392,25 +387,38 @@ namespace sawRobotIO1394 {
             parse_success &= osaXML1394ConfigureCouplingMatrix(xmlConfig, robotIndex, "JointToActuatorPosition",
                                                                robot.NumberOfActuators, robot.NumberOfJoints,
                                                                robot.Coupling.JointToActuatorPosition());
+            if (robot.Coupling.JointToActuatorPosition().size() == 0) {
+                robot.Coupling.JointToActuatorPosition()
+                    .ForceAssign(robot.Coupling.ActuatorToJointPosition());
+                nmrInverse(robot.Coupling.JointToActuatorPosition());
+            }
 
             parse_success &= osaXML1394ConfigureCouplingMatrix(xmlConfig, robotIndex, "ActuatorToJointTorque",
                                                                robot.NumberOfJoints, robot.NumberOfActuators,
                                                                robot.Coupling.ActuatorToJointEffort());
+            if (robot.Coupling.ActuatorToJointEffort().size() == 0) {
+                robot.Coupling.ActuatorToJointEffort()
+                    .ForceAssign(robot.Coupling.JointToActuatorPosition().Transpose());
+            }
 
             parse_success &= osaXML1394ConfigureCouplingMatrix(xmlConfig, robotIndex, "JointToActuatorTorque",
                                                                robot.NumberOfActuators, robot.NumberOfJoints,
                                                                robot.Coupling.JointToActuatorEffort());
-            // Still need to do proper alignment and such for joint/actuator situ for each matrix.
+            if (robot.Coupling.JointToActuatorEffort().size() == 0) {
+                robot.Coupling.JointToActuatorEffort()
+                    .ForceAssign(robot.Coupling.ActuatorToJointEffort());
+                nmrInverse(robot.Coupling.JointToActuatorEffort());
+            }
+
             if (!parse_success) {
                 return false;
             }
 
             // make sure the coupling matrices make sense
             vctDoubleMat product, identity;
-
             identity.ForceAssign(vctDoubleMat::Eye(robot.NumberOfActuators));
-
             product.SetSize(robot.NumberOfActuators, robot.NumberOfActuators);
+
             product.ProductOf(robot.Coupling.ActuatorToJointPosition(),
                               robot.Coupling.JointToActuatorPosition());
 
@@ -424,10 +432,10 @@ namespace sawRobotIO1394 {
                               robot.Coupling.JointToActuatorEffort());
             if (!product.AlmostEqual(identity, 0.001)) {
                 CMN_LOG_INIT_ERROR << "ConfigureCoupling: product of torque coupling matrices not identity:"
-                                  << std::endl << product << std::endl;
+                                   << std::endl << product << std::endl;
                 return false;
             }
-        }
+        } // has actuator coupling
         return true;
     }
 
@@ -444,6 +452,13 @@ namespace sawRobotIO1394 {
         std::ostringstream matrixPath;
         matrixPath << "Robot[" << robotIndex << "]/Coupling/" << couplingString;
 
+        // if it doesn't exist, parsing is fine, matrix is set to size 0, 0
+        if (!xmlConfig.Exists(context, matrixPath.str())) {
+            resultMatrix.SetSize(0.0, 0.0, 0.0);
+            return true;
+        }
+
+        resultMatrix.SetSize(numRows, numCols, 0.0);
         for (int i = 0; i < numRows; i++) {
             // Construct XPath for matrix row
             std::ostringstream rowPath;

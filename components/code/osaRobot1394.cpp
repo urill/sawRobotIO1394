@@ -22,7 +22,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #ifndef SAW_ROBOT_IO_1394_WO_CISST
 #include <cisstCommon/cmnUnits.h>
-#include <cisstOSAbstraction/osaSleep.h>
+#include <cisstNumerical/nmrInverse.h>
 #endif
 
 #include <Amp1394/AmpIORevision.h>
@@ -634,7 +634,7 @@ void osaRobot1394::CheckState(void)
                 vctDoubleVec::const_iterator potTimestamp = mActuatorTimestamp.begin(); // this is a bit approximative when there's coupling
                 vctDoubleVec::iterator potDuration = mPotErrorDuration.begin();
                 vctBoolVec::iterator potValid = mPotValid.begin();
-                
+
                 for (;
                      pot != potEnd;
                      ++pot,
@@ -717,43 +717,67 @@ void osaRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
         (coupling.ActuatorToJointPosition().cols() != mNumberOfActuators)) {
         cmnThrow("SetCoupling: invalid size for ActuatorToJointPosition");
     }
+    mConfiguration.Coupling.ActuatorToJointPosition()
+        .ForceAssign(coupling.ActuatorToJointPosition());
 
-    if ((coupling.JointToActuatorPosition().rows() != mNumberOfActuators) ||
-        (coupling.JointToActuatorPosition().cols() != mNumberOfJoints)) {
-        cmnThrow("SetCoupling: invalid size for JointToActuatorPosition");
+    // if we get an empty matrix, compute the inverse
+    if (coupling.JointToActuatorPosition().size() == 0) {
+        mConfiguration.Coupling.JointToActuatorPosition()
+            .ForceAssign(coupling.ActuatorToJointPosition());
+        nmrInverse(mConfiguration.Coupling.JointToActuatorPosition());
+    } else {
+        if ((coupling.JointToActuatorPosition().rows() != mNumberOfActuators) ||
+            (coupling.JointToActuatorPosition().cols() != mNumberOfJoints)) {
+            cmnThrow("SetCoupling: invalid size for JointToActuatorPosition");
+        }
+        mConfiguration.Coupling.JointToActuatorPosition()
+            .ForceAssign(coupling.JointToActuatorPosition());
     }
 
-    if ((coupling.ActuatorToJointEffort().rows() != mNumberOfJoints) ||
-        (coupling.ActuatorToJointEffort().cols() != mNumberOfActuators)) {
-        cmnThrow("SetCoupling: invalid size for ActuatorToJointEffort");
+    // if we get an empty matrix, compute the transpose
+    if (coupling.ActuatorToJointEffort().size() == 0) {
+        mConfiguration.Coupling.ActuatorToJointEffort()
+            .ForceAssign(mConfiguration.Coupling.JointToActuatorPosition().Transpose());
+    } else {
+        if ((coupling.ActuatorToJointEffort().rows() != mNumberOfJoints) ||
+            (coupling.ActuatorToJointEffort().cols() != mNumberOfActuators)) {
+            cmnThrow("SetCoupling: invalid size for ActuatorToJointEffort");
+        }
+        mConfiguration.Coupling.ActuatorToJointEffort()
+            .ForceAssign(coupling.ActuatorToJointEffort());
     }
 
-    if ((coupling.JointToActuatorEffort().rows() != mNumberOfActuators) ||
-        (coupling.JointToActuatorEffort().cols() != mNumberOfJoints)) {
-        cmnThrow("SetCoupling: invalid size for JointToActuatorEffort");
+    // if we get an empty matrix, compute the transpose
+    if (coupling.JointToActuatorEffort().size() == 0) {
+        mConfiguration.Coupling.JointToActuatorEffort()
+            .ForceAssign(mConfiguration.Coupling.ActuatorToJointEffort());
+        nmrInverse(mConfiguration.Coupling.JointToActuatorEffort());
+    } else {
+        if ((coupling.JointToActuatorEffort().rows() != mNumberOfActuators) ||
+            (coupling.JointToActuatorEffort().cols() != mNumberOfJoints)) {
+            cmnThrow("SetCoupling: invalid size for JointToActuatorEffort");
+        }
+        mConfiguration.Coupling.JointToActuatorEffort()
+            .ForceAssign(coupling.JointToActuatorEffort());
     }
+
+    // assign values
+    mConfiguration.HasActuatorToJointCoupling = true;
 
     // check for identity using inverse
     const vctDoubleMat identity = vctDoubleMat::Eye(mNumberOfActuators);
     vctDoubleMat product;
     product.SetSize(mNumberOfActuators, mNumberOfActuators);
-    product.ProductOf(coupling.ActuatorToJointPosition(),
-                      coupling.JointToActuatorPosition());
+    product.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
+                      mConfiguration.Coupling.JointToActuatorPosition());
     if (!product.AlmostEqual(identity, 0.001)) {
         cmnThrow("SetCoupling: product of position coupling matrices not identity");
     }
-    product.ProductOf(coupling.ActuatorToJointEffort(),
-                      coupling.JointToActuatorEffort());
+    product.ProductOf(mConfiguration.Coupling.ActuatorToJointEffort(),
+                      mConfiguration.Coupling.JointToActuatorEffort());
     if (!product.AlmostEqual(identity, 0.001)) {
         cmnThrow("ConfigureCoupling: product of torque coupling matrices not identity");
     }
-
-    // finally assign values
-    mConfiguration.HasActuatorToJointCoupling = true;
-    mConfiguration.Coupling.ActuatorToJointPosition().ForceAssign(coupling.ActuatorToJointPosition());
-    mConfiguration.Coupling.JointToActuatorPosition().ForceAssign(coupling.JointToActuatorPosition());
-    mConfiguration.Coupling.ActuatorToJointEffort().ForceAssign(coupling.ActuatorToJointEffort());
-    mConfiguration.Coupling.JointToActuatorEffort().ForceAssign(coupling.JointToActuatorEffort());
 }
 
 void osaRobot1394::EnablePower(void)
