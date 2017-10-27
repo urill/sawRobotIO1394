@@ -349,7 +349,7 @@ namespace sawRobotIO1394 {
                 } else if (units == "m") {
                     pot.Distance *= cmn_m;
                 } else {
-                    CMN_LOG_INIT_ERROR << "Configure: invalid <Potentiometers><Tolerance Units=\"\"> must be rad, deg, mm, m but found \""
+                    CMN_LOG_INIT_ERROR << "Configure: invalid <Potentiometers><Tolerance Unit=\"\"> must be rad, deg, mm, m but found \""
                                        << units << "\" for Axis " << axis << " for robot " 
                                        << robotIndex << std::endl;
                     good = false;

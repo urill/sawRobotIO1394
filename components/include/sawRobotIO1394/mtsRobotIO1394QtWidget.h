@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen
   Created on: 2012-07-20
 
-  (C) Copyright 2012-2015 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2012-2017 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -67,6 +67,7 @@ private slots:
     void SlotBrakeAmpEnable(void);
     void SlotResetEncodersAll(void);
     void SlotBiasEncodersAll(void);
+    void SlotUsePotsForSafetyCheck(bool status);
     void SlotWatchdogPeriod(double period_ms);
     void SlotBrakeEngage(void);
     void SlotBrakeRelease(void);
@@ -119,6 +120,7 @@ protected:
         mtsFunctionWrite SetWatchdogPeriod;
 
         mtsFunctionWrite BiasEncoder;
+        mtsFunctionWrite UsePotsForSafetyCheck;
     } Robot;
 
     struct ActuatorStruct {
@@ -174,6 +176,7 @@ private:
     // GUI: Feedbacks
     QPushButton * QPBResetEncAll;
     QPushButton * QPBBiasEncAll;
+    QCheckBox * QCBUsePotsForSafetyCheck;
     QDoubleSpinBox * QSBWatchdogPeriod;
     QCheckBox * QCBEnableDirectControl;
     QLabel * QLSerialNumber;
@@ -208,6 +211,7 @@ private:
 
     void PowerStatusEventHandler(const bool & status);
     void WatchdogStatusEventHandler(const bool & status);
+    void UsePotsForSafetyCheckEventHandler(const bool & status);
 
     // signal and slot used by mts event handlers, this this component
     // doesn't have a thread (i.e. mtsTask), events are handled in the
@@ -216,9 +220,11 @@ private:
 signals:
     void SignalPowerStatus(bool status);
     void SignalWatchdogStatus(bool status);
+    void SignalUsePotsForSafetyCheck(bool status);
 protected slots:
     void SlotPowerStatusEvent(bool status);
     void SlotWatchdogStatusEvent(bool status);
+    void SlotUsePotsForSafetyCheckEvent(bool status);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mtsRobotIO1394QtWidget);

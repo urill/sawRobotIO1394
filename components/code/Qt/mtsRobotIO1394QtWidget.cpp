@@ -228,6 +228,7 @@ void mtsRobotIO1394QtWidget::SlotEnableDirectControl(bool toggle)
     QSBWatchdogPeriod->setEnabled(toggle);
     QPBResetEncAll->setEnabled(toggle);
     QPBBiasEncAll->setEnabled(toggle);
+    QCBUsePotsForSafetyCheck->setEnabled(toggle);
     QVWActuatorCurrentEnableEach->setEnabled(toggle);
     QVWActuatorCurrentSpinBox->setEnabled(toggle);
     QVWActuatorCurrentSlider->setEnabled(toggle);
@@ -291,7 +292,7 @@ void mtsRobotIO1394QtWidget::SlotResetEncodersAll()
     newEncoderValues.SetAll(0.0);
     mtsExecutionResult result = Robot.SetEncoderPosition(newEncoderValues);
     if (!result.IsOK()) {
-        CMN_LOG_CLASS_RUN_WARNING << "slot_qpbResetEncAll: command failed \"" << result << "\"" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << "SlotResetEncodersAll: command failed \"" << result << "\"" << std::endl;
      }
 }
 
@@ -299,7 +300,7 @@ void mtsRobotIO1394QtWidget::SlotBiasEncodersAll()
 {
     mtsExecutionResult result = Robot.BiasEncoder(1000);
     if (!result.IsOK()) {
-        CMN_LOG_CLASS_RUN_WARNING << "slot_qpbBiasEncAll: command failed \"" << result << "\"" << std::endl;
+        CMN_LOG_CLASS_RUN_WARNING << "SlotBiasEncodersAll: command failed \"" << result << "\"" << std::endl;
     }
 }
 
@@ -450,10 +451,15 @@ void mtsRobotIO1394QtWidget::SetupCisstInterface(void)
         robotInterface->AddFunction("SetWatchdogPeriod", Robot.SetWatchdogPeriod);
 
         robotInterface->AddFunction("BiasEncoder", Robot.BiasEncoder);
+        robotInterface->AddFunction("UsePotsForSafetyCheck", Robot.UsePotsForSafetyCheck);
 
         // make sure the events are queued
-        robotInterface->AddEventHandlerWrite(&mtsRobotIO1394QtWidget::PowerStatusEventHandler, this, "PowerStatus");
-        robotInterface->AddEventHandlerWrite(&mtsRobotIO1394QtWidget::WatchdogStatusEventHandler, this, "WatchdogStatus");
+        robotInterface->AddEventHandlerWrite(&mtsRobotIO1394QtWidget::PowerStatusEventHandler,
+                                             this, "PowerStatus");
+        robotInterface->AddEventHandlerWrite(&mtsRobotIO1394QtWidget::WatchdogStatusEventHandler,
+                                             this, "WatchdogStatus");
+        robotInterface->AddEventHandlerWrite(&mtsRobotIO1394QtWidget::UsePotsForSafetyCheckEventHandler,
+                                             this, "UsePotsForSafetyCheck");
     }
 
     mtsInterfaceRequired * actuatorInterface = AddInterfaceRequired("RobotActuators");
@@ -544,6 +550,8 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     encoderLayout->addWidget(QPBResetEncAll);
     QPBBiasEncAll = new QPushButton("Bias from potentiometers");
     encoderLayout->addWidget(QPBBiasEncAll);
+    QCBUsePotsForSafetyCheck = new QCheckBox("Use pot/encoder check");
+    encoderLayout->addWidget(QCBUsePotsForSafetyCheck);
     encoderLayout->addStretch();
     encoderFrame->setLayout(encoderLayout);
     encoderFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -707,27 +715,45 @@ void mtsRobotIO1394QtWidget::setupUi(void)
     resize(sizeHint());
 
     // connect signals & slots
-    connect(QCBEnableAmps, SIGNAL(toggled(bool)), this, SLOT(SlotEnableAmps(bool)));
-    connect(QCBEnableAll, SIGNAL(toggled(bool)), this, SLOT(SlotEnableAll(bool)));
-    connect(QCBEnableDirectControl, SIGNAL(toggled(bool)), this, SLOT(SlotEnableDirectControl(bool)));
-    connect(QPBResetCurrentAll, SIGNAL(clicked()), this, SLOT(SlotResetCurrentAll()));
-    connect(QPBResetEncAll, SIGNAL(clicked()), this, SLOT(SlotResetEncodersAll()));
-    connect(QPBBiasEncAll, SIGNAL(clicked()), this, SLOT(SlotBiasEncodersAll()));
+    connect(QCBEnableAmps, SIGNAL(toggled(bool)),
+            this, SLOT(SlotEnableAmps(bool)));
+    connect(QCBEnableAll, SIGNAL(toggled(bool)),
+            this, SLOT(SlotEnableAll(bool)));
+    connect(QCBEnableDirectControl, SIGNAL(toggled(bool)),
+            this, SLOT(SlotEnableDirectControl(bool)));
+    connect(QPBResetCurrentAll, SIGNAL(clicked()),
+            this, SLOT(SlotResetCurrentAll()));
+    connect(QPBResetEncAll, SIGNAL(clicked()),
+            this, SLOT(SlotResetEncodersAll()));
+    connect(QPBBiasEncAll, SIGNAL(clicked()),
+            this, SLOT(SlotBiasEncodersAll()));
+    connect(QCBUsePotsForSafetyCheck, SIGNAL(toggled(bool)),
+            this, SLOT(SlotUsePotsForSafetyCheck(bool)));
     connect(QSBWatchdogPeriod, SIGNAL(valueChanged(double)),
             this, SLOT(SlotWatchdogPeriod(double)));
-    connect(QVWActuatorCurrentEnableEach, SIGNAL(valueChanged()), this, SLOT(SlotActuatorAmpEnable()));
-    connect(QVWActuatorCurrentSpinBox, SIGNAL(valueChanged()), this, SLOT(SlotActuatorCurrentValueChanged()));
-    connect(QVWActuatorCurrentSlider, SIGNAL(valueChanged()), this, SLOT(SlotSliderActuatorCurrentValueChanged()));
+    connect(QVWActuatorCurrentEnableEach, SIGNAL(valueChanged()),
+            this, SLOT(SlotActuatorAmpEnable()));
+    connect(QVWActuatorCurrentSpinBox, SIGNAL(valueChanged()),
+            this, SLOT(SlotActuatorCurrentValueChanged()));
+    connect(QVWActuatorCurrentSlider, SIGNAL(valueChanged()),
+            this, SLOT(SlotSliderActuatorCurrentValueChanged()));
 
     if (NumberOfBrakes != 0) {
-        connect(QPBBrakeRelease, SIGNAL(clicked()), this, SLOT(SlotBrakeRelease()));
-        connect(QPBBrakeEngage, SIGNAL(clicked()), this, SLOT(SlotBrakeEngage()));
-        connect(QVWBrakeCurrentEnableEach, SIGNAL(valueChanged()), this, SLOT(SlotBrakeAmpEnable()));
+        connect(QPBBrakeRelease, SIGNAL(clicked()),
+                this, SLOT(SlotBrakeRelease()));
+        connect(QPBBrakeEngage, SIGNAL(clicked()),
+                this, SLOT(SlotBrakeEngage()));
+        connect(QVWBrakeCurrentEnableEach, SIGNAL(valueChanged()),
+                this, SLOT(SlotBrakeAmpEnable()));
     }
 
     // connect cisstMultiTask events
-    connect(this, SIGNAL(SignalPowerStatus(bool)), this, SLOT(SlotPowerStatusEvent(bool)));
-    connect(this, SIGNAL(SignalWatchdogStatus(bool)), this, SLOT(SlotWatchdogStatusEvent(bool)));
+    connect(this, SIGNAL(SignalPowerStatus(bool)),
+            this, SLOT(SlotPowerStatusEvent(bool)));
+    connect(this, SIGNAL(SignalWatchdogStatus(bool)),
+            this, SLOT(SlotWatchdogStatusEvent(bool)));
+    connect(this, SIGNAL(SignalUsePotsForSafetyCheck(bool)),
+            this, SLOT(SlotUsePotsForSafetyCheckEvent(bool)));
 
     // set initial value
     QCBEnableAmps->setChecked(false);
@@ -817,5 +843,23 @@ void mtsRobotIO1394QtWidget::SlotWatchdogStatusEvent(bool status)
     } else {
         QLWatchdog->setText("Timeout FALSE");
         QLWatchdog->setStyleSheet("QLabel { background-color: green }");
+    }
+}
+
+void mtsRobotIO1394QtWidget::UsePotsForSafetyCheckEventHandler(const bool & status)
+{
+    emit SignalUsePotsForSafetyCheck(status);
+}
+
+void mtsRobotIO1394QtWidget::SlotUsePotsForSafetyCheckEvent(bool status)
+{
+    QCBUsePotsForSafetyCheck->setChecked(status);
+}
+
+void mtsRobotIO1394QtWidget::SlotUsePotsForSafetyCheck(bool checked)
+{
+    mtsExecutionResult result = Robot.UsePotsForSafetyCheck(checked);
+    if (!result.IsOK()) {
+        CMN_LOG_CLASS_RUN_WARNING << "SlotUsePotsForSafetyCheck: command failed \"" << result << "\"" << std::endl;
     }
 }

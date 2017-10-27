@@ -69,6 +69,7 @@ namespace sawRobotIO1394 {
         void GetNumberOfActuators(int & num_actuators) const;
         void GetNumberOfJoints(int & num_joints) const;
         void GetSerialNumber(int & serialNumber) const;
+        void UsePotsForSafetyCheck(const bool & usePotsForSafetyChecks);
         void SetTorqueJoint(const prmForceTorqueJointSet & jointTorques);
         void ResetSingleEncoder(const int & index);
         void EnablePower(void);
@@ -97,6 +98,7 @@ namespace sawRobotIO1394 {
             mtsFunctionWrite WatchdogPeriod;
             mtsFunctionWrite Coupling;
             mtsFunctionWrite BiasEncoder;
+            mtsFunctionWrite UsePotsForSafetyCheck;
         } EventTriggers;
 
         int mSamplesForCalibrateEncoderOffsetsFromPots;

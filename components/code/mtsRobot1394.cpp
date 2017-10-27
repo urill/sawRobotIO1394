@@ -139,6 +139,14 @@ void mtsRobot1394::GetSerialNumber(int & serialNumber) const {
     serialNumber = this->SerialNumber();
 }
 
+void mtsRobot1394::UsePotsForSafetyCheck(const bool & usePotsForSafetyCheck)
+{
+    // use base class for logic
+    osaRobot1394::UsePotsForSafetyCheck(usePotsForSafetyCheck);
+    // trigger mts event
+    EventTriggers.UsePotsForSafetyCheck(usePotsForSafetyCheck);
+}
+
 void mtsRobot1394::SetTorqueJoint(const prmForceTorqueJointSet & efforts) {
     this->SetJointEffort(efforts.ForceTorque());
 }
@@ -271,7 +279,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableWrite, mActuatorCurrentCommand,
                                         "GetActuatorRequestedCurrent");
 
-    robotInterface->AddCommandWrite(&osaRobot1394::UsePotsForSafetyCheck, thisBase,
+    robotInterface->AddCommandWrite(&mtsRobot1394::UsePotsForSafetyCheck, this,
                                     "UsePotsForSafetyCheck", mUsePotsForSafetyCheck);
 
     robotInterface->AddCommandWrite<osaRobot1394, vctBoolVec>(&osaRobot1394::SetBrakePower, thisBase,
@@ -337,6 +345,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddEventWrite(EventTriggers.WatchdogPeriod, "WatchdogPeriod", 15.0 * cmn_ms);
     robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
     robotInterface->AddEventWrite(EventTriggers.BiasEncoder, "BiasEncoder", 0);
+    robotInterface->AddEventWrite(EventTriggers.UsePotsForSafetyCheck, "UsePotsForSafetyCheck", false);
 
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
