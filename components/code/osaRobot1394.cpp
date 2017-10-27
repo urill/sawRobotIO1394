@@ -1164,7 +1164,7 @@ void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & 
             const int counter = bits[i];
             // overflow value +/- 0x3ffffc, sign set by direction bit
             // Temporary change for testing single count velocity
-            if (counter == 0x3ffffc || counter == -0x3ffffc) {
+            if (counter == 0xffff || counter == -0xffff) {
                 vel[i] = 0.0;
             }
             else {
@@ -1181,15 +1181,16 @@ void osaRobot1394::EncoderBitsToVelocityAcc(const vctIntVec & bits, const vctDou
                    || (Amp1394_VERSION_MAJOR > 1));
         const double period = 1.0 / 3072000.0; // Clock period defined in firmware - different than system clock
         for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
-            const int counter = bits[i];
+            int counter = bits[i];
             const double cur_acc = acc[i];
             // overflow value +/- 0x3ffffc, sign set by direction bit
             // Temporary change for testing single count velocity
-            if (counter == 0x3ffffc || counter == -0x3ffffc) {
+            if (counter == 0xffff || counter == -0xffff) {
                 vel[i] = 0.0;
             }
             else {
-                vel[i] = mBitsToPositionScales[i] * (4.0/((double) counter*period) + (counter*period/2)*cur_acc) ;
+                counter = counter + (counter/2)*cur_acc;
+                vel[i] = mBitsToPositionScales[i] * (4.0/((double) counter*period));
             }
         }
     }
