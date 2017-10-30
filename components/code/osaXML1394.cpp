@@ -453,7 +453,7 @@ namespace sawRobotIO1394 {
         matrixPath << "Robot[" << robotIndex << "]/Coupling/" << couplingString;
 
         // if it doesn't exist, parsing is fine, matrix is set to size 0, 0
-        if (!xmlConfig.Exists(context, matrixPath.str())) {
+        if (!xmlConfig.Exists(context + '/'+ matrixPath.str())) {
             resultMatrix.SetSize(0.0, 0.0, 0.0);
             return true;
         }
