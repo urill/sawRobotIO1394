@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
 {
     cmnCommandLineOptions options;
     int portNumber = 0;
-    size_t actuatorIndex = 0;
+    size_t actuatorIndex = 6;
     size_t numberOfIterations;
     double sleepBetweenReads = 0.3 * cmn_ms;
     std::string configFile;
@@ -79,6 +79,11 @@ int main(int argc, char * argv[])
     double * allCPUTimes = new double[numberOfIterations];
     double * allPositions = new double[numberOfIterations];
     double * allVelocities = new double[numberOfIterations];
+    double * allVelocitiesAcc = new double[numberOfIterations];
+    int * allVelocitiesRaw = new int[numberOfIterations];
+    double * allAccelerations = new double[numberOfIterations];
+    int * allAccPrevRaw = new int[numberOfIterations];
+    int * allAccRecRaw = new int[numberOfIterations];
     double * allVelocitiesSoftware = new double[numberOfIterations];
 
     std::cout << "Loading config file ..." << std::endl;
@@ -152,6 +157,21 @@ int main(int argc, char * argv[])
         allVelocities[iter] =
             robot->EncoderVelocity()[actuatorIndex];
 
+        allVelocitiesAcc[iter] =
+            robot->EncoderVelocityAcc()[actuatorIndex];
+
+        allVelocitiesRaw[iter] =
+        robot->EncoderVelocityRaw()[actuatorIndex];
+        
+        allAccelerations[iter] =
+            robot->EncoderAcceleration()[actuatorIndex];
+                
+        allAccPrevRaw[iter] =
+        robot->EncoderAccPrevRaw()[actuatorIndex];
+
+        allAccRecRaw[iter] =
+        robot->EncoderAccRecRaw()[actuatorIndex];
+
         allVelocitiesSoftware[iter] =
             robot->EncoderVelocitySoftware()[actuatorIndex];
 
@@ -182,6 +202,11 @@ int main(int argc, char * argv[])
            << "fpga-dtime,"
            << "encoder-pos,"
            << "encoder-vel,"
+           << "encoder-vel-acc,"
+           << "encoder-vel-raw,"
+           << "encoder-acc,"
+           << "encoder-acc-prev,"
+           << "encoder-acc-rec,"
            << "software-vel" << std::endl;
 
     output << std::setprecision(17);
@@ -193,6 +218,11 @@ int main(int argc, char * argv[])
                << allActuatorTimeStamps[iter] << ","
                << allPositions[iter] << ","
                << allVelocities[iter] << ","
+               << allVelocitiesAcc[iter] << ","
+               << allVelocitiesRaw[iter] << ","
+               << allAccelerations[iter] << ","
+               << allAccPrevRaw[iter] << ","
+               << allAccRecRaw[iter] << ","
                << allVelocitiesSoftware[iter] << std::endl;
     }
 
