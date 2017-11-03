@@ -253,10 +253,18 @@ int main(int argc, char * argv[])
     try {
         port->Read();
     } catch (const std::runtime_error & e) {
-        std::cerr << "Caught exception: " << e.what() << std::endl;
+        std::cerr << "Caught exception: " << e.what() << std::endl
+                  << "--> This is normal if the encoders have not yet been calibrated using the potentiometers"
+                  << std::endl;
     }
     // preload encoders
-    robot->CalibrateEncoderOffsetsFromPots();
+    try {
+        robot->CalibrateEncoderOffsetsFromPots();
+    } catch (const std::runtime_error & e) {
+        std::cerr << "Caught exception: " << e.what() << std::endl
+                  << "--> This is normal if that robot doesn't use the potentiometers to calibrate the encoders"
+                  << std::endl;
+    }
 
     std::cout << std::endl
               << "Ready to power?  Press any key to start." << std::endl;
