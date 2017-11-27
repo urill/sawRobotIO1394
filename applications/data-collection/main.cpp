@@ -75,17 +75,23 @@ int main(int argc, char * argv[])
     // add arrays here for all data collected....
     std::cout << "Allocation memory for " << numberOfIterations << " samples." << std::endl;
     size_t * allIterations = new size_t[numberOfIterations];
-    double * allActuatorTimeStamps = new double[numberOfIterations];
+    //    double * allActuatorTimeStamps = new double[numberOfIterations];
     double * allCPUTimes = new double[numberOfIterations];
     double * allPositions = new double[numberOfIterations];
     double * allVelocities = new double[numberOfIterations];
     double * allVelocitiesAcc = new double[numberOfIterations];
-    int * allVelocitiesRaw = new int[numberOfIterations];
     double * allAccelerations = new double[numberOfIterations];
-    int * allAccPrevRaw = new int[numberOfIterations];
-    int * allAccRecRaw = new int[numberOfIterations];
+    double * allVelocityAccRunning = new double[numberOfIterations];
     double * allVelocitiesSoftware = new double[numberOfIterations];
-
+    int    * allRunningRaw = new int[numberOfIterations];
+    int    * allPrevRaw = new int[numberOfIterations];
+    int    * allRecRaw = new int[numberOfIterations];
+    int    * allChannel = new int[numberOfIterations];
+    int    * allNextChannel = new int[numberOfIterations];
+    bool   * allDirChanged = new bool[numberOfIterations];
+    bool   * allDir = new bool[numberOfIterations];
+    bool   * allExpectedEdge = new bool[numberOfIterations];
+    
     std::cout << "Loading config file ..." << std::endl;
     sawRobotIO1394::osaPort1394Configuration config;
     sawRobotIO1394::osaXML1394ConfigurePort(configFile, config);
@@ -139,7 +145,6 @@ int main(int argc, char * argv[])
          iter < numberOfIterations;
          ++iter) {
         port->Read();
-
         // save index
         allIterations[iter] = iter;
 
@@ -147,8 +152,8 @@ int main(int argc, char * argv[])
         allCPUTimes[iter] = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
 
         // get time from FPGA
-        allActuatorTimeStamps[iter] =
-            robot->ActuatorTimeStamp()[actuatorIndex];
+        // allActuatorTimeStamps[iter] =
+        //robot->ActuatorTimeStamp()[actuatorIndex];
 
         // get positions, see osaRobot1394.cpp, line ~1000
         allPositions[iter] =
@@ -159,21 +164,39 @@ int main(int argc, char * argv[])
 
         allVelocitiesAcc[iter] =
             robot->EncoderVelocityAcc()[actuatorIndex];
-
-        allVelocitiesRaw[iter] =
-        robot->EncoderVelocityRaw()[actuatorIndex];
         
         allAccelerations[iter] =
             robot->EncoderAcceleration()[actuatorIndex];
                 
-        allAccPrevRaw[iter] =
-        robot->EncoderAccPrevRaw()[actuatorIndex];
-
-        allAccRecRaw[iter] =
-        robot->EncoderAccRecRaw()[actuatorIndex];
+        allVelocityAccRunning[iter] =
+        robot->EncoderVelocityAccRunning()[actuatorIndex];
 
         allVelocitiesSoftware[iter] =
             robot->EncoderVelocitySoftware()[actuatorIndex];
+
+        allRunningRaw[iter] =
+            robot->EncoderAccRunningRaw()[actuatorIndex];
+
+        allPrevRaw[iter] =
+            robot->EncoderAccPrevRaw()[actuatorIndex];
+
+        allRecRaw[iter] =
+            robot->EncoderAccRecRaw()[actuatorIndex];
+
+        allChannel[iter] =
+            robot->EncoderVelocityChannel()[actuatorIndex];
+
+        allNextChannel[iter] =
+            robot->EncoderNextChannel()[actuatorIndex];
+
+        allDirChanged[iter] =
+            robot->EncoderDirChanged()[actuatorIndex];
+
+        allDir[iter] =
+            robot->EncoderDir()[actuatorIndex];
+        
+        allExpectedEdge[iter] =
+            robot->EncoderExpectedEdge()[actuatorIndex];
 
         // display progress
         progress++;
@@ -199,15 +222,21 @@ int main(int argc, char * argv[])
     // header
     output << "iteration,"
            << "cpu-time,"
-           << "fpga-dtime,"
+        // << "fpga-dtime,"
            << "encoder-pos,"
            << "encoder-vel,"
            << "encoder-vel-acc,"
-           << "encoder-vel-raw,"
            << "encoder-acc,"
-           << "encoder-acc-prev,"
-           << "encoder-acc-rec,"
-           << "software-vel" << std::endl;
+           << "encoder-acc-running,"
+           << "software-vel,"
+           << "running-raw,"
+           << "prev-raw,"
+           << "rec-raw,"
+           << "dir-changed,"
+           << "dir,"
+           << "expected-edge,"
+           << "channel,"
+           << "next-channel" << std::endl;
 
     output << std::setprecision(17);
     for (size_t iter = 0;
@@ -215,22 +244,42 @@ int main(int argc, char * argv[])
          ++iter) {
         output << allIterations[iter] << ","
                << allCPUTimes[iter] << ","
-               << allActuatorTimeStamps[iter] << ","
+            //     << allActuatorTimeStamps[iter] << ","
                << allPositions[iter] << ","
                << allVelocities[iter] << ","
                << allVelocitiesAcc[iter] << ","
-               << allVelocitiesRaw[iter] << ","
                << allAccelerations[iter] << ","
-               << allAccPrevRaw[iter] << ","
-               << allAccRecRaw[iter] << ","
-               << allVelocitiesSoftware[iter] << std::endl;
+               << allVelocityAccRunning[iter] << ","
+               << allVelocitiesSoftware[iter] << ","
+               << allRunningRaw[iter] << ","
+               << allPrevRaw[iter] << ","
+               << allRecRaw[iter] << ","
+               << allDirChanged[iter] << ","
+               << allDir[iter] << ","
+               << allExpectedEdge[iter] << ","
+               << allChannel[iter] << ","
+               << allNextChannel[iter] << std::endl;
     }
 
     output.close();
 
     // cleanup
     delete allIterations;
-    delete allActuatorTimeStamps;
+    delete allCPUTimes;
+    //    delete allActuatorTimeStamps;
+    delete allPositions;
+    delete allVelocities;
+    delete allAccelerations;
+    delete allVelocityAccRunning;
+    delete allVelocitiesSoftware;
+    delete allRunningRaw;
+    delete allPrevRaw;
+    delete allRecRaw;
+    delete allDirChanged;
+    delete allDir;
+    delete allExpectedEdge;
+    delete allChannel;
+    delete allNextChannel;
 
     delete port;
     return 0;

@@ -81,6 +81,7 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mEncoderPositionBits.SetSize(mNumberOfActuators);
     mEncoderPositionBitsPrev.SetSize(mNumberOfActuators);
     mEncoderVelocityBits.SetSize(mNumberOfActuators);
+    mEncoderPrevVelocityBits.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsCommand.SetSize(mNumberOfActuators);
     mActuatorCurrentBitsFeedback.SetSize(mNumberOfActuators);
 
@@ -97,11 +98,18 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mEncoderVelocityCountsPerSecond.SetSize(mNumberOfActuators);
     mEncoderVelocity.SetSize(mNumberOfActuators);
     mEncoderVelocityAcc.SetSize(mNumberOfActuators);
+    mEncoderVelocityAccRunning.SetSize(mNumberOfActuators);
     mEncoderVelocityRaw.SetSize(mNumberOfActuators);
     mEncoderAcceleration.SetSize(mNumberOfActuators);
-    mEncoderAccPrevRaw.SetSize(mNumberOfActuators);
-    mEncoderAccRecRaw.SetSize(mNumberOfActuators);
+    mEncoderAccPrevCounter.SetSize(mNumberOfActuators);
+    mEncoderAccRecCounter.SetSize(mNumberOfActuators);
+    mEncoderAccRunningCounter.SetSize(mNumberOfActuators);
+    mEncoderDirChanged.SetSize(mNumberOfActuators);
+    mEncoderDir.SetSize(mNumberOfActuators);
+    mEncoderExpectedEdge.SetSize(mNumberOfActuators);
     mEncoderVelocitySoftware.SetSize(mNumberOfActuators);
+    mEncoderVelocityChannel.SetSize(mNumberOfActuators);
+    mEncoderNextChannel.SetSize(mNumberOfActuators);
     mJointPosition.SetSize(mNumberOfJoints);
     mJointVelocity.SetSize(mNumberOfJoints);
     mJointTorque.SetSize(mNumberOfJoints);
@@ -407,10 +415,16 @@ void osaRobot1394::PollState(void)
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
         mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
         mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
-        mEncoderAccPrevRaw[i] = board->GetEncoderVelocityRaw(axis);
+        mEncoderPrevVelocityBits[i] = board->GetEncoderPrevVelocity(axis);
         mEncoderAcceleration[i] = board->GetEncoderAcceleration(axis);
-        mEncoderAccPrevRaw[i] = board->GetEncoderAccPrevRaw(axis);
-        mEncoderAccRecRaw[i] = board->GetEncoderAccRecRaw(axis);
+        mEncoderAccPrevCounter[i] = board->GetEncoderAccPrev(axis);
+        mEncoderAccRecCounter[i] = board->GetEncoderAccRec(axis);
+        mEncoderAccRunningCounter[i] = board->GetEncoderAccRunning(axis);
+        mEncoderDirChanged[i] = board->GetEncoderDirChanged(axis);
+        mEncoderDir[i] = board->GetEncoderDir(axis);
+        mEncoderExpectedEdge[i] = board->GetEncoderExpectedEdge(axis);
+        mEncoderVelocityChannel[i] = board->GetEncoderVelocityChannel(axis);
+        mEncoderNextChannel[i] = board->GetEncoderNextChannel(axis);
         mEncoderVelocityCountsPerSecond[i] = board->GetEncoderVelocityCountsPerSecond(axis);
 
         mPotBits[i] = board->GetAnalogInput(axis);
@@ -459,8 +473,9 @@ void osaRobot1394::ConvertState(void)
 
     // If we have firmware 5 or above, FPGA performs velocity computation
     if (mLowestFirmWareVersion >= 5) {
-        EncoderBitsToVelocity(mEncoderVelocityBits, mEncoderVelocity);   // 1/dt
-        EncoderBitsToVelocityAcc(mEncoderVelocityBits, mEncoderAcceleration, mEncoderVelocityAcc);   // 1/dt
+        EncoderBitsToVelocity(mEncoderVelocityBits,  mEncoderVelocity);   // 1/dt
+        EncoderBitsToVelocityAcc(mEncoderVelocityBits, mEncoderPrevVelocityBits, mEncoderAcceleration, mEncoderVelocityAcc);   // 1/dt
+      EncoderBitsToVelocityAccRunning(mEncoderVelocityBits, mEncoderPrevVelocityBits, mEncoderAccRunningCounter, mEncoderAcceleration, mEncoderVelocityAccRunning);   // 1/dt 
     }
 
 #define USE_ENCODER_VELOCITY_IF_FAST 1
@@ -1146,6 +1161,10 @@ const vctDoubleVec & osaRobot1394::EncoderVelocity(void) const {
     return mEncoderVelocity;
 }
 
+const vctDoubleVec & osaRobot1394::EncoderVelocityAccRunning(void) const {
+    return mEncoderVelocityAccRunning;
+}
+
 const vctDoubleVec & osaRobot1394::EncoderVelocityAcc(void) const {
     return mEncoderVelocityAcc;
 }
@@ -1159,11 +1178,35 @@ const vctDoubleVec & osaRobot1394::EncoderAcceleration(void) const {
 }
 
 const vctIntVec & osaRobot1394::EncoderAccPrevRaw(void) const {
-    return mEncoderAccPrevRaw;
+    return mEncoderAccPrevCounter;
 }
 
 const vctIntVec & osaRobot1394::EncoderAccRecRaw(void) const {
-    return mEncoderAccRecRaw;
+    return mEncoderAccRecCounter;
+}
+
+const vctIntVec & osaRobot1394::EncoderAccRunningRaw(void) const {
+    return mEncoderAccRunningCounter;
+}
+
+const vctBoolVec & osaRobot1394::EncoderDirChanged(void) const {
+    return mEncoderDirChanged;
+}
+
+const vctBoolVec & osaRobot1394::EncoderDir(void) const {
+    return mEncoderDir;
+}
+
+const vctBoolVec & osaRobot1394::EncoderExpectedEdge(void) const {
+    return mEncoderExpectedEdge;
+}
+
+const vctIntVec & osaRobot1394::EncoderVelocityChannel(void) const {
+    return mEncoderVelocityChannel;
+}
+
+const vctIntVec & osaRobot1394::EncoderNextChannel(void) const {
+    return mEncoderNextChannel;
 }
 
 const vctDoubleVec & osaRobot1394::EncoderVelocitySoftware(void) const {
@@ -1229,7 +1272,7 @@ void osaRobot1394::EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & 
 }
 
 void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const
-{
+{    
     if (mLowestFirmWareVersion >= 6) {
         CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
                    || (Amp1394_VERSION_MAJOR > 1));
@@ -1238,7 +1281,7 @@ void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & 
             const int counter = bits[i];
             // overflow value +/- 0x3ffffc, sign set by direction bit
             // Temporary change for testing single count velocity
-            if (counter == 0xffff || counter == -0xffff) {
+            if (counter == 0x3fffff || counter == -0x3fffff) {
                 vel[i] = 0.0;
             }
             else {
@@ -1248,23 +1291,66 @@ void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & 
     }
 }
 
-void osaRobot1394::EncoderBitsToVelocityAcc(const vctIntVec & bits, const vctDoubleVec & acc, vctDoubleVec & vel) const
+bool signbit(double x) {
+    return x < 0;
+}
+
+void osaRobot1394::EncoderBitsToVelocityAcc(const vctIntVec & bits, const vctIntVec & prev, const vctDoubleVec & acc, vctDoubleVec & vel) const
 {
     if (mLowestFirmWareVersion >= 6) {
         CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
                    || (Amp1394_VERSION_MAJOR > 1));
         const double period = 1.0 / 3072000.0; // Clock period defined in firmware - different than system clock
         for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
-            int counter = bits[i];
+            const int counter = bits[i];
+            const int prev_counter = prev[i];
             const double cur_acc = acc[i];
             // overflow value +/- 0x3ffffc, sign set by direction bit
             // Temporary change for testing single count velocity
-            if (counter == 0xffff || counter == -0xffff) {
+            if (counter == 0x3fffff || counter == -0x3fffff) {
                 vel[i] = 0.0;
             }
             else {
-                counter = counter + (counter/2)*cur_acc;
-                vel[i] = mBitsToPositionScales[i] * (4.0/((double) counter*period));
+                double vel_term = 4.0/(counter*period);
+                double acc_term = 4.0*cur_acc/(abs(prev_counter) * period);
+                if (vel_term > 0)
+                    acc_term = -acc_term;
+                
+                if ((signbit(vel_term) != signbit(acc_term)) && (abs(acc_term) > abs(vel_term))){
+                    vel[i] = 0;
+                } else {
+                    vel[i] = mBitsToPositionScales[i] * (vel_term + acc_term);
+                }
+            }
+        }
+    }
+}
+
+void osaRobot1394::EncoderBitsToVelocityAccRunning(const vctIntVec & bits, const vctIntVec & prev, const vctIntVec & running, const vctDoubleVec & acc, vctDoubleVec & vel) const
+{
+    if (mLowestFirmWareVersion >= 6) {
+        CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
+                   || (Amp1394_VERSION_MAJOR > 1));
+        const double period = 1.0 / 3072000.0; // Clock period defined in firmware - different than system clock
+        for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
+            const int counter = bits[i];
+            const int prev_counter = prev[i];
+            const double cur_acc = acc[i];
+            const int running_counter = running[i];
+            // overflow value +/- 0x3ffffc, sign set by direction bit
+            // Temporary change for testing single count velocity
+            if (counter == 0x3fffff || counter == -0x3fffff) {
+                vel[i] = 0.0;
+            }
+            else {
+                double vel_term = 4.0/(counter*period);
+                double acc_term = 8.0*cur_acc/((double) abs(counter)*abs(prev_counter)*period)*(abs(counter)/2.0 + running_counter);
+
+                if ((signbit(vel_term) != signbit(acc_term)) && (abs(acc_term) > abs(vel_term))){
+                    vel[i] = 0;
+                } else {
+                    vel[i] = mBitsToPositionScales[i] * (vel_term + acc_term);
+                }
             }
         }
     }

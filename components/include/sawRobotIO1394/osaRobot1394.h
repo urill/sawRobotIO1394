@@ -126,9 +126,15 @@ public:
     bool WatchdogStatus(void) const;
     const vctBoolVec & ActuatorPowerStatus(void) const;
     const vctBoolVec & BrakePowerStatus(void) const;
+    const vctBoolVec & EncoderDirChanged(void) const;
+    const vctBoolVec & EncoderDir(void) const;
+    const vctBoolVec & EncoderExpectedEdge(void) const;
     const vctIntVec & EncoderVelocityRaw(void) const;
     const vctIntVec & EncoderAccPrevRaw(void) const;
     const vctIntVec & EncoderAccRecRaw(void) const;
+    const vctIntVec & EncoderAccRunningRaw(void) const;
+    const vctIntVec & EncoderVelocityChannel(void) const;
+    const vctIntVec & EncoderNextChannel(void) const;
     const vctDoubleVec & ActuatorCurrentFeedback(void) const;
     const vctDoubleVec & BrakeCurrentFeedback(void) const;
     const vctDoubleVec & PotPosition(void) const;
@@ -137,6 +143,7 @@ public:
     const vctDoubleVec & EncoderPosition(void) const;
     const vctDoubleVec & EncoderVelocity(void) const;
     const vctDoubleVec & EncoderVelocityAcc(void) const;
+    const vctDoubleVec & EncoderVelocityAccRunning(void) const;
     const vctDoubleVec & EncoderAcceleration(void) const;
     const vctDoubleVec & EncoderVelocitySoftware(void) const;
     /**}**/
@@ -168,7 +175,9 @@ public:
     void EncoderPositionToBits(const vctDoubleVec & pos, vctIntVec & bits) const;
     void EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & pos) const;
     void EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & vel) const;
-    void EncoderBitsToVelocityAcc(const vctIntVec & bits, const vctDoubleVec & acc, vctDoubleVec & vel) const;
+    void EncoderBitsToVelocityAcc(const vctIntVec & bits, const vctIntVec & prev, const vctDoubleVec & acc, vctDoubleVec & vel) const;
+    void EncoderBitsToVelocityAccRunning(const vctIntVec & bits, const vctIntVec & prev, const vctIntVec & running, const vctDoubleVec & acc, vctDoubleVec & vel) const;
+    
     //! Conversions for actuator current commands and measurements
     void ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const;
     void ActuatorCurrentToBits(const vctDoubleVec & currents, vctIntVec & bits) const;
@@ -274,6 +283,9 @@ protected:
         mPreviousEncoderOverflow,
         mEncoderOverflow,
         mDigitalInputs,
+        mEncoderDirChanged,
+        mEncoderDir,
+        mEncoderExpectedEdge,
         mEncoderChannelsA;
 
     vctIntVec
@@ -281,11 +293,15 @@ protected:
         mEncoderPositionBits,
         mEncoderPositionBitsPrev,
         mEncoderVelocityBits,     // latched velocity
+        mEncoderPrevVelocityBits,     // latched velocity
         mEncoderDPositionBits,
         mEncoderDTimeBits,
         mEncoderVelocityRaw,
-        mEncoderAccPrevRaw,
-        mEncoderAccRecRaw;
+        mEncoderAccPrevCounter,
+        mEncoderAccRecCounter,
+        mEncoderAccRunningCounter,
+        mEncoderVelocityChannel,
+        mEncoderNextChannel;
     
     vctIntVec
         mActuatorCurrentBitsCommand,
@@ -305,6 +321,7 @@ protected:
         mEncoderVelocityCountsPerSecond,  // velocity based on FPGA measurement of time between encoder edges (period)
         mEncoderVelocity,
         mEncoderVelocityAcc,
+        mEncoderVelocityAccRunning,
         mEncoderAcceleration,
         mEncoderVelocitySoftware,
         mJointPosition,
