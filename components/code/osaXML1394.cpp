@@ -243,22 +243,6 @@ namespace sawRobotIO1394 {
             good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToPositionScale, !robot.OnlyIO);
             actuator.Encoder.BitsToPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
 
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Scale", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDPositionScale, !robot.OnlyIO);
-            actuator.Encoder.BitsToDPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Offset", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDPositionOffset, !robot.OnlyIO);
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Scale", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDTimeScale, !robot.OnlyIO);
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Offset", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDTimeOffset, !robot.OnlyIO);
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/CountsPerTurn/@Value", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.CountsPerTurn, !robot.OnlyIO);
-
             sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/BitsToVolts/@Scale", robotIndex, actuatorIndex);
             good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Pot.BitsToVoltageScale);
 
