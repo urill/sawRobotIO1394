@@ -168,10 +168,10 @@ namespace sawRobotIO1394 {
             if (actuatorType == "Revolute") {
                 // deg to radian
                 unitPosConversion = cmnPI_180;
-                actuator.JointType = PRM_REVOLUTE;
+                actuator.JointType = PRM_JOINT_REVOLUTE;
             } else if (actuatorType == "Prismatic") {
                 unitPosConversion = cmn_mm;
-                actuator.JointType = PRM_PRISMATIC;
+                actuator.JointType = PRM_JOINT_PRISMATIC;
             }
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Scale", robotIndex, actuatorIndex);

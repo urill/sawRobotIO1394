@@ -117,13 +117,14 @@ void mtsRobotIO1394QtWidget::Startup(void)
         // set unitFactor
         for (size_t i = 0; i < this->NumberOfActuators; i++ ) {
             switch (jointType[i]) {
-            case PRM_REVOLUTE:
+            case PRM_JOINT_REVOLUTE:
                 UnitFactor[i] = cmn180_PI;
                 break;
-            case PRM_PRISMATIC:
+            case PRM_JOINT_PRISMATIC:
                 UnitFactor[i] = 1.0 / cmn_mm; // convert internal values to mm
                 break;
-            case PRM_INACTIVE:
+            case PRM_JOINT_INACTIVE:
+            case PRM_JOINT_UNDEFINED:
                 break;
             default:
                 cmnThrow("mtsRobotIO1394QtWidget: unknown joint type");
