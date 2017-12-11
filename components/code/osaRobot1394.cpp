@@ -146,18 +146,11 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mUsePotsForSafetyCheck = false;
 
     mBitsToPositionScales.SetSize(mNumberOfActuators);
-    mBitsToDPositionScales.SetSize(mNumberOfActuators);
-    mBitsToDPositionOffsets.SetSize(mNumberOfActuators);
-    mBitsToDTimeScales.SetSize(mNumberOfActuators);
-    mBitsToDTimeOffsets.SetSize(mNumberOfActuators);
-    mBitsToVecocityScales.SetSize(mNumberOfActuators);
-    mBitsToVelocityOffsets.SetSize(mNumberOfActuators);
 
     mBitsToVoltageScales.SetSize(mNumberOfActuators);
     mBitsToVoltageOffsets.SetSize(mNumberOfActuators);
     mVoltageToPositionScales.SetSize(mNumberOfActuators);
     mVoltageToPositionOffsets.SetSize(mNumberOfActuators);
-    mCountsPerTurn.SetSize(mNumberOfActuators);
 
     mActuatorTemperature.SetSize(mNumberOfActuators);
 
@@ -187,13 +180,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
         mActuatorCurrentFeedbackLimits[i] = 1.2 * mActuatorCurrentCommandLimits[i] + (50.0 / 1000.0);
 
         mBitsToPositionScales[i]   = encoder.BitsToPositionScale;
-        mBitsToDPositionScales[i]  = encoder.BitsToDPositionScale;
-        mBitsToDPositionOffsets[i] = encoder.BitsToDPositionOffset;
-        mBitsToDTimeScales[i]      = encoder.BitsToDTimeScale;
-        mBitsToDTimeOffsets[i]     = encoder.BitsToDTimeOffset;
-        mBitsToVecocityScales[i]   = encoder.BitsToVelocityScale;
-        mBitsToVelocityOffsets[i]  = encoder.BitsToVelocityOffset;
-        mCountsPerTurn[i]          = encoder.CountsPerTurn;
 
         mBitsToVoltageScales[i]      = pot.BitsToVoltageScale;
         mBitsToVoltageOffsets[i]     = pot.BitsToVoltageOffset;

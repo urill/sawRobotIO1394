@@ -210,9 +210,6 @@ protected:
     vctDoubleVec mBrakeReleasingTimer;
 
     //! Vectors of actuator properties
-    vctIntVec
-        mCountsPerTurn;
-
     vctDoubleVec
         mEffortToCurrentScales,
         mActuatorCurrentToBitsScales,
@@ -224,13 +221,6 @@ protected:
         mActuatorBitsToCurrentOffsets,
         mBrakeBitsToCurrentOffsets,
         mBitsToPositionScales,
-        mBitsToPositionOffsets,
-        mBitsToDPositionScales,
-        mBitsToDPositionOffsets,
-        mBitsToDTimeScales,
-        mBitsToDTimeOffsets,
-        mBitsToVecocityScales,
-        mBitsToVelocityOffsets,
         mBitsToVoltageScales,
         mBitsToVoltageOffsets,
         mVoltageToPositionScales,

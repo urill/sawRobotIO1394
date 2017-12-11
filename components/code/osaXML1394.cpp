@@ -168,10 +168,10 @@ namespace sawRobotIO1394 {
             if (actuatorType == "Revolute") {
                 // deg to radian
                 unitPosConversion = cmnPI_180;
-                actuator.JointType = PRM_REVOLUTE;
+                actuator.JointType = PRM_JOINT_REVOLUTE;
             } else if (actuatorType == "Prismatic") {
                 unitPosConversion = cmn_mm;
-                actuator.JointType = PRM_PRISMATIC;
+                actuator.JointType = PRM_JOINT_PRISMATIC;
             }
 
             sprintf(path, "Robot[%i]/Actuator[%d]/Drive/AmpsToBits/@Scale", robotIndex, actuatorIndex);
@@ -242,22 +242,6 @@ namespace sawRobotIO1394 {
             sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToPosSI/@Scale", robotIndex, actuatorIndex);
             good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToPositionScale, !robot.OnlyIO);
             actuator.Encoder.BitsToPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Scale", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDPositionScale, !robot.OnlyIO);
-            actuator.Encoder.BitsToDPositionScale *= unitPosConversion; // -------------------------------------------- adeguet1, make sure these are degrees
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaPosSI/@Offset", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDPositionOffset, !robot.OnlyIO);
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Scale", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDTimeScale, !robot.OnlyIO);
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/BitsToDeltaT/@Offset", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.BitsToDTimeOffset, !robot.OnlyIO);
-
-            sprintf(path, "Robot[%i]/Actuator[%d]/Encoder/CountsPerTurn/@Value", robotIndex, actuatorIndex);
-            good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Encoder.CountsPerTurn, !robot.OnlyIO);
 
             sprintf(path, "Robot[%i]/Actuator[%d]/AnalogIn/BitsToVolts/@Scale", robotIndex, actuatorIndex);
             good &= osaXML1394GetValue(xmlConfig, context, path, actuator.Pot.BitsToVoltageScale);

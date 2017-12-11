@@ -1,7 +1,7 @@
 Change log
 ==========
 
-1.5.0 (2017-mm-dd)
+1.5.0 (2017-11-07)
 ==================
 
 * API changes:
@@ -11,6 +11,8 @@ Change log
   * Removed some old ROS code, see dVRK ROS for current features
 * New features:
   * Much improved current calibration utility, calibrates current feedback and requested.  Please recalibrate for all your arms!
+  * Potentiometer configuration (tolerance and delay) now saved per arm in XML config file.  This allows settings per arm!
+  * Single coupling matrix (position actuator->joint) need, all others (3) are computed from primary one
   * Added read command for watchdog timeout
   * Added read command for interval statistics (ROS conversion available too)
   * Support for firmware based velocity estimation (requires rev 6)

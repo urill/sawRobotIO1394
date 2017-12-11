@@ -67,13 +67,6 @@ namespace sawRobotIO1394 {
 
     struct osaEncoder1394Configuration {
         double BitsToPositionScale;
-        double BitsToDPositionScale;
-        double BitsToDPositionOffset;
-        double BitsToDTimeScale;
-        double BitsToDTimeOffset;
-        double BitsToVelocityScale;
-        double BitsToVelocityOffset;
-        int CountsPerTurn;
     };
 
     struct osaPot1394Configuration {
