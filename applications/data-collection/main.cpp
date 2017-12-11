@@ -36,7 +36,9 @@ int main(int argc, char * argv[])
 {
     cmnCommandLineOptions options;
     int portNumber = 0;
-    size_t actuatorIndex = 6;
+    int actuatorIndex = 0;
+    int startIndex = 3;
+    int endIndex = startIndex + 4;
     size_t numberOfIterations;
     double sleepBetweenReads = 0.3 * cmn_ms;
     std::string configFile;
@@ -74,18 +76,23 @@ int main(int argc, char * argv[])
 
     // add arrays here for all data collected....
     std::cout << "Allocation memory for " << numberOfIterations << " samples." << std::endl;
-    size_t * allIterations = new size_t[numberOfIterations];
-    double * allActuatorTimeStamps = new double[numberOfIterations];
-    double * allCPUTimes = new double[numberOfIterations];
-    double * allPositions = new double[numberOfIterations];
-    double * allVelocities = new double[numberOfIterations];
-    double * allVelocitiesAcc = new double[numberOfIterations];
-    int * allVelocitiesRaw = new int[numberOfIterations];
-    double * allAccelerations = new double[numberOfIterations];
-    int * allAccPrevRaw = new int[numberOfIterations];
-    int * allAccRecRaw = new int[numberOfIterations];
-    double * allVelocitiesSoftware = new double[numberOfIterations];
-
+    size_t allIterations[numberOfIterations];
+    //    double * allActuatorTimeStamps = new double[numberOfIterations];
+    double allCPUTimes[numberOfIterations];
+    double allPositions[numberOfIterations][4];
+    double allVelocities[numberOfIterations][4];
+    double allVelocitiesAcc[numberOfIterations][4];
+    double allAccelerations[numberOfIterations][4];
+    double allVelocityAccRunning[numberOfIterations][4];
+    double allVelocitiesSoftware[numberOfIterations][4];
+    int    allRunningRaw[numberOfIterations][4];
+    int    allRecRaw[numberOfIterations][4];
+    int    allChannel[numberOfIterations][4];
+    int    allNextChannel[numberOfIterations][4];
+    bool   allVelocityOverflow[numberOfIterations][4];
+    bool   allDir[numberOfIterations][4];
+    bool   allExpectedEdge[numberOfIterations][4];
+    
     std::cout << "Loading config file ..." << std::endl;
     sawRobotIO1394::osaPort1394Configuration config;
     sawRobotIO1394::osaXML1394ConfigurePort(configFile, config);
@@ -139,7 +146,6 @@ int main(int argc, char * argv[])
          iter < numberOfIterations;
          ++iter) {
         port->Read();
-
         // save index
         allIterations[iter] = iter;
 
@@ -147,34 +153,51 @@ int main(int argc, char * argv[])
         allCPUTimes[iter] = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
 
         // get time from FPGA
-        allActuatorTimeStamps[iter] =
-            robot->ActuatorTimeStamp()[actuatorIndex];
+        // allActuatorTimeStamps[iter] =
+        //robot->ActuatorTimeStamp()[actuatorIndex];
 
         // get positions, see osaRobot1394.cpp, line ~1000
-        allPositions[iter] =
-            robot->EncoderPosition()[actuatorIndex];
+        for (actuatorIndex = startIndex; actuatorIndex < endIndex; ++actuatorIndex)
+            {
+                allPositions[iter][actuatorIndex-startIndex] =
+                    robot->EncoderPosition()[actuatorIndex];
 
-        allVelocities[iter] =
-            robot->EncoderVelocity()[actuatorIndex];
+                allVelocities[iter][actuatorIndex-startIndex] =
+                    robot->EncoderVelocity()[actuatorIndex];
 
-        allVelocitiesAcc[iter] =
-            robot->EncoderVelocityAcc()[actuatorIndex];
-
-        allVelocitiesRaw[iter] =
-        robot->EncoderVelocityRaw()[actuatorIndex];
+                allVelocitiesAcc[iter][actuatorIndex-startIndex] =
+                    robot->EncoderVelocityAcc()[actuatorIndex];
         
-        allAccelerations[iter] =
-            robot->EncoderAcceleration()[actuatorIndex];
+                allAccelerations[iter][actuatorIndex-startIndex] =
+                    robot->EncoderAcceleration()[actuatorIndex];
                 
-        allAccPrevRaw[iter] =
-        robot->EncoderAccPrevRaw()[actuatorIndex];
+                allVelocityAccRunning[iter][actuatorIndex-startIndex] =
+                    robot->EncoderVelocityAccRunning()[actuatorIndex];
 
-        allAccRecRaw[iter] =
-        robot->EncoderAccRecRaw()[actuatorIndex];
+                allVelocitiesSoftware[iter][actuatorIndex-startIndex] =
+                    robot->EncoderVelocitySoftware()[actuatorIndex];
 
-        allVelocitiesSoftware[iter] =
-            robot->EncoderVelocitySoftware()[actuatorIndex];
+                allRunningRaw[iter][actuatorIndex-startIndex] =
+                    robot->EncoderAccRunningRaw()[actuatorIndex];
 
+                allRecRaw[iter][actuatorIndex-startIndex] =
+                    robot->EncoderAccRecRaw()[actuatorIndex];
+
+                allChannel[iter][actuatorIndex-startIndex] =
+                    robot->EncoderVelocityChannel()[actuatorIndex];
+
+                allNextChannel[iter][actuatorIndex] =
+                    robot->EncoderNextChannel()[actuatorIndex];
+
+                allVelocityOverflow[iter][actuatorIndex-startIndex] =
+                    robot->EncoderVelocityOverflow()[actuatorIndex];
+
+                allDir[iter][actuatorIndex-startIndex] =
+                    robot->EncoderDir()[actuatorIndex];
+
+                allExpectedEdge[iter][actuatorIndex-startIndex] =
+                    robot->EncoderLatchOverflow()[actuatorIndex];
+            }
         // display progress
         progress++;
         if (progress == percent) {
@@ -196,41 +219,55 @@ int main(int argc, char * argv[])
     std::ofstream output;
     output.open(fileName.c_str());
 
-    // header
     output << "iteration,"
-           << "cpu-time,"
-           << "fpga-dtime,"
-           << "encoder-pos,"
-           << "encoder-vel,"
-           << "encoder-vel-acc,"
-           << "encoder-vel-raw,"
-           << "encoder-acc,"
-           << "encoder-acc-prev,"
-           << "encoder-acc-rec,"
-           << "software-vel" << std::endl;
+           << "cpu-time,";
+        // << "fpga-dtime,"
+
+    // header
+    for(actuatorIndex = startIndex; actuatorIndex < endIndex; ++actuatorIndex)
+        {
+            output << "encoder-pos-" << actuatorIndex << ","
+                   << "encoder-vel-" << actuatorIndex << ","
+                   << "encoder-vel-acc-" << actuatorIndex << ","
+                   << "encoder-acc-" << actuatorIndex << ","
+                   << "encoder-acc-running-" << actuatorIndex << ","
+                   << "software-vel-" << actuatorIndex << ","
+                   << "running-raw-" << actuatorIndex << ","
+                   << "rec-raw-" << actuatorIndex << ","
+                   << "vel-overflow-" << actuatorIndex << ","
+                   << "dir-" << actuatorIndex << ","
+                   << "channel-" << actuatorIndex << ","
+                   << "next-channel-" << actuatorIndex << ","
+                   << "expected-edge-" << actuatorIndex << ",";
+        }
+    output << std::endl;
 
     output << std::setprecision(17);
     for (size_t iter = 0;
          iter < numberOfIterations;
          ++iter) {
         output << allIterations[iter] << ","
-               << allCPUTimes[iter] << ","
-               << allActuatorTimeStamps[iter] << ","
-               << allPositions[iter] << ","
-               << allVelocities[iter] << ","
-               << allVelocitiesAcc[iter] << ","
-               << allVelocitiesRaw[iter] << ","
-               << allAccelerations[iter] << ","
-               << allAccPrevRaw[iter] << ","
-               << allAccRecRaw[iter] << ","
-               << allVelocitiesSoftware[iter] << std::endl;
+               << allCPUTimes[iter] << ",";
+        //     << allActuatorTimeStamps[iter] << ","
+        for(actuatorIndex = 0; actuatorIndex < 4; ++actuatorIndex)
+            {
+                output << allPositions[iter][actuatorIndex] << ","
+                       << allVelocities[iter][actuatorIndex] << ","
+                       << allVelocitiesAcc[iter][actuatorIndex] << ","
+                       << allAccelerations[iter][actuatorIndex] << ","
+                       << allVelocityAccRunning[iter][actuatorIndex] << ","
+                       << allVelocitiesSoftware[iter][actuatorIndex] << ","
+                       << allRunningRaw[iter][actuatorIndex] << ","
+                       << allRecRaw[iter][actuatorIndex] << ","
+                       << allVelocityOverflow[iter][actuatorIndex] << ","
+                       << allDir[iter][actuatorIndex] << ","
+                       << allChannel[iter][actuatorIndex] << ","
+                       << allNextChannel[iter][actuatorIndex] << ","
+                       << allExpectedEdge[iter][actuatorIndex] << ",";
+            }
+        output << std::endl;
     }
-
     output.close();
-
-    // cleanup
-    delete allIterations;
-    delete allActuatorTimeStamps;
 
     delete port;
     return 0;
