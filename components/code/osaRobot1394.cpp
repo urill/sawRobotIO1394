@@ -443,9 +443,7 @@ void osaRobot1394::ConvertState(void)
     const vctIntVec::const_iterator end = mEncoderPositionBits.end();
     vctIntVec::const_iterator currentEncoder, previousEncoder;
     vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
-    vctDoubleVec::const_iterator encoderVelocity;
     vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
-    size_t index = 0;
     for (currentEncoder = mEncoderPositionBits.begin(),
              previousEncoder = mEncoderPositionBitsPrev.begin(),
              currentTimestamp = mActuatorTimestamp.begin(),
@@ -453,7 +451,6 @@ void osaRobot1394::ConvertState(void)
              lastChangeTimestamp = mActuatorTimestampChange.begin(),
              slope = mVelocitySlopeToZero.begin(),
              velocity = mEncoderVelocitySoftware.begin(),
-             encoderVelocity = mEncoderVelocity.begin();
          // end
          currentEncoder != end;
          // increment
@@ -464,7 +461,6 @@ void osaRobot1394::ConvertState(void)
              ++lastChangeTimestamp,
              ++slope,
              ++velocity,
-             ++encoderVelocity,
              ++index) {
         // first see if there has been any change
         const int difference = (*currentEncoder) - (*previousEncoder);
