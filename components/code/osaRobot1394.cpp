@@ -450,7 +450,7 @@ void osaRobot1394::ConvertState(void)
              bitsToPos = mBitsToPositionScales.begin(),
              lastChangeTimestamp = mActuatorTimestampChange.begin(),
              slope = mVelocitySlopeToZero.begin(),
-             velocity = mEncoderVelocitySoftware.begin(),
+             velocity = mEncoderVelocitySoftware.begin();
          // end
          currentEncoder != end;
          // increment
@@ -460,8 +460,7 @@ void osaRobot1394::ConvertState(void)
              ++bitsToPos,
              ++lastChangeTimestamp,
              ++slope,
-             ++velocity,
-             ++index) {
+             ++velocity) {
         // first see if there has been any change
         const int difference = (*currentEncoder) - (*previousEncoder);
         if (difference == 0) {
