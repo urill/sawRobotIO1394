@@ -497,7 +497,7 @@ void osaRobot1394::ConvertState(void)
     mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
 
     // We have two velocity estimations, we believe FPGA based estimation rev >= 6
-    if (mLowestFirmWareVersion >= 5) {
+    if (mLowestFirmWareVersion >= 6) {
         if (mConfiguration.HasActuatorToJointCoupling) {
             mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
                                      mEncoderVelocity);
