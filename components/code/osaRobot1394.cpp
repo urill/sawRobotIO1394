@@ -444,8 +444,7 @@ void osaRobot1394::ConvertState(void)
     vctIntVec::const_iterator currentEncoder, previousEncoder;
     vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
     vctDoubleVec::const_iterator encoderVelocity;
-    vctDoubleVec::iterator lastChangeTimestamp, prevChangeTimestamp,
-        slope, velocity;
+    vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
     size_t index = 0;
     for (currentEncoder = mEncoderPositionBits.begin(),
              previousEncoder = mEncoderPositionBitsPrev.begin(),
@@ -454,8 +453,7 @@ void osaRobot1394::ConvertState(void)
              lastChangeTimestamp = mActuatorTimestampChange.begin(),
              slope = mVelocitySlopeToZero.begin(),
              velocity = mEncoderVelocitySoftware.begin(),
-             encoderVelocity = mEncoderVelocity.begin(),
-             prevChangeTimestamp = mActuatorPreviousTimestampChange.begin();
+             encoderVelocity = mEncoderVelocity.begin();
          // end
          currentEncoder != end;
          // increment
@@ -467,7 +465,6 @@ void osaRobot1394::ConvertState(void)
              ++slope,
              ++velocity,
              ++encoderVelocity,
-             ++prevChangeTimestamp,
              ++index) {
         // first see if there has been any change
         const int difference = (*currentEncoder) - (*previousEncoder);
@@ -495,26 +492,9 @@ void osaRobot1394::ConvertState(void)
                 }
             }
             // keep record of this change
-            *prevChangeTimestamp = * lastChangeTimestamp;
             *lastChangeTimestamp = 0.0;
             *slope = (*velocity) / (timeToZeroVelocity);
         }
-        /*
-        if (*lastChangeTimestamp > 2.0 * cmn_ms) {
-            *prevChangeTimestamp = *lastChangeTimestamp;
-        } else {
-            if (*prevChangeTimestamp < 2.0 * cmn_ms) {
-                *velocity = *encoderVelocity;
-                if (index == 6) {
-                    std::cerr << "-";
-                }
-            } else {
-                if (index == 6) {
-                    std::cerr << "+";
-                }
-            }
-        }
-        */
     }
 
     // finally save previous encoder bits position
@@ -522,10 +502,6 @@ void osaRobot1394::ConvertState(void)
 
     // We have two velocity estimations, we believe FPGA based estimation rev >= 6
     if (mLowestFirmWareVersion >= 5) {
-        // Anton Todo
-
-        // remove method EncoderBitsToVelocity, data member mEncoderVelocityBits
-
         if (mConfiguration.HasActuatorToJointCoupling) {
             mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
                                      mEncoderVelocity);
