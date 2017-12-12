@@ -37,7 +37,7 @@ int main(int argc, char * argv[])
     cmnCommandLineOptions options;
     int portNumber = 0;
     int actuatorIndex = 0;
-    int startIndex = 3;
+    int startIndex = 0;
     int endIndex = startIndex + 4;
     size_t numberOfIterations;
     double sleepBetweenReads = 0.3 * cmn_ms;
@@ -81,17 +81,8 @@ int main(int argc, char * argv[])
     double allCPUTimes[numberOfIterations];
     double allPositions[numberOfIterations][4];
     double allVelocities[numberOfIterations][4];
-    double allVelocitiesAcc[numberOfIterations][4];
     double allAccelerations[numberOfIterations][4];
-    double allVelocityAccRunning[numberOfIterations][4];
     double allVelocitiesSoftware[numberOfIterations][4];
-    int    allRunningRaw[numberOfIterations][4];
-    int    allRecRaw[numberOfIterations][4];
-    int    allChannel[numberOfIterations][4];
-    int    allNextChannel[numberOfIterations][4];
-    bool   allVelocityOverflow[numberOfIterations][4];
-    bool   allDir[numberOfIterations][4];
-    bool   allExpectedEdge[numberOfIterations][4];
     
     std::cout << "Loading config file ..." << std::endl;
     sawRobotIO1394::osaPort1394Configuration config;
@@ -111,7 +102,7 @@ int main(int argc, char * argv[])
     std::cout << "Creating port ..." << std::endl;
     sawRobotIO1394::osaPort1394 * port = new sawRobotIO1394::osaPort1394(portNumber);
     port->AddRobot(robot);
-
+   
     // make sure we have at least one set of pots values
     try {
         port->Read();
@@ -164,40 +155,14 @@ int main(int argc, char * argv[])
 
                 allVelocities[iter][actuatorIndex-startIndex] =
                     robot->EncoderVelocity()[actuatorIndex];
-
-                allVelocitiesAcc[iter][actuatorIndex-startIndex] =
-                    robot->EncoderVelocityAcc()[actuatorIndex];
-        
+     
                 allAccelerations[iter][actuatorIndex-startIndex] =
                     robot->EncoderAcceleration()[actuatorIndex];
                 
-                allVelocityAccRunning[iter][actuatorIndex-startIndex] =
-                    robot->EncoderVelocityAccRunning()[actuatorIndex];
-
                 allVelocitiesSoftware[iter][actuatorIndex-startIndex] =
                     robot->EncoderVelocitySoftware()[actuatorIndex];
-
-                allRunningRaw[iter][actuatorIndex-startIndex] =
-                    robot->EncoderAccRunningRaw()[actuatorIndex];
-
-                allRecRaw[iter][actuatorIndex-startIndex] =
-                    robot->EncoderAccRecRaw()[actuatorIndex];
-
-                allChannel[iter][actuatorIndex-startIndex] =
-                    robot->EncoderVelocityChannel()[actuatorIndex];
-
-                allNextChannel[iter][actuatorIndex] =
-                    robot->EncoderNextChannel()[actuatorIndex];
-
-                allVelocityOverflow[iter][actuatorIndex-startIndex] =
-                    robot->EncoderVelocityOverflow()[actuatorIndex];
-
-                allDir[iter][actuatorIndex-startIndex] =
-                    robot->EncoderDir()[actuatorIndex];
-
-                allExpectedEdge[iter][actuatorIndex-startIndex] =
-                    robot->EncoderLatchOverflow()[actuatorIndex];
             }
+        
         // display progress
         progress++;
         if (progress == percent) {
@@ -228,17 +193,8 @@ int main(int argc, char * argv[])
         {
             output << "encoder-pos-" << actuatorIndex << ","
                    << "encoder-vel-" << actuatorIndex << ","
-                   << "encoder-vel-acc-" << actuatorIndex << ","
                    << "encoder-acc-" << actuatorIndex << ","
-                   << "encoder-acc-running-" << actuatorIndex << ","
-                   << "software-vel-" << actuatorIndex << ","
-                   << "running-raw-" << actuatorIndex << ","
-                   << "rec-raw-" << actuatorIndex << ","
-                   << "vel-overflow-" << actuatorIndex << ","
-                   << "dir-" << actuatorIndex << ","
-                   << "channel-" << actuatorIndex << ","
-                   << "next-channel-" << actuatorIndex << ","
-                   << "expected-edge-" << actuatorIndex << ",";
+                   << "software-vel-" << actuatorIndex << ",";
         }
     output << std::endl;
 
@@ -253,17 +209,8 @@ int main(int argc, char * argv[])
             {
                 output << allPositions[iter][actuatorIndex] << ","
                        << allVelocities[iter][actuatorIndex] << ","
-                       << allVelocitiesAcc[iter][actuatorIndex] << ","
                        << allAccelerations[iter][actuatorIndex] << ","
-                       << allVelocityAccRunning[iter][actuatorIndex] << ","
-                       << allVelocitiesSoftware[iter][actuatorIndex] << ","
-                       << allRunningRaw[iter][actuatorIndex] << ","
-                       << allRecRaw[iter][actuatorIndex] << ","
-                       << allVelocityOverflow[iter][actuatorIndex] << ","
-                       << allDir[iter][actuatorIndex] << ","
-                       << allChannel[iter][actuatorIndex] << ","
-                       << allNextChannel[iter][actuatorIndex] << ","
-                       << allExpectedEdge[iter][actuatorIndex] << ",";
+                       << allVelocitiesSoftware[iter][actuatorIndex] << ",";
             }
         output << std::endl;
     }
