@@ -87,8 +87,6 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mActuatorTimestamp.SetSize(mNumberOfActuators);
     mActuatorTimestampChange.SetSize(mNumberOfActuators);
     mActuatorTimestampChange.SetAll(0.0);
-    mActuatorPreviousTimestampChange.SetSize(mNumberOfActuators);
-    mActuatorPreviousTimestampChange.SetAll(0.0);
     mVelocitySlopeToZero.SetSize(mNumberOfActuators);
     mVelocitySlopeToZero.SetAll(0.0);
     mPotVoltage.SetSize(mNumberOfActuators);

@@ -278,7 +278,6 @@ protected:
     vctDoubleVec
         mActuatorTimestamp,
         mActuatorTimestampChange, // cumulated time since last encoder changed
-        mActuatorPreviousTimestampChange,
         mVelocitySlopeToZero, // slope used to reduced velocity to zero when no encoder count change
         mBrakeTimestamp,
         mPotVoltage,
