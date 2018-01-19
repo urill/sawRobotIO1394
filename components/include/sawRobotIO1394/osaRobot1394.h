@@ -126,6 +126,8 @@ public:
     bool WatchdogStatus(void) const;
     const vctBoolVec & ActuatorPowerStatus(void) const;
     const vctBoolVec & BrakePowerStatus(void) const;
+    const vctIntVec & EncoderVelocityRaw(void) const;
+    const vctIntVec & EncoderAccRunningRaw(void) const;
     const vctDoubleVec & ActuatorCurrentFeedback(void) const;
     const vctDoubleVec & BrakeCurrentFeedback(void) const;
     const vctDoubleVec & PotPosition(void) const;
@@ -133,6 +135,8 @@ public:
     const vctDoubleVec & BrakeTimeStamp(void) const;
     const vctDoubleVec & EncoderPosition(void) const;
     const vctDoubleVec & EncoderVelocity(void) const;
+    const vctDoubleVec & EncoderVelocityAcc(void) const;
+    const vctDoubleVec & EncoderVelocityAccRunning(void) const;
     const vctDoubleVec & EncoderAcceleration(void) const;
     const vctDoubleVec & EncoderVelocitySoftware(void) const;
     /**}**/
@@ -164,6 +168,8 @@ public:
     void EncoderPositionToBits(const vctDoubleVec & pos, vctIntVec & bits) const;
     void EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & pos) const;
     void EncoderBitsToVelocity(vctDoubleVec & vel) const;
+    void EncoderBitsToVelocityAcc(vctDoubleVec & vel) const;
+    void EncoderBitsToVelocityAccRunning(vctDoubleVec & vel) const;
     
     //! Conversions for actuator current commands and measurements
     void ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const;
@@ -266,8 +272,12 @@ protected:
         mPotBits,
         mEncoderPositionBits,
         mEncoderPositionBitsPrev,
+        mEncoderVelocityBits,     // latched velocity
+        mEncoderVelocityDelay,
         mEncoderDPositionBits,
-        mEncoderDTimeBits;
+        mEncoderDTimeBits,
+        mEncoderVelocityRaw,
+        mEncoderAccRunningCounter;
     
     vctIntVec
         mActuatorCurrentBitsCommand,
@@ -278,13 +288,16 @@ protected:
     vctDoubleVec
         mActuatorTimestamp,
         mActuatorTimestampChange, // cumulated time since last encoder changed
+        mActuatorPreviousTimestampChange,
         mVelocitySlopeToZero, // slope used to reduced velocity to zero when no encoder count change
         mBrakeTimestamp,
         mPotVoltage,
         mPotPosition,
         mEncoderPosition,
+        mEncoderVelocityCountsPerSecond,  // velocity based on FPGA measurement of time between encoder edges (period)
         mEncoderVelocity,
-        mEncoderVelocityBits,     // latched velocity
+        mEncoderVelocityAcc,
+        mEncoderVelocityAccRunning,
         mEncoderAcceleration,
         mEncoderVelocitySoftware,
         mJointPosition,
