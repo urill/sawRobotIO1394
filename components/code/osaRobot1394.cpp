@@ -97,10 +97,8 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mEncoderVelocityCountsPerSecond.SetSize(mNumberOfActuators);
     mEncoderVelocityDelay.SetSize(mNumberOfActuators);
     mEncoderVelocityAcc.SetSize(mNumberOfActuators);
-    mEncoderVelocityAccRunning.SetSize(mNumberOfActuators);
     mEncoderVelocityRaw.SetSize(mNumberOfActuators);
     mEncoderAcceleration.SetSize(mNumberOfActuators);
-    mEncoderAccRunningCounter.SetSize(mNumberOfActuators);
     mEncoderVelocitySoftware.SetSize(mNumberOfActuators);
     mJointPosition.SetSize(mNumberOfJoints);
     mJointVelocity.SetSize(mNumberOfJoints);
@@ -394,7 +392,7 @@ void osaRobot1394::PollState(void)
         mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
         mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
         mEncoderVelocityDelay[i] = board->GetEncoderVelocityDelay(axis);
-        mEncoderAcceleration[i] = board->GetEncoderAcceleration(axis);
+        mEncoderAcceleration[i] = board->GetEncoderAcceleration(axis, 0.0005); //Second argument is how much quantization error do we accept
         mEncoderVelocityCountsPerSecond[i] = board->GetEncoderVelocityCountsPerSecond(axis);
 
         mPotBits[i] = board->GetAnalogInput(axis);
@@ -1142,10 +1140,6 @@ const vctDoubleVec & osaRobot1394::EncoderAcceleration(void) const {
     return mEncoderAcceleration;
 }
 
-const vctIntVec & osaRobot1394::EncoderAccRunningRaw(void) const {
-    return mEncoderAccRunningCounter;
-}
-
 const vctDoubleVec & osaRobot1394::EncoderVelocitySoftware(void) const {
     return mEncoderVelocitySoftware;
 }
@@ -1213,10 +1207,9 @@ void osaRobot1394::EncoderBitsToVelocity(vctDoubleVec & vel) const
     if (mLowestFirmWareVersion >= 6) {
         CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
                    || (Amp1394_VERSION_MAJOR > 1));
-        const double period = 1.0 / 3072000.0; // Clock period defined in firmware - different than system clock
         for (size_t i = 0; i < mEncoderVelocityCountsPerSecond.size() && i < vel.size(); i++) {
             const double counts_per_second = mEncoderVelocityCountsPerSecond[i];
-            vel[i] = mBitsToPositionScales[i] * counts_per_second * 4.0;
+            vel[i] = mBitsToPositionScales[i] * counts_per_second;
         }
     }
 }
@@ -1226,63 +1219,11 @@ void osaRobot1394::EncoderBitsToVelocityAcc(vctDoubleVec & vel) const
     if (mLowestFirmWareVersion >= 6) {
         CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
                    || (Amp1394_VERSION_MAJOR > 1));
-        const double period = 1.0 / 3072000.0; // Clock period defined in firmware - different than system clock
         for (size_t i = 0; i < mEncoderVelocityCountsPerSecond.size() && i < vel.size(); i++) {
-            const int counts_per_second = mEncoderVelocityCountsPerSecond[i];
-            const double cur_acc = mEncoderAcceleration[i];
-            // overflow value +/- 0x3ffffc, sign set by direction bit
-            // Temporary change for testing single count velocity
-      
-            double vel_term = 4.0*counts_per_second;
-            double acc_term = cur_acc*mEncoderVelocityDelay[i]*period;
+            const double vel_term = mEncoderVelocityCountsPerSecond[i];
+            double acc_term = mEncoderAcceleration[i] * mEncoderVelocityDelay[i];
             
-            // Sign on acceleration indicates faster/slower, not direction
-            if (vel_term < 0){
-                acc_term = -acc_term;
-            }
-
             if ((std::signbit(vel_term) != std::signbit(acc_term)) && (abs(acc_term) > abs(vel_term))){ // Don't decelerate pass a zero-crossing
-                vel[i] = 0;
-            }
-            else {
-                vel[i] = mBitsToPositionScales[i] * (vel_term + acc_term);
-            }
-        }
-    }
-}
-
-// This is currently not fully implemented/tested. It requires updating packet size to return the running counter
-
-void osaRobot1394::EncoderBitsToVelocityAccRunning(vctDoubleVec & vel) const
-{
-    if (mLowestFirmWareVersion >= 6) {
-        CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
-                   || (Amp1394_VERSION_MAJOR > 1));
-        const double period = 1.0 / 3072000.0; // Clock period defined in firmware - different than system clock
-        for (size_t i = 0; i < mEncoderVelocityBits.size() && i < vel.size(); i++) {
-            const int counter = mEncoderVelocityBits[i];
-            const double cur_acc = mEncoderAcceleration[i];
-            const int running_counter = mEncoderAccRunningCounter[i];
-            // overflow value +/- 0x3ffffc, sign set by direction bit
-            // Temporary change for testing single count velocity
-
-            
-            double vel_term = 4.0/(counter*period);
-            //            double acc_term = 8.0*cur_acc/((double) abs(counter)*abs(prev_counter)*period)            
-            //            *(abs(counter)/2.0 + running_counter);
-            double acc_term = 0; //Update when running counter is actually passed back
-
-            
-            // If accleration is positive, running counter should not exceed latched
-            if ((acc_term > 0) && (running_counter > counter))
-                acc_term = 0;
-            // Sign on acceleration indicates faster/slower, not direction
-            if (vel_term < 0){
-                acc_term = -acc_term;
-            }
-            
-            // Don't deccelerate pass a zero crossing
-            if ((std::signbit(vel_term) != std::signbit(acc_term)) && (abs(acc_term) > abs(vel_term))){
                 vel[i] = 0;
             }
             else {
