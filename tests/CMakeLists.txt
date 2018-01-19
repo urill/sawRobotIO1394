@@ -34,8 +34,6 @@ if (cisst_FOUND_AS_REQUIRED)
 
   if (sawRobotIO1394_FOUND)
 
-    include_directories (${CURSES_INCLUDE_DIR})
-
     # sawRobotIO1394 configuration
     include_directories (${sawRobotIO1394_INCLUDE_DIR})
     link_directories (${sawRobotIO1394_LIBRARY_DIR})
@@ -48,8 +46,7 @@ if (cisst_FOUND_AS_REQUIRED)
 
     # link against non cisst libraries and cisst components
     target_link_libraries (sawRobotIO1394Tests
-                           ${sawRobotIO1394_LIBRARIES}
-                           ${CURSES_LIBRARIES})
+                           ${sawRobotIO1394_LIBRARIES})
 
     # link against cisst libraries (and dependencies)
     cisst_target_link_libraries (sawRobotIO1394Tests ${REQUIRED_CISST_LIBRARIES})
