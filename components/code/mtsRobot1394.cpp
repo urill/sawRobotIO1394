@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -66,7 +66,7 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mActuatorPowerEnabled, "ActuatorPowerEnabled");
     mStateTableRead->AddData(mEncoderPositionBits, "PositionEncoderRaw");
     mStateTableRead->AddData(mJointPosition, "PositionJoint");
-    mStateTableRead->AddData(mEncoderVelocityBits, "VelocityEncoderRaw");
+    mStateTableRead->AddData(mEncoderAcceleration, "Accel");
     mStateTableRead->AddData(mEncoderVelocity, "Vel");
     mStateTableRead->AddData(mJointTorque, "Effortjoint");
     mStateTableRead->AddData(mPotBits, "AnalogInRaw");
@@ -255,8 +255,8 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableRead, this->mPositionJointGet,
                                         "GetPositionJoint"); // prmPositionJointGet
 
-    robotInterface->AddCommandReadState(*mStateTableRead, mEncoderVelocityBits,
-                                        "GetVelocityRaw"); // vector[int]
+    robotInterface->AddCommandReadState(*mStateTableRead, mEncoderAcceleration,
+                                        "GetAcceleration"); // vector[double]
     robotInterface->AddCommandReadState(*mStateTableRead, mEncoderVelocity,
                                         "GetVelocity"); // vector[double]
 

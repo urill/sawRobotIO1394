@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Jonathan Bohren, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -93,11 +93,10 @@ void osaRobot1394::Configure(const osaRobot1394Configuration & config)
     mPotPosition.SetSize(mNumberOfActuators);
     mEncoderPosition.SetSize(mNumberOfActuators);
     mEncoderVelocity.SetSize(mNumberOfActuators);
-    mEncoderVelocityBits.SetSize(mNumberOfActuators);
     mEncoderVelocityCountsPerSecond.SetSize(mNumberOfActuators);
     mEncoderVelocityDelay.SetSize(mNumberOfActuators);
-    mEncoderVelocityAcc.SetSize(mNumberOfActuators);
-    mEncoderVelocityRaw.SetSize(mNumberOfActuators);
+    mEncoderVelocityPredicted.SetSize(mNumberOfActuators);
+    mEncoderAccelerationCountsPerSecSec.SetSize(mNumberOfActuators);
     mEncoderAcceleration.SetSize(mNumberOfActuators);
     mEncoderVelocitySoftware.SetSize(mNumberOfActuators);
     mJointPosition.SetSize(mNumberOfJoints);
@@ -286,6 +285,7 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoa
     }
 
     mLowestFirmWareVersion = 999999;
+    mHighestFirmWareVersion = 0;
     size_t boardCounter = 0;
     for (unique_board_iterator board = mUniqueBoards.begin();
          board != mUniqueBoards.end();
@@ -302,6 +302,9 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoa
         if (fversion < mLowestFirmWareVersion) {
             mLowestFirmWareVersion = fversion;
         }
+        if (fversion > mHighestFirmWareVersion) {
+            mHighestFirmWareVersion = fversion;
+        }
         CMN_LOG_INIT_WARNING << "osaRobot1394::SetBoards: " << this->mName
                              << ", board: " << boardCounter
                              << ", Id: " << static_cast<int>(board->second->GetBoardId())
@@ -310,13 +313,22 @@ void osaRobot1394::SetBoards(const std::vector<osaActuatorMapping> & actuatorBoa
                              << ", QLA serial: " << serialQLA
                              << std::endl;
     }
-    const AmpIO_UInt32 currentFirmwareRevision = 5;
+    const AmpIO_UInt32 currentFirmwareRevision = 6;
     if (mLowestFirmWareVersion < currentFirmwareRevision) {
         CMN_LOG_INIT_WARNING << "osaRobot1394::SetBoards" << std::endl
                              << "----------------------------------------------------" << std::endl
                              << " Warning:" << std::endl
                              << "   Please upgrade all boards firmware to version " << currentFirmwareRevision << "." << std::endl
                              << "   Lowest version found is " << mLowestFirmWareVersion << "." << std::endl
+                             << "----------------------------------------------------" << std::endl;
+    }
+    if (mHighestFirmWareVersion > currentFirmwareRevision) {
+        CMN_LOG_INIT_WARNING << "osaRobot1394::SetBoards" << std::endl
+                             << "----------------------------------------------------" << std::endl
+                             << " Warning:" << std::endl
+                             << "   Highest firmware version found is " << mHighestFirmWareVersion << "." << std::endl
+                             << "   This software is compatible with firmware version " << currentFirmwareRevision << "." << std::endl
+                             << "   Please update this software." << std::endl
                              << "----------------------------------------------------" << std::endl;
     }
 }
@@ -390,9 +402,9 @@ void osaRobot1394::PollState(void)
 
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
         mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
-        mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
         mEncoderVelocityDelay[i] = board->GetEncoderVelocityDelay(axis);
-        mEncoderAcceleration[i] = board->GetEncoderAcceleration(axis, 0.0005); //Second argument is how much quantization error do we accept
+        // Second argument below is how much quantization error do we accept
+        mEncoderAccelerationCountsPerSecSec[i] = board->GetEncoderAcceleration(axis, 0.0005);
         mEncoderVelocityCountsPerSecond[i] = board->GetEncoderVelocityCountsPerSecond(axis);
 
         mPotBits[i] = board->GetAnalogInput(axis);
@@ -424,8 +436,6 @@ void osaRobot1394::PollState(void)
 
 }
 
-#define NEW_ENCODER_VELOCITY
-
 void osaRobot1394::ConvertState(void)
 {
     // Perform read conversions
@@ -437,24 +447,30 @@ void osaRobot1394::ConvertState(void)
         mJointPosition.Assign(mEncoderPosition);
     }
 
+    // Scale velocity from counts/sec to SI units
+    // Note that this velocity may not get used; depending on the firmware version,
+    // the system will compute the joint velocities from mEncoderVelocitySoftware or
+    // mEncoderVelocityPredicted.
+    mEncoderVelocity.ElementwiseProductOf(mBitsToPositionScales, mEncoderVelocityCountsPerSecond);
+
+    // Scale acceleration from counts/sec**2 to SI units
+    mEncoderAcceleration.ElementwiseProductOf(mBitsToPositionScales, mEncoderAccelerationCountsPerSecSec);
+
     // Velocity computation
 
-    // If we have firmware 5 or above, FPGA performs velocity computation
-    if (mLowestFirmWareVersion >= 5) {
-        EncoderBitsToVelocity(mEncoderVelocity);   // 1/dt
-        EncoderBitsToVelocityAcc(mEncoderVelocityAcc);   // 1/dt
+    // If we have firmware 6, use FPGA acceleration to predict current velocity
+    if ((mLowestFirmWareVersion == 6) && (mHighestFirmWareVersion == 6)) {
+        EncoderBitsToVelocityPredicted(mEncoderVelocityPredicted);
     }
 
-#define USE_ENCODER_VELOCITY_IF_FAST 1
-    // In any case, compute velocities on "software"
+    // In any case, compute velocities in "software"
     // using iterator for efficiency and going over all actuators
     const double timeToZeroVelocity = 1.0 * cmn_s;
     const vctIntVec::const_iterator end = mEncoderPositionBits.end();
     vctIntVec::const_iterator currentEncoder, previousEncoder;
     vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
     vctDoubleVec::const_iterator encoderVelocity;
-    vctDoubleVec::iterator lastChangeTimestamp, prevChangeTimestamp,
-        slope, velocity;
+    vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
     size_t index = 0;
     for (currentEncoder = mEncoderPositionBits.begin(),
              previousEncoder = mEncoderPositionBitsPrev.begin(),
@@ -462,9 +478,7 @@ void osaRobot1394::ConvertState(void)
              bitsToPos = mBitsToPositionScales.begin(),
              lastChangeTimestamp = mActuatorTimestampChange.begin(),
              slope = mVelocitySlopeToZero.begin(),
-             velocity = mEncoderVelocitySoftware.begin(),
-             encoderVelocity = mEncoderVelocity.begin(),
-             prevChangeTimestamp = mActuatorPreviousTimestampChange.begin();
+             velocity = mEncoderVelocitySoftware.begin();
          // end
          currentEncoder != end;
          // increment
@@ -475,8 +489,6 @@ void osaRobot1394::ConvertState(void)
              ++lastChangeTimestamp,
              ++slope,
              ++velocity,
-             ++encoderVelocity,
-             ++prevChangeTimestamp,
              ++index) {
         // first see if there has been any change
         const int difference = (*currentEncoder) - (*previousEncoder);
@@ -504,50 +516,27 @@ void osaRobot1394::ConvertState(void)
                 }
             }
             // keep record of this change
-            *prevChangeTimestamp = * lastChangeTimestamp;
             *lastChangeTimestamp = 0.0;
             *slope = (*velocity) / (timeToZeroVelocity);
         }
-        /*
-        if (*lastChangeTimestamp > 2.0 * cmn_ms) {
-            *prevChangeTimestamp = *lastChangeTimestamp;
-        } else {
-            if (*prevChangeTimestamp < 2.0 * cmn_ms) {
-                *velocity = *encoderVelocity;
-                if (index == 6) {
-                    std::cerr << "-";
-                }
-            } else {
-                if (index == 6) {
-                    std::cerr << "+";
-                }
-            }
-        }
-        */
     }
 
     // finally save previous encoder bits position
     mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
 
-    // We have two velocity estimations, we believe FPGA based estimation rev >= 6
-    if (mLowestFirmWareVersion >= 5) {
-        // Anton Todo
-
-        // remove method EncoderBitsToVelocity, data member mEncoderVelocityBits
-
-        if (mConfiguration.HasActuatorToJointCoupling) {
-            mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
-                                     mEncoderVelocity);
-        } else {
-            mJointVelocity.Assign(mEncoderVelocity);
-        }
+    // Figure out which velocity to use based on firmware version
+    vctDoubleVec *velToUse;
+    if ((mLowestFirmWareVersion == 6) && (mHighestFirmWareVersion == 6)) {
+        velToUse = &mEncoderVelocity;               // velocity based on FPGA measurement
+        // velToUse = &mEncoderVelocityPredicted;   // velocity based on FPGA measurement of velocity and acceleration
     } else {
-        if (mConfiguration.HasActuatorToJointCoupling) {
-            mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(),
-                                     mEncoderVelocitySoftware);
-        } else {
-            mJointVelocity.Assign(mEncoderVelocitySoftware);
-        }
+        velToUse = &mEncoderVelocitySoftware;    // velocity based on software computation (from position)
+    }
+
+    if (mConfiguration.HasActuatorToJointCoupling) {
+        mJointVelocity.ProductOf(mConfiguration.Coupling.ActuatorToJointPosition(), *velToUse);
+    } else {
+        mJointVelocity.Assign(*velToUse);
     }
 
     // Effort computation
@@ -1128,12 +1117,8 @@ const vctDoubleVec & osaRobot1394::EncoderVelocity(void) const {
     return mEncoderVelocity;
 }
 
-const vctDoubleVec & osaRobot1394::EncoderVelocityAcc(void) const {
-    return mEncoderVelocityAcc;
-}
-
-const vctIntVec & osaRobot1394::EncoderVelocityRaw(void) const {
-    return mEncoderVelocityRaw;
+const vctDoubleVec & osaRobot1394::EncoderVelocityPredicted(void) const {
+    return mEncoderVelocityPredicted;
 }
 
 const vctDoubleVec & osaRobot1394::EncoderAcceleration(void) const {
@@ -1202,28 +1187,21 @@ void osaRobot1394::EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & 
     }
 }
 
-void osaRobot1394::EncoderBitsToVelocity(vctDoubleVec & vel) const
-{    
-    if (mLowestFirmWareVersion >= 6) {
-        CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
-                   || (Amp1394_VERSION_MAJOR > 1));
-        for (size_t i = 0; i < mEncoderVelocityCountsPerSecond.size() && i < vel.size(); i++) {
-            const double counts_per_second = mEncoderVelocityCountsPerSecond[i];
-            vel[i] = mBitsToPositionScales[i] * counts_per_second;
-        }
-    }
-}
 
-void osaRobot1394::EncoderBitsToVelocityAcc(vctDoubleVec & vel) const
+
+void osaRobot1394::EncoderBitsToVelocityPredicted(vctDoubleVec & vel) const
 {
-    if (mLowestFirmWareVersion >= 6) {
-        CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
-                   || (Amp1394_VERSION_MAJOR > 1));
+    if ((mLowestFirmWareVersion == 6) && (mHighestFirmWareVersion == 6)) {
+        vctDoubleVec acc_term_vec(mNumberOfActuators);
+        acc_term_vec.ElementwiseProductOf(mEncoderAccelerationCountsPerSecSec, mEncoderVelocityDelay);
+
         for (size_t i = 0; i < mEncoderVelocityCountsPerSecond.size() && i < vel.size(); i++) {
             const double vel_term = mEncoderVelocityCountsPerSecond[i];
-            double acc_term = mEncoderAcceleration[i] * mEncoderVelocityDelay[i];
-            
-            if ((std::signbit(vel_term) != std::signbit(acc_term)) && (abs(acc_term) > abs(vel_term))){ // Don't decelerate pass a zero-crossing
+            const double acc_term = acc_term_vec[i];
+
+            // Don't decelerate past a zero-crossing; first expression checks whether vel_term and
+            // acc_term have different signs (i.e., one positive and one negative).
+            if ((vel_term*acc_term < 0) && (abs(acc_term) > abs(vel_term))){
                 vel[i] = 0;
             }
             else {

@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides, Anton Deguet
   Created on: 2011-06-10
 
-  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 --- begin cisst license - do not edit ---
 
@@ -126,7 +126,6 @@ public:
     bool WatchdogStatus(void) const;
     const vctBoolVec & ActuatorPowerStatus(void) const;
     const vctBoolVec & BrakePowerStatus(void) const;
-    const vctIntVec & EncoderVelocityRaw(void) const;
     const vctDoubleVec & ActuatorCurrentFeedback(void) const;
     const vctDoubleVec & BrakeCurrentFeedback(void) const;
     const vctDoubleVec & PotPosition(void) const;
@@ -134,7 +133,7 @@ public:
     const vctDoubleVec & BrakeTimeStamp(void) const;
     const vctDoubleVec & EncoderPosition(void) const;
     const vctDoubleVec & EncoderVelocity(void) const;
-    const vctDoubleVec & EncoderVelocityAcc(void) const;
+    const vctDoubleVec & EncoderVelocityPredicted(void) const;
     const vctDoubleVec & EncoderAcceleration(void) const;
     const vctDoubleVec & EncoderVelocitySoftware(void) const;
     /**}**/
@@ -165,8 +164,7 @@ public:
     //! Conversions for encoders
     void EncoderPositionToBits(const vctDoubleVec & pos, vctIntVec & bits) const;
     void EncoderBitsToPosition(const vctIntVec & bits, vctDoubleVec & pos) const;
-    void EncoderBitsToVelocity(vctDoubleVec & vel) const;
-    void EncoderBitsToVelocityAcc(vctDoubleVec & vel) const;
+    void EncoderBitsToVelocityPredicted(vctDoubleVec & vel) const;
     
     //! Conversions for actuator current commands and measurements
     void ActuatorEffortToCurrent(const vctDoubleVec & efforts, vctDoubleVec & currents) const;
@@ -251,6 +249,7 @@ protected:
         mWatchdogPeriod;
 
     unsigned int mLowestFirmWareVersion;
+    unsigned int mHighestFirmWareVersion;
 
     bool mSafetyRelay;
 
@@ -269,10 +268,7 @@ protected:
         mPotBits,
         mEncoderPositionBits,
         mEncoderPositionBitsPrev,
-        mEncoderVelocityBits,     // latched velocity
-        mEncoderDPositionBits,
-        mEncoderDTimeBits,
-        mEncoderVelocityRaw;
+        mEncoderDPositionBits;
     
     vctIntVec
         mActuatorCurrentBitsCommand,
@@ -289,12 +285,14 @@ protected:
         mPotVoltage,
         mPotPosition,
         mEncoderPosition,
+
         mEncoderVelocityCountsPerSecond,  // velocity based on FPGA measurement of time between encoder edges (period)
-        mEncoderVelocity,
-        mEncoderVelocityDelay,
-        mEncoderVelocityAcc,
-        mEncoderAcceleration,
-        mEncoderVelocitySoftware,
+        mEncoderVelocity,                 // velocity passed to higher level (SI units)
+        mEncoderVelocityDelay,            // assumed delay in velocity measurement (period/2)
+        mEncoderVelocityPredicted,        // velocity based on FPGA measurement, combined with prediction based on acceleration (SI units)
+        mEncoderVelocitySoftware,         // velocity based on backward difference of position (SI units)
+        mEncoderAccelerationCountsPerSecSec, // acceleration based on FPGA measurement (firmware rev 6)
+        mEncoderAcceleration,             // acceleration in SI units (firmware rev 6)
         mJointPosition,
         mJointVelocity,
         mJointTorque,
