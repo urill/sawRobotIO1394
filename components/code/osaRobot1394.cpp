@@ -527,8 +527,7 @@ void osaRobot1394::ConvertState(void)
     // Figure out which velocity to use based on firmware version
     vctDoubleVec *velToUse;
     if ((mLowestFirmWareVersion == 6) && (mHighestFirmWareVersion == 6)) {
-        velToUse = &mEncoderVelocity;               // velocity based on FPGA measurement
-        // velToUse = &mEncoderVelocityPredicted;   // velocity based on FPGA measurement of velocity and acceleration
+        velToUse = &mEncoderVelocityPredicted;   // velocity based on FPGA measurement of velocity and acceleration
     } else {
         velToUse = &mEncoderVelocitySoftware;    // velocity based on software computation (from position)
     }
