@@ -5,7 +5,7 @@
   Author(s):  Zihan Chen, Peter Kazanzides
   Created on: 2012-07-31
 
-  (C) Copyright 2011-2017 Johns Hopkins University (JHU), All Rights Reserved.
+  (C) Copyright 2011-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
  --- begin cisst license - do not edit ---
 
@@ -220,6 +220,9 @@ bool mtsRobotIO1394::SetupRobot(mtsRobot1394 * robot)
                                  << robot->Name() << "\", do we have multiple robots with the same name?" << std::endl;
         return false;
     }
+    // we show statistics for the whole component using the main state table
+    robotInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
+                                        "GetPeriodStatistics");
 
     // Create actuator interface
     std::string actuatorInterfaceName = robot->Name();

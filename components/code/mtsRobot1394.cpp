@@ -230,8 +230,6 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandReadState(*mStateTableRead, mActuatorPowerStatus,
                                         "GetActuatorAmpStatus"); // vector[bool]
 
-    robotInterface->AddCommandReadState(*mStateTableRead, mStateTableRead->PeriodStats,
-                                        "GetPeriodStatistics"); // mtsIntervalStatistics
     robotInterface->AddCommandReadState(*mStateTableRead, mPowerStatus,
                                         "GetPowerStatus"); // bool
     robotInterface->AddCommandReadState(*mStateTableRead, mSafetyRelay,
