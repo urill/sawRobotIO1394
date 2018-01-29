@@ -81,6 +81,12 @@ void mtsRobotIO1394::Init(const int portNumber)
     // default watchdog period
     mWatchdogPeriod = 15.0 * cmn_ms;
 
+    // add state tables for stats
+    mStateTableRead = new mtsStateTable(100, this->GetName() + "Read");
+    mStateTableRead->SetAutomaticAdvance(false);
+    mStateTableWrite = new mtsStateTable(100, this->GetName() + "Write");
+    mStateTableWrite->SetAutomaticAdvance(false);
+        
     // construct port
     MessageStream = new std::ostream(this->GetLogMultiplexer());
     try {
@@ -129,7 +135,11 @@ void mtsRobotIO1394::Init(const int portNumber)
         configurationInterface->AddCommandRead<mtsComponent>(&mtsComponent::GetName, this,
                                                              "GetName");
         configurationInterface->AddCommandReadState(StateTable, StateTable.PeriodStats,
-                                                    "GetPeriodStatistics"); // mtsIntervalStatistics
+                                                    "GetPeriodStatistics");
+        configurationInterface->AddCommandReadState(*mStateTableRead, mStateTableRead->PeriodStats,
+                                                    "GetPeriodStatisticsRead");
+        configurationInterface->AddCommandReadState(*mStateTableWrite, mStateTableWrite->PeriodStats,
+                                                    "GetPeriodStatisticsWrite");
     } else {
         CMN_LOG_CLASS_INIT_ERROR << "Configure: unable to create configuration interface." << std::endl;
     }
@@ -301,6 +311,7 @@ void mtsRobotIO1394::Startup(void)
 
 void mtsRobotIO1394::PreRead(void)
 {
+    mStateTableRead->Start();
     const robots_iterator robotsEnd = mRobots.end();
     for (robots_iterator robot = mRobots.begin();
          robot != robotsEnd;
@@ -311,6 +322,7 @@ void mtsRobotIO1394::PreRead(void)
 
 void mtsRobotIO1394::PostRead(void)
 {
+    mStateTableRead->Advance();
     // Trigger robot events
     const robots_iterator robotsEnd = mRobots.end();
     for (robots_iterator robot = mRobots.begin();
@@ -338,6 +350,7 @@ void mtsRobotIO1394::PostRead(void)
 
 void mtsRobotIO1394::PreWrite(void)
 {
+    mStateTableWrite->Start();
     const robots_iterator robotsEnd = mRobots.end();
     for (robots_iterator robot = mRobots.begin();
          robot != robotsEnd;
@@ -348,6 +361,7 @@ void mtsRobotIO1394::PreWrite(void)
 
 void mtsRobotIO1394::PostWrite(void)
 {
+    mStateTableWrite->Advance();
     // Trigger robot events
     const robots_iterator robotsEnd = mRobots.end();
     for (robots_iterator robot = mRobots.begin();

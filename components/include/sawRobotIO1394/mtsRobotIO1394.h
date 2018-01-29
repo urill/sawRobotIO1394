@@ -53,6 +53,10 @@ protected:
     typedef DigitalOutputsType::iterator digital_outputs_iterator;
     DigitalOutputsType mDigitalOutputs;
 
+    // state tables for statistics
+    mtsStateTable * mStateTableRead;
+    mtsStateTable * mStateTableWrite;
+
     ///////////// Public Class Methods ///////////////////////////
 public:
     // Constructor & Destructor
