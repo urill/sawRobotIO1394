@@ -18,7 +18,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <sawRobotIO1394/osaDigitalInput1394.h>
 
-#include "FirewirePort.h"
+//#include "FirewirePort.h"
 #include "AmpIO.h"
 
 using namespace sawRobotIO1394;

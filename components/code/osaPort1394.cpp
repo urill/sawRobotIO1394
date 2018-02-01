@@ -18,10 +18,10 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <Amp1394/AmpIORevision.h>
 #if Amp1394_HAS_RAW1394
-#include "FirewirePort.h"
+//#include "FirewirePort.h"
 #endif
 #if Amp1394_HAS_PCAP
-#include "Eth1394Port.h"
+//#include "Eth1394Port.h"
 #endif
 #include "AmpIO.h"
 
@@ -34,19 +34,19 @@ using namespace sawRobotIO1394;
 
 osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
 {
-    // Construct handle to firewire port
-#if Amp1394_HAS_RAW1394
-    mPort = new FirewirePort(portNumber, messageStream);
-#else
-    mPort = new Eth1394Port(portNumber, messageStream);
-#endif
-
-    // Check number of port users
-    if (mPort->NumberOfUsers() > 1) {
-        std::ostringstream oss;
-        oss << "osaIO1394Port: Found more than one user on firewire port: " << portNumber;
-        cmnThrow(osaRuntimeError1394(oss.str()));
-    }
+//    // Construct handle to firewire port
+//#if Amp1394_HAS_RAW1394
+//    mPort = new FirewirePort(portNumber, messageStream);
+//#else
+//    mPort = new Eth1394Port(portNumber, messageStream);
+//#endif
+//
+//    // Check number of port users
+//    if (mPort->NumberOfUsers() > 1) {
+//        std::ostringstream oss;
+//        oss << "osaIO1394Port: Found more than one user on firewire port: " << portNumber;
+//        cmnThrow(osaRuntimeError1394(oss.str()));
+//    }
 
     // write warning to cerr if not compiled in Release mode
     if (std::string(CISST_BUILD_TYPE) != "Release") {
@@ -62,19 +62,7 @@ osaPort1394::osaPort1394(int portNumber, std::ostream & messageStream)
 
 void osaPort1394::SetProtocol(const ProtocolType & protocol)
 {
-    switch (protocol) {
-    case PROTOCOL_SEQ_RW:
-        mPort->SetProtocol(BasePort::PROTOCOL_SEQ_RW);
-        break;
-    case PROTOCOL_SEQ_R_BC_W:
-        mPort->SetProtocol(BasePort::PROTOCOL_SEQ_R_BC_W);
-        break;
-    case PROTOCOL_BC_QRW:
-        mPort->SetProtocol(BasePort::PROTOCOL_BC_QRW);
-        break;
-    default:
-        break;
-    }
+
 }
 
 void osaPort1394::Configure(const osaPort1394Configuration & config)
@@ -122,7 +110,7 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
         // If the board hasn't been created, construct it and add it to the port
         if (mBoards.count(boardId) == 0) {
             mBoards[boardId] = new AmpIO(boardId);
-            mPort->AddBoard(mBoards[boardId]);
+//            mPort->AddBoard(mBoards[boardId]);
         }
 
         // Add the board to the list of boards relevant to this robot
@@ -138,7 +126,7 @@ void osaPort1394::AddRobot(osaRobot1394 * robot)
             // If the board hasn't been created, construct it and add it to the port
             if (mBoards.count(boardId) == 0) {
                 mBoards[boardId] = new AmpIO(boardId);
-                mPort->AddBoard(mBoards[boardId]);
+//                mPort->AddBoard(mBoards[boardId]);
             }
             
             // Add the board to the list of boards relevant to this robot
@@ -197,7 +185,7 @@ void osaPort1394::AddDigitalInput(osaDigitalInput1394 * digitalInput)
     // If the board hasn't been created, construct it and add it to the port
     if (mBoards.count(boardID) == 0) {
         mBoards[boardID] = new AmpIO(boardID);
-        mPort->AddBoard(mBoards[boardID]);
+//        mPort->AddBoard(mBoards[boardID]);
     }
 
     // Assign the board to the digital input
@@ -227,7 +215,7 @@ void osaPort1394::AddDigitalOutput(osaDigitalOutput1394 * digitalOutput)
     // If the board hasn't been created, construct it and add it to the port
     if (mBoards.count(boardID) == 0) {
         mBoards[boardID] = new AmpIO(boardID);
-        mPort->AddBoard(mBoards[boardID]);
+//        mPort->AddBoard(mBoards[boardID]);
     }
 
     // Assign the board to the digital output
@@ -275,7 +263,7 @@ osaPort1394::~osaPort1394()
          iter != mBoards.end();
          ++iter) {
         if (iter->second != 0) {
-            mPort->RemoveBoard(iter->first);
+//            mPort->RemoveBoard(iter->first);
             delete iter->second;
         }
     }
@@ -290,14 +278,14 @@ osaPort1394::~osaPort1394()
 void osaPort1394::Read(void)
 {
     // Read from all boards on the port
-    mPort->ReadAllBoards();
+//    mPort->ReadAllBoards();
 
     // Poll the state for each robot
     for (robot_iterator robot = mRobots.begin();
          robot != mRobots.end();
          ++robot) {
         // Poll the board validity
-        (*robot)->PollValidity();
+//        (*robot)->PollValidity();
 
         // Poll this robot's state
         (*robot)->PollState();
@@ -326,7 +314,7 @@ void osaPort1394::Read(void)
 void osaPort1394::Write(void)
 {
     // Write to all boards
-    mPort->WriteAllBoards();
+//    mPort->WriteAllBoards();
 }
 
 int osaPort1394::NumberOfBoards(void) const {

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libAmp1394.a  CMakeFiles/Amp1394.dir/code/AmpIO.cpp.o CMakeFiles/Amp1394.dir/code/Amp1394Time.cpp.o
+/usr/bin/ranlib libAmp1394.a
