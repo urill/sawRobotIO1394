@@ -270,9 +270,9 @@ osaPort1394::~osaPort1394()
     mBoards.clear();
 
     // Delete firewire port
-    if (mPort != 0) {
-        delete mPort;
-    }
+//    if (mPort != 0) {
+//        delete mPort;
+//    }
 }
 
 void osaPort1394::Read(void)
@@ -285,7 +285,7 @@ void osaPort1394::Read(void)
          robot != mRobots.end();
          ++robot) {
         // Poll the board validity
-//        (*robot)->PollValidity();
+        (*robot)->PollValidity();
 
         // Poll this robot's state
         (*robot)->PollState();
