@@ -389,28 +389,49 @@ void osaRobot1394::PollState(void)
         int axis = mActuatorInfo[i].Axis;
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
-
-        mActuatorTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
-        mDigitalInputs[i] = board->GetDigitalInput();
+        mActuatorTimestamp[i] = 0;
+        mDigitalInputs[i] = 0;
 
         // vectors of bits
-        mEncoderOverflow[i] = board->GetEncoderOverflow(axis);
-        mEncoderChannelsA[i] = board->GetEncoderChannelA(axis);
+        mEncoderOverflow[i] = 0;
+        mEncoderChannelsA[i] = 0;
 
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
-        mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
-        mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
-        mEncoderVelocityCountsPerSecond[i] = board->GetEncoderVelocityCountsPerSecond(axis);
+        mEncoderPositionBits[i] = -3;
+        mEncoderVelocityBits[i] = -6;
+        mEncoderVelocityCountsPerSecond[i] = -9;
 
-        mPotBits[i] = board->GetAnalogInput(axis);
+        mPotBits[i] = 0;
 
-        mActuatorCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
-        mActuatorPowerEnabled[i] = board->GetAmpEnable(axis);
-        mActuatorPowerStatus[i] = board->GetAmpStatus(axis);
+        mActuatorCurrentBitsFeedback[i] = 0xffff / 2;
+        mActuatorPowerEnabled[i] = 1;
+        mActuatorPowerStatus[i] = 1;
 
         // first temperature corresponds to first 2 actuators, second to last 2
         // board reports temperature in celsius * 2
-        mActuatorTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
+        mActuatorTemperature[i] = 31.4;
+
+//        mActuatorTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+//        mDigitalInputs[i] = board->GetDigitalInput();
+//
+//        // vectors of bits
+//        mEncoderOverflow[i] = board->GetEncoderOverflow(axis);
+//        mEncoderChannelsA[i] = board->GetEncoderChannelA(axis);
+//
+//        // convert from 24 bits signed stored in 32 unsigned to 32 signed
+//        mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
+//        mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
+//        mEncoderVelocityCountsPerSecond[i] = board->GetEncoderVelocityCountsPerSecond(axis);
+//
+//        mPotBits[i] = board->GetAnalogInput(axis);
+//
+//        mActuatorCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
+//        mActuatorPowerEnabled[i] = board->GetAmpEnable(axis);
+//        mActuatorPowerStatus[i] = board->GetAmpStatus(axis);
+//
+//        // first temperature corresponds to first 2 actuators, second to last 2
+//        // board reports temperature in celsius * 2
+//        mActuatorTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
     }
 
     for (size_t i = 0; i < mNumberOfBrakes; i++) {
