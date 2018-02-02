@@ -107,6 +107,14 @@ public:
     void SetActuatorCurrent(const vctDoubleVec & currents);
     void SetActuatorCurrentBits(const vctIntVec & bits);
 
+    //! Exposed IO
+    void IOSetEncoderPositionBits(const vctIntVec & val);
+    void IOSetEncoderVelocityBits(const vctIntVec & val);
+    void IOSetActuatorCurrentFeedback(const vctDoubleVec & val);
+    void IOSetPotVoltage(const vctDoubleVec & val);
+
+
+
     //! Brake Control
     void SetBrakeCurrent(const vctDoubleVec & currents);
     void SetBrakeCurrentBits(const vctIntVec & bits);
@@ -320,7 +328,9 @@ protected:
         mCurrentSafetyViolationsMaximum;
 
     size_t mInvalidReadCounter;
-    };
+
+    void InitializeState(void);
+};
 
 } // namespace sawRobotIO1394
 

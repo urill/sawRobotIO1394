@@ -52,6 +52,7 @@ osaRobot1394::osaRobot1394(const osaRobot1394Configuration & config,
     mInvalidReadCounter(0)
 {
     this->Configure(config);
+    this->InitializeState();
 }
 
 void osaRobot1394::Configure(const osaRobot1394Configuration & config)
@@ -381,7 +382,7 @@ void osaRobot1394::PollValidity(void)
     }
 }
 
-void osaRobot1394::PollState(void)
+void osaRobot1394::InitializeState(void)
 {
     // Poll data
     for (size_t i = 0; i < mNumberOfActuators; i++) {
@@ -397,9 +398,9 @@ void osaRobot1394::PollState(void)
         mEncoderChannelsA[i] = 0;
 
         // convert from 24 bits signed stored in 32 unsigned to 32 signed
-        mEncoderPositionBits[i] = -3;
-        mEncoderVelocityBits[i] = -6;
-        mEncoderVelocityCountsPerSecond[i] = -9;
+        mEncoderPositionBits[i] = 0;
+        mEncoderVelocityBits[i] = 0;
+        mEncoderVelocityCountsPerSecond[i] = 0;
 
         mPotBits[i] = 0;
 
@@ -409,7 +410,7 @@ void osaRobot1394::PollState(void)
 
         // first temperature corresponds to first 2 actuators, second to last 2
         // board reports temperature in celsius * 2
-        mActuatorTemperature[i] = 31.4;
+        mActuatorTemperature[i] = 3.14;
 
 //        mActuatorTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
 //        mDigitalInputs[i] = board->GetDigitalInput();
@@ -434,21 +435,92 @@ void osaRobot1394::PollState(void)
 //        mActuatorTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
     }
 
-    for (size_t i = 0; i < mNumberOfBrakes; i++) {
-        AmpIO * board = mBrakeInfo[i].Board;
-        int axis = mBrakeInfo[i].Axis;
+//    for (size_t i = 0; i < mNumberOfBrakes; i++) {
+//        AmpIO * board = mBrakeInfo[i].Board;
+//        int axis = mBrakeInfo[i].Axis;
+//
+//        if (!board || (axis < 0)) continue; // We probably don't need this check any more
+//
+//        mBrakeTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+//        mBrakeCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
+//        mBrakePowerEnabled[i] = board->GetAmpEnable(axis);
+//        mBrakePowerStatus[i] = board->GetAmpStatus(axis);
+//
+//        // first temperature corresponds to first 2 brakes, second to last 2
+//        // board reports temperature in celsius * 2
+//        mBrakeTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
+//    }
+
+}
+
+void osaRobot1394::PollState(void)
+{
+    // Poll data
+    for (size_t i = 0; i < mNumberOfActuators; i++) {
+        AmpIO * board = mActuatorInfo[i].Board;
+        int axis = mActuatorInfo[i].Axis;
 
         if (!board || (axis < 0)) continue; // We probably don't need this check any more
+        mActuatorTimestamp[i] = 0;
+        mDigitalInputs[i] = 0;
 
-        mBrakeTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
-        mBrakeCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
-        mBrakePowerEnabled[i] = board->GetAmpEnable(axis);
-        mBrakePowerStatus[i] = board->GetAmpStatus(axis);
+        // vectors of bits
+        mEncoderOverflow[i] = 0;
+        mEncoderChannelsA[i] = 0;
 
-        // first temperature corresponds to first 2 brakes, second to last 2
+        // convert from 24 bits signed stored in 32 unsigned to 32 signed
+//        mEncoderPositionBits[i] = -3;
+//        mEncoderVelocityBits[i] = -6;
+//        mEncoderVelocityCountsPerSecond[i] = -9;
+
+//        mPotBits[i] = 0;
+
+//        mActuatorCurrentBitsFeedback[i] = 0xffff / 2;
+//        mActuatorPowerEnabled[i] = 1;
+        mActuatorPowerStatus[i] = 1;
+
+        // first temperature corresponds to first 2 actuators, second to last 2
         // board reports temperature in celsius * 2
-        mBrakeTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
+        mActuatorTemperature[i] = 3.14;
+
+//        mActuatorTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+//        mDigitalInputs[i] = board->GetDigitalInput();
+//
+//        // vectors of bits
+//        mEncoderOverflow[i] = board->GetEncoderOverflow(axis);
+//        mEncoderChannelsA[i] = board->GetEncoderChannelA(axis);
+//
+//        // convert from 24 bits signed stored in 32 unsigned to 32 signed
+//        mEncoderPositionBits[i] = board->GetEncoderPosition(axis);
+//        mEncoderVelocityBits[i] = board->GetEncoderVelocity(axis);
+//        mEncoderVelocityCountsPerSecond[i] = board->GetEncoderVelocityCountsPerSecond(axis);
+//
+//        mPotBits[i] = board->GetAnalogInput(axis);
+//
+//        mActuatorCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
+//        mActuatorPowerEnabled[i] = board->GetAmpEnable(axis);
+//        mActuatorPowerStatus[i] = board->GetAmpStatus(axis);
+//
+//        // first temperature corresponds to first 2 actuators, second to last 2
+//        // board reports temperature in celsius * 2
+//        mActuatorTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
     }
+
+//    for (size_t i = 0; i < mNumberOfBrakes; i++) {
+//        AmpIO * board = mBrakeInfo[i].Board;
+//        int axis = mBrakeInfo[i].Axis;
+//
+//        if (!board || (axis < 0)) continue; // We probably don't need this check any more
+//
+//        mBrakeTimestamp[i] = board->GetTimestamp() * 1.0 / 49125000.0;
+//        mBrakeCurrentBitsFeedback[i] = board->GetMotorCurrent(axis);
+//        mBrakePowerEnabled[i] = board->GetAmpEnable(axis);
+//        mBrakePowerStatus[i] = board->GetAmpStatus(axis);
+//
+//        // first temperature corresponds to first 2 brakes, second to last 2
+//        // board reports temperature in celsius * 2
+//        mBrakeTemperature[i] = (board->GetAmpTemperature(axis / 2)) / 2.0;
+//    }
 
 }
 
@@ -474,62 +546,62 @@ void osaRobot1394::ConvertState(void)
 
     // In any case, compute velocities on "software"
     // using iterator for efficiency and going over all actuators
-    const double timeToZeroVelocity = 1.0 * cmn_s;
-    const vctIntVec::const_iterator end = mEncoderPositionBits.end();
-    vctIntVec::const_iterator currentEncoder, previousEncoder;
-    vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
-    vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
-    for (currentEncoder = mEncoderPositionBits.begin(),
-             previousEncoder = mEncoderPositionBitsPrev.begin(),
-             currentTimestamp = mActuatorTimestamp.begin(),
-             bitsToPos = mBitsToPositionScales.begin(),
-             lastChangeTimestamp = mActuatorTimestampChange.begin(),
-             slope = mVelocitySlopeToZero.begin(),
-             velocity = mEncoderVelocitySoftware.begin();
-         // end
-         currentEncoder != end;
-         // increment
-         ++currentEncoder,
-             ++previousEncoder,
-             ++currentTimestamp,
-             ++bitsToPos,
-             ++lastChangeTimestamp,
-             ++slope,
-             ++velocity) {
-        // first see if there has been any change
-        const int difference = (*currentEncoder) - (*previousEncoder);
-        if (difference == 0) {
-            if (*lastChangeTimestamp < timeToZeroVelocity) {
-                *velocity -= (*slope) * (*currentTimestamp);
-            } else {
-                *velocity = 0.0;
-            }
-            *lastChangeTimestamp += (*currentTimestamp);
-        } else {
-            *lastChangeTimestamp += (*currentTimestamp);
-            // if we only have one bit change compute velocity since last change
-            if ((difference == 1) || (difference == -1)) {
-                *velocity = (difference / (*lastChangeTimestamp))
-                    * (*bitsToPos);
-            } else if (difference > 1) {
-                // we know all but 1 bit difference happened in last Dt, other bit change happened between now and last change
-                *velocity = ((difference - 1.0) / (*currentTimestamp) + 1.0 / (*lastChangeTimestamp))
-                    * (*bitsToPos);
-            } else {
-                *velocity = ((difference + 1.0) / (*currentTimestamp) - 1.0 / (*lastChangeTimestamp))
-                    * (*bitsToPos);
-            }
-            // keep record of this change
-            *lastChangeTimestamp = 0.0;
-            *slope = (*velocity) / (timeToZeroVelocity);
-        }
-    }
+//    const double timeToZeroVelocity = 1.0 * cmn_s;
+//    const vctIntVec::const_iterator end = mEncoderPositionBits.end();
+//    vctIntVec::const_iterator currentEncoder, previousEncoder;
+//    vctDoubleVec::const_iterator currentTimestamp, bitsToPos;
+//    vctDoubleVec::iterator lastChangeTimestamp, slope, velocity;
+//    for (currentEncoder = mEncoderPositionBits.begin(),
+//             previousEncoder = mEncoderPositionBitsPrev.begin(),
+//             currentTimestamp = mActuatorTimestamp.begin(),
+//             bitsToPos = mBitsToPositionScales.begin(),
+//             lastChangeTimestamp = mActuatorTimestampChange.begin(),
+//             slope = mVelocitySlopeToZero.begin(),
+//             velocity = mEncoderVelocitySoftware.begin();
+//         // end
+//         currentEncoder != end;
+//         // increment
+//         ++currentEncoder,
+//             ++previousEncoder,
+//             ++currentTimestamp,
+//             ++bitsToPos,
+//             ++lastChangeTimestamp,
+//             ++slope,
+//             ++velocity) {
+//        // first see if there has been any change
+//        const int difference = (*currentEncoder) - (*previousEncoder);
+//        if (difference == 0) {
+//            if (*lastChangeTimestamp < timeToZeroVelocity) {
+//                *velocity -= (*slope) * (*currentTimestamp);
+//            } else {
+//                *velocity = 0.0;
+//            }
+//            *lastChangeTimestamp += (*currentTimestamp);
+//        } else {
+//            *lastChangeTimestamp += (*currentTimestamp);
+//            // if we only have one bit change compute velocity since last change
+//            if ((difference == 1) || (difference == -1)) {
+//                *velocity = (difference / (*lastChangeTimestamp))
+//                    * (*bitsToPos);
+//            } else if (difference > 1) {
+//                // we know all but 1 bit difference happened in last Dt, other bit change happened between now and last change
+//                *velocity = ((difference - 1.0) / (*currentTimestamp) + 1.0 / (*lastChangeTimestamp))
+//                    * (*bitsToPos);
+//            } else {
+//                *velocity = ((difference + 1.0) / (*currentTimestamp) - 1.0 / (*lastChangeTimestamp))
+//                    * (*bitsToPos);
+//            }
+//            // keep record of this change
+//            *lastChangeTimestamp = 0.0;
+//            *slope = (*velocity) / (timeToZeroVelocity);
+//        }
+//    }
 
     // finally save previous encoder bits position
-    mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
+//    mEncoderPositionBitsPrev.Assign(mEncoderPositionBits);
 
     // We have two velocity estimations, we believe FPGA based estimation rev >= 6
-    if (mLowestFirmWareVersion >= 6) {
+    if (1) { // not use software encoder velocity
         // Anton Todo
 
         // remove method EncoderBitsToVelocity, data member mEncoderVelocityBits
@@ -550,7 +622,7 @@ void osaRobot1394::ConvertState(void)
     }
 
     // Effort computation
-    ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback);
+//    ActuatorBitsToCurrent(mActuatorCurrentBitsFeedback, mActuatorCurrentFeedback); // current in amps from ros
     ActuatorCurrentToEffort(mActuatorCurrentFeedback, mActuatorEffortFeedback);
     if (mConfiguration.HasActuatorToJointCoupling) {
         mJointTorque.ProductOf(mConfiguration.Coupling.ActuatorToJointEffort(),
@@ -561,7 +633,7 @@ void osaRobot1394::ConvertState(void)
 
     BrakeBitsToCurrent(mBrakeCurrentBitsFeedback, mBrakeCurrentFeedback);
 
-    PotBitsToVoltage(mPotBits, mPotVoltage);
+//    PotBitsToVoltage(mPotBits, mPotVoltage); // feed in voltage from ros
     PotVoltageToPosition(mPotVoltage, mPotPosition);
 }
 
@@ -916,7 +988,7 @@ void osaRobot1394::SetEncoderPosition(const vctDoubleVec & pos)
 void osaRobot1394::SetEncoderPositionBits(const vctIntVec & bits)
 {
     for (size_t i = 0; i < mNumberOfActuators; i++) {
-        mActuatorInfo[i].Board->WriteEncoderPreload(mActuatorInfo[i].Axis, bits[i]);
+//        mActuatorInfo[i].Board->WriteEncoderPreload(mActuatorInfo[i].Axis, bits[i]);
     }
     // initialize previous bits value
     mEncoderPositionBitsPrev.Assign(bits);
@@ -1195,7 +1267,7 @@ void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & 
         CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
                    || (Amp1394_VERSION_MAJOR > 1));
         for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {{
-                vel[i] = mBitsToPositionScales[i] / bits[i];
+                vel[i] = mBitsToPositionScales[i] * bits[i]; // why was it division?
             }
         }
     }
@@ -1242,4 +1314,20 @@ void osaRobot1394::PotBitsToVoltage(const vctIntVec & bits, vctDoubleVec & volta
 void osaRobot1394::PotVoltageToPosition(const vctDoubleVec & voltages, vctDoubleVec & pos) const {
     pos.ElementwiseProductOf(voltages, mVoltageToPositionScales);
     pos.SumOf(pos, mVoltageToPositionOffsets);
+}
+
+void osaRobot1394::IOSetEncoderPositionBits(const vctIntVec &val) {
+    mEncoderPositionBits.ForceAssign(val);
+}
+
+void osaRobot1394::IOSetEncoderVelocityBits(const vctIntVec &val) {
+    mEncoderVelocityBits.ForceAssign(val);
+}
+
+void osaRobot1394::IOSetActuatorCurrentFeedback(const vctDoubleVec &val) {
+    mActuatorCurrentFeedback.ForceAssign(val);
+}
+
+void osaRobot1394::IOSetPotVoltage(const vctDoubleVec &val) {
+    mPotValid.ForceAssign(val);
 }

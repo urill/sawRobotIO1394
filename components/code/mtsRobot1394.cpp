@@ -23,27 +23,24 @@ http://www.cisst.org/cisst/license.txt.
 
 using namespace sawRobotIO1394;
 
-mtsRobot1394::mtsRobot1394(const cmnGenericObject & owner,
-                           const osaRobot1394Configuration & config):
-    osaRobot1394(config, 100),
-    OwnerServices(owner.Services()),
-    mStateTableRead(0),
-    mStateTableWrite(0),
-    mFirstWatchdog(true),
-    mSamplesForCalibrateEncoderOffsetsFromPots(0)
-{
+mtsRobot1394::mtsRobot1394(const cmnGenericObject &owner,
+                           const osaRobot1394Configuration &config) :
+        osaRobot1394(config, 100),
+        OwnerServices(owner.Services()),
+        mStateTableRead(0),
+        mStateTableWrite(0),
+        mFirstWatchdog(true),
+        mSamplesForCalibrateEncoderOffsetsFromPots(0) {
 }
 
-mtsRobot1394::~mtsRobot1394()
-{
+mtsRobot1394::~mtsRobot1394() {
     delete mStateTableRead;
     delete mStateTableWrite;
 }
 
 bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
-                                    mtsStateTable * & stateTableRead,
-                                    mtsStateTable * & stateTableWrite)
-{
+                                    mtsStateTable *&stateTableRead,
+                                    mtsStateTable *&stateTableWrite) {
     if (mStateTableRead || mStateTableWrite) {
         CMN_LOG_CLASS_INIT_ERROR << "SetupStateTables: state tables have already been created for robot: "
                                  << this->Name() << std::endl;
@@ -96,14 +93,14 @@ bool mtsRobot1394::SetupStateTables(const size_t stateTableSize,
     mStateTableRead->AddData(mBrakeCurrentFeedback, "BrakeFeedbackCurrent");
     mStateTableRead->AddData(mBrakeTemperature, "BrakeTemperature");
 
-    mtsStateTable::AccessorBase * accessorBase;
+    mtsStateTable::AccessorBase *accessorBase;
     accessorBase = mStateTableRead->GetAccessor(mPotPosition);
     CMN_ASSERT(accessorBase);
-    mPotPositionAccessor = dynamic_cast<mtsStateTable::Accessor<vctDoubleVec>* >(accessorBase);
+    mPotPositionAccessor = dynamic_cast<mtsStateTable::Accessor<vctDoubleVec> * >(accessorBase);
     CMN_ASSERT(mPotPositionAccessor);
     accessorBase = mStateTableRead->GetAccessor(mPositionActuatorGet);
     CMN_ASSERT(accessorBase);
-    mPositionActuatorGetAccessor = dynamic_cast<mtsStateTable::Accessor<prmPositionJointGet>*>(accessorBase);
+    mPositionActuatorGetAccessor = dynamic_cast<mtsStateTable::Accessor<prmPositionJointGet> *>(accessorBase);
     CMN_ASSERT(mPositionActuatorGetAccessor);
 
     stateTableRead = mStateTableRead;
@@ -127,36 +124,34 @@ void mtsRobot1394::AdvanceWriteStateTable(void) {
     mStateTableWrite->Advance();
 }
 
-void mtsRobot1394::GetNumberOfActuators(int & numberOfActuators) const {
+void mtsRobot1394::GetNumberOfActuators(int &numberOfActuators) const {
     numberOfActuators = this->NumberOfActuators();
 }
 
-void mtsRobot1394::GetNumberOfJoints(int & numberOfJoints) const {
+void mtsRobot1394::GetNumberOfJoints(int &numberOfJoints) const {
     numberOfJoints = this->NumberOfJoints();
 }
 
-void mtsRobot1394::GetSerialNumber(int & serialNumber) const {
+void mtsRobot1394::GetSerialNumber(int &serialNumber) const {
     serialNumber = this->SerialNumber();
 }
 
-void mtsRobot1394::UsePotsForSafetyCheck(const bool & usePotsForSafetyCheck)
-{
+void mtsRobot1394::UsePotsForSafetyCheck(const bool &usePotsForSafetyCheck) {
     // use base class for logic
     osaRobot1394::UsePotsForSafetyCheck(usePotsForSafetyCheck);
     // trigger mts event
     EventTriggers.UsePotsForSafetyCheck(usePotsForSafetyCheck);
 }
 
-void mtsRobot1394::SetTorqueJoint(const prmForceTorqueJointSet & efforts) {
+void mtsRobot1394::SetTorqueJoint(const prmForceTorqueJointSet &efforts) {
     this->SetJointEffort(efforts.ForceTorque());
 }
 
-void mtsRobot1394::ResetSingleEncoder(const int & index) {
+void mtsRobot1394::ResetSingleEncoder(const int &index) {
     this->SetSingleEncoderPosition(index, 0.0);
 }
 
-void mtsRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
-{
+void mtsRobot1394::SetCoupling(const prmActuatorJointCoupling &coupling) {
     // set coupling in base class
     osaRobot1394::SetCoupling(coupling);
     // start state table and get new data
@@ -172,34 +167,29 @@ void mtsRobot1394::SetCoupling(const prmActuatorJointCoupling & coupling)
     EventTriggers.Coupling(coupling);
 }
 
-void mtsRobot1394::EnablePower(void)
-{
+void mtsRobot1394::EnablePower(void) {
     mUserExpectsPower = true;
     osaRobot1394::EnablePower();
 }
 
-void mtsRobot1394::DisablePower(void)
-{
+void mtsRobot1394::DisablePower(void) {
     mUserExpectsPower = false;
     osaRobot1394::DisablePower();
 }
 
-void mtsRobot1394::SetWatchdogPeriod(const double & periodInSeconds)
-{
+void mtsRobot1394::SetWatchdogPeriod(const double &periodInSeconds) {
     osaRobot1394::SetWatchdogPeriod(periodInSeconds);
     EventTriggers.WatchdogPeriod(mWatchdogPeriod);
 }
 
-void mtsRobot1394::CalibrateEncoderOffsetsFromPots(const int & numberOfSamples)
-{
+void mtsRobot1394::CalibrateEncoderOffsetsFromPots(const int &numberOfSamples) {
     mSamplesForCalibrateEncoderOffsetsFromPots = numberOfSamples + 1;
     mSamplesForCalibrateEncoderOffsetsFromPotsRequested = numberOfSamples;
 }
 
-void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
-                                   mtsInterfaceProvided * actuatorInterface)
-{
-    osaRobot1394 * thisBase = static_cast<osaRobot1394 *>(this);
+void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided *robotInterface,
+                                   mtsInterfaceProvided *actuatorInterface) {
+    osaRobot1394 *thisBase = static_cast<osaRobot1394 *>(this);
 
     this->mInterface = robotInterface;
     robotInterface->AddMessageEvents();
@@ -283,7 +273,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                     "UsePotsForSafetyCheck", mUsePotsForSafetyCheck);
 
     robotInterface->AddCommandWrite<osaRobot1394, vctBoolVec>(&osaRobot1394::SetBrakePower, thisBase,
-                                    "SetBrakeAmpEnable", mBrakePowerEnabled); // vector[bool]
+                                                              "SetBrakeAmpEnable", mBrakePowerEnabled); // vector[bool]
     robotInterface->AddCommandReadState(*mStateTableRead, mBrakePowerEnabled,
                                         "GetBrakeAmpEnable"); // vector[bool]
     robotInterface->AddCommandReadState(*mStateTableRead, mBrakePowerStatus,
@@ -339,6 +329,16 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddCommandWrite(&mtsRobot1394::ResetSingleEncoder, this,
                                     "ResetSingleEncoder"); // int
 
+    // Exposed IO
+    robotInterface->AddCommandWrite(&mtsRobot1394::IOSetEncoderPositionBits, thisBase,
+                                    "IOSetEncoderPositionBits");
+    robotInterface->AddCommandWrite(&mtsRobot1394::IOSetEncoderVelocityBits, thisBase,
+                                    "IOSetEncoderVelocityBits");
+    robotInterface->AddCommandWrite(&mtsRobot1394::IOSetPotVoltage, thisBase,
+                                    "IOSetPotVoltage");
+    robotInterface->AddCommandWrite(&mtsRobot1394::IOSetActuatorCurrentFeedback, thisBase,
+                                    "IOSetActuatorCurrentFeedback");
+
     // Events
     robotInterface->AddEventWrite(EventTriggers.PowerStatus, "PowerStatus", false);
     robotInterface->AddEventWrite(EventTriggers.WatchdogStatus, "WatchdogStatus", false);
@@ -346,6 +346,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
     robotInterface->AddEventWrite(EventTriggers.BiasEncoder, "BiasEncoder", 0);
     robotInterface->AddEventWrite(EventTriggers.UsePotsForSafetyCheck, "UsePotsForSafetyCheck", false);
+    robotInterface->AddEventWrite(EventTriggers.EncoderSetTo, "EncoderSetTo", mEncoderPosition);
 
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
@@ -353,7 +354,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
     actuatorInterface->AddCommandVoid(&osaRobot1394::DisableBoardPower, thisBase,
                                       "DisableBoardsPower");
     actuatorInterface->AddCommandWrite<osaRobot1394, vctBoolVec>(&osaRobot1394::SetActuatorPower, thisBase,
-                                       "SetAmpEnable", mActuatorPowerEnabled); // vector[bool]
+                                                                 "SetAmpEnable", mActuatorPowerEnabled); // vector[bool]
     actuatorInterface->AddCommandWrite(&mtsRobot1394::ResetSingleEncoder, this,
                                        "ResetSingleEncoder"); // int
 
@@ -365,24 +366,24 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided * robotInterface,
                                            "GetPositionActuator"); // prmPositionJointGet
 
     actuatorInterface->AddCommandQualifiedRead(&osaRobot1394::ActuatorCurrentToBits, thisBase,
-                                               "DriveAmpsToBits", mActuatorCurrentFeedback, mActuatorCurrentBitsFeedback);
+                                               "DriveAmpsToBits", mActuatorCurrentFeedback,
+                                               mActuatorCurrentBitsFeedback);
     actuatorInterface->AddCommandQualifiedRead(&osaRobot1394::PotVoltageToPosition, thisBase,
                                                "AnalogInVoltsToPosSI", mPotVoltage, mPotPosition);
 }
 
-bool mtsRobot1394::CheckConfiguration(void)
-{
+bool mtsRobot1394::CheckConfiguration(void) {
     if ((NumberOfActuators() > 2)
         && mActuatorCurrentToBitsOffsets.Equal(mActuatorCurrentToBitsOffsets[0])) {
-        CMN_LOG_CLASS_INIT_ERROR << "CheckConfiguration: all currents to bits offsets are equal, please calibrate the current offsets for arm: "
-                                 << this->Name() << std::endl;
+        CMN_LOG_CLASS_INIT_ERROR
+            << "CheckConfiguration: all currents to bits offsets are equal, please calibrate the current offsets for arm: "
+            << this->Name() << std::endl;
         return false;
     }
     return true;
 }
 
-void mtsRobot1394::CheckState(void)
-{
+void mtsRobot1394::CheckState(void) {
     mPositionJointGet.Position().Assign(mJointPosition);
     mPositionJointGet.Timestamps().Add(mActuatorTimestamp); // todo: we don't take coupling into account here
     mPositionActuatorGet.Position().Assign(mEncoderPosition);
@@ -451,22 +452,24 @@ void mtsRobot1394::CheckState(void)
 
             // determine where pots are
             vctDoubleVec actuatorPosition(mNumberOfActuators);
-            switch(mPotType) {
-            case POTENTIOMETER_UNDEFINED:
-                cmnThrow("mtsRobot1394::CheckState: can't set encoder offset, potentiometer's position undefined");
-                break;
-            case POTENTIOMETER_ON_JOINTS:
-                if (mConfiguration.HasActuatorToJointCoupling) {
-                    actuatorPosition.ProductOf(mConfiguration.Coupling.JointToActuatorPosition(),
-                                               potentiometers);
-                } else {
-                    actuatorPosition.Assign(potentiometers);
-                }
-                SetEncoderPosition(actuatorPosition);
-                break;
-            case POTENTIOMETER_ON_ACTUATORS:
-                SetEncoderPosition(potentiometers);
-                break;
+            switch (mPotType) {
+                case POTENTIOMETER_UNDEFINED:
+                    cmnThrow("mtsRobot1394::CheckState: can't set encoder offset, potentiometer's position undefined");
+                    break;
+                case POTENTIOMETER_ON_JOINTS:
+                    if (mConfiguration.HasActuatorToJointCoupling) {
+                        actuatorPosition.ProductOf(mConfiguration.Coupling.JointToActuatorPosition(),
+                                                   potentiometers);
+                    } else {
+                        actuatorPosition.Assign(potentiometers);
+                    }
+                    SetEncoderPosition(actuatorPosition);
+                    EventTriggers.EncoderSetTo(actuatorPosition);
+                    break;
+                case POTENTIOMETER_ON_ACTUATORS:
+                    SetEncoderPosition(potentiometers);
+                    EventTriggers.EncoderSetTo(potentiometers);
+                    break;
             }
             EventTriggers.BiasEncoder(nbElements);
             mSamplesForCalibrateEncoderOffsetsFromPots = 0; // not needed anymore

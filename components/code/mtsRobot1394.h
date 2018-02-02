@@ -99,6 +99,7 @@ namespace sawRobotIO1394 {
             mtsFunctionWrite Coupling;
             mtsFunctionWrite BiasEncoder;
             mtsFunctionWrite UsePotsForSafetyCheck;
+            mtsFunctionWrite EncoderSetTo;
         } EventTriggers;
 
         int mSamplesForCalibrateEncoderOffsetsFromPots;
