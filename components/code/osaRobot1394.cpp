@@ -1173,15 +1173,8 @@ void osaRobot1394::EncoderBitsToVelocity(const vctIntVec & bits, vctDoubleVec & 
     if (mLowestFirmWareVersion >= 6) {
         CMN_ASSERT(((Amp1394_VERSION_MAJOR >= 1) && (Amp1394_VERSION_MINOR >= 3))
                    || (Amp1394_VERSION_MAJOR > 1));
-        const double period = 1.0 / 3072000.0; // Clock period defined in firmware - different than system clock
-        for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {
-            const int counter = bits[i];
-            // overflow value +/- 0x3fffff, sign set by direction bit
-            if (counter == 0x3fffff || counter == -0x3fffff) {
-                vel[i] = 0.0;
-            }
-            else {
-                vel[i] = mBitsToPositionScales[i] / ((double) counter * period) * 4.0;
+        for (size_t i = 0; i < bits.size() && i < vel.size(); i++) {{
+                vel[i] = mBitsToPositionScales[i] / bits[i];
             }
         }
     }
