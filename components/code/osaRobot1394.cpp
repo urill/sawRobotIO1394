@@ -386,10 +386,7 @@ void osaRobot1394::InitializeState(void)
 {
     // Poll data
     for (size_t i = 0; i < mNumberOfActuators; i++) {
-        AmpIO * board = mActuatorInfo[i].Board;
         int axis = mActuatorInfo[i].Axis;
-
-        if (!board || (axis < 0)) continue; // We probably don't need this check any more
         mActuatorTimestamp[i] = 0;
         mDigitalInputs[i] = 0;
 
@@ -1329,5 +1326,5 @@ void osaRobot1394::IOSetActuatorCurrentFeedback(const vctDoubleVec &val) {
 }
 
 void osaRobot1394::IOSetPotVoltage(const vctDoubleVec &val) {
-    mPotValid.ForceAssign(val);
+    mPotVoltage.ForceAssign(val);
 }
