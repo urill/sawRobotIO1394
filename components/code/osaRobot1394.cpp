@@ -31,6 +31,7 @@ http://www.cisst.org/cisst/license.txt.
 #endif
 
 #include <AmpIO.h>
+#include <cisstOSAbstraction/osaSleep.h>
 
 using namespace sawRobotIO1394;
 
@@ -452,6 +453,7 @@ void osaRobot1394::InitializeState(void)
 
 void osaRobot1394::PollState(void)
 {
+    osaSleep(8.0 * cmn_ms); // TODO: pend on new incoming data
     // Poll data
     for (size_t i = 0; i < mNumberOfActuators; i++) {
         AmpIO * board = mActuatorInfo[i].Board;
