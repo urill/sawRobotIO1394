@@ -346,7 +346,7 @@ void mtsRobot1394::SetupInterfaces(mtsInterfaceProvided *robotInterface,
     robotInterface->AddEventWrite(EventTriggers.Coupling, "Coupling", prmActuatorJointCoupling());
     robotInterface->AddEventWrite(EventTriggers.BiasEncoder, "BiasEncoder", 0);
     robotInterface->AddEventWrite(EventTriggers.UsePotsForSafetyCheck, "UsePotsForSafetyCheck", false);
-    robotInterface->AddEventWrite(EventTriggers.EncoderSetTo, "EncoderSetTo", mEncoderPosition);
+    robotInterface->AddEventWrite(EventTriggers.EncoderSetTo, "EncoderSetTo", mEncoderPositionBits);
 
     // fine tune power, board vs. axis
     actuatorInterface->AddCommandVoid(&osaRobot1394::EnableBoardsPower, thisBase,
@@ -463,12 +463,23 @@ void mtsRobot1394::CheckState(void) {
                     } else {
                         actuatorPosition.Assign(potentiometers);
                     }
+
+                    {
+                        vctIntVec bits(mNumberOfActuators);
+                        this->EncoderPositionToBits(actuatorPosition, bits);
+                        EventTriggers.EncoderSetTo(bits);
+                    }
+
                     SetEncoderPosition(actuatorPosition);
-                    EventTriggers.EncoderSetTo(actuatorPosition);
                     break;
                 case POTENTIOMETER_ON_ACTUATORS:
+                    {
+                        vctIntVec bits(mNumberOfActuators);
+                        this->EncoderPositionToBits(potentiometers, bits);
+                        EventTriggers.EncoderSetTo(bits);
+                    }
+
                     SetEncoderPosition(potentiometers);
-                    EventTriggers.EncoderSetTo(potentiometers);
                     break;
             }
             EventTriggers.BiasEncoder(nbElements);
